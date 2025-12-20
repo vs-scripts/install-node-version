@@ -8,6 +8,13 @@
   "files.insertFinalNewline": true,
   "files.autoSave": "afterDelay",
   "files.autoSaveDelay": 1000,
+  "files.readonlyInclude": {
+    "**/AUTHOR": true,
+    "**/EMAIL": true,
+    "**/ORIGIN": true,
+    "**/VERSION": true,
+    "**/WEBSITE": true
+  },
   "editor.bracketPairColorization.enabled": true,
   "editor.guides.bracketPairs": "active",
   "workbench.editor.centeredLayoutAutoResize": false,
@@ -36,12 +43,17 @@
     "SECURITY": "text",
     "VERSION": "text",
     "CONTRIBUTORS": "text",
-    "EMAIL": "text"
+    "EMAIL": "text",
+    "WEBSITE": "text"
   },
   "terminal.integrated.profiles.windows": {
     "PowerShell (Admin)": {
       "path": "pwsh.exe",
       "args": ["-Command", "Start-Process pwsh -Verb RunAs"]
     }
+  },
+  "kiroAgent.configureMCP": "Disabled",
+  "[jsonc]": {
+    "editor.defaultFormatter": "vscode.json-language-features"
   }
 }

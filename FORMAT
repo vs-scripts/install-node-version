@@ -138,6 +138,7 @@ EMPLOYED TO DETECT AND PREVENT UNAUTHORIZED ALTERATIONS.
         - README
         - REFERENCES
         - SECURITY
+        - WEBSITE
         - VERSION
 
             - This MUST contain the version of this repository in SEMVER format.

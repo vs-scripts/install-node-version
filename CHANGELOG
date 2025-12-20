@@ -1,24 +1,28 @@
 2025-12-20 feat: initial release install-node-version script
-2025-12-20 feat: modularized PowerShell script with structured help documentation
-2025-12-20 feat: integrated Volta for repository-scoped Node.js version
+2025-12-20 feat: modularized powershell script with structured help documentation
+2025-12-20 feat: integrated volta for repository-scoped node.js version
 2025-12-20 feat: added support for winget-based tool installation
-2025-12-20 feat: configured RFC-style README and editor settings
-2025-12-20 chore: update METADATA file CHANGELOG format to TEXT LIST
-2025-12-20 chore: update FORMAT file changelog specification
-2025-12-20 chore: update FORMAT file LICENSE specification
-2025-12-20 chore: configure VSCode file associations for METADATA files
-2025-12-20 chore: update LICENSE file to follow CRFCF format
+2025-12-20 feat: configured rfc-style readme and editor settings
+2025-12-20 chore: update metadata file changelog format to text list
+2025-12-20 chore: update format file changelog specification
+2025-12-20 chore: update format file license specification
+2025-12-20 chore: configure vscode file associations for metadata files
+2025-12-20 chore: update license file to follow crfcf format
 2025-12-20 fix: ensure all files follow 83-character word wrap format
 2025-12-20 fix: format file lines exceeding 83 characters
 2025-12-20 fix: editorconfig file lines exceeding 83 characters
 2025-12-20 fix: powershell script lines exceeding 83 characters
-2025-12-20 fix: FORMAT file NOTICE section word wrap formatting
-2025-12-20 feat: add start-global-ssh-agent PowerShell script
-2025-12-20 chore: update VSCode settings configuration
-2025-12-20 chore: verify CHANGELOG compliance with FORMAT specification
+2025-12-20 fix: format file notice section word wrap formatting
+2025-12-20 feat: add start-global-ssh-agent powershell script
+2025-12-20 chore: update vscode settings configuration
+2025-12-20 chore: verify changelog compliance with format specification
 2025-12-20 chore: update contributing document to crfcf format
 2025-12-20 chore: update readme document to crfcf format
 2025-12-20 chore: update privacy policy document to crfcf format
 2025-12-20 chore: update references document to crfcf format
 2025-12-20 chore: update security policy document to crfcf format
 2025-12-20 chore: update format specification structure and metadata rules
+2025-12-20 chore: mark single-line metadata files readonly in vscode
+2025-12-20 chore: add website metadata file
+2025-12-20 chore: add email and website to metadata specifications
+2025-12-20 fix: correct acronyms in rfc metadata headers

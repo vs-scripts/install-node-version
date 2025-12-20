@@ -10,6 +10,7 @@ CHANGELOG text eol=lf
 CONTRIBUTING text eol=lf
 CONTRIBUTORS text eol=lf
 FORMAT text eol=lf
+EMAIL text eol=lf
 LICENSE text eol=lf
 METADATA text eol=lf
 ORIGIN text eol=lf
@@ -18,6 +19,7 @@ README text eol=lf
 REFERENCES text eol=lf
 SECURITY text eol=lf
 VERSION text eol=lf
+WEBSITE text eol=lf
 
 *.ps1 text eol=lf
 *.sh text eol=lf
