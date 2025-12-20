@@ -1,0 +1,17 @@
+Begin RFC:
+RFC: 0.0.0
+Title: External References and Dependencies
+Author: Richeve Bebedor <richeve.bebedor+vs-scripts@gmail.com>
+Status: Draft
+Created: 2025-12-20
+
+1. Tools:
+
+   - Volta Tool Manager: https://volta.sh
+   - Windows Package Manager (winget): https://github.com/microsoft/winget-cli
+
+2. Documentation:
+
+   - PowerShell Documentation: https://learn.microsoft.com/en-us/powershell/
+   - EditorConfig Specification: https://editorconfig.org/
+End RFC:

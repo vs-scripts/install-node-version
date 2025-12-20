@@ -1,0 +1,73 @@
+------------------------------------ BEGIN-RFC ------------------------------------
+
+RFC: 0.0.0
+Title: Privacy Policy
+Author: Richeve Bebedor <richeve.bebedor+vs-scripts@gmail.com>
+Status: Draft
+Created: 2025-12-20
+
+1.  Introduction:
+
+    This Privacy Policy outlines the commitment of the install-node-version
+    project to protecting your privacy. This policy is designed to align with
+    international standards, including the General Data Protection Regulation
+    (GDPR) and the California Consumer Privacy Act (CCPA).
+
+2.  Privacy by Design:
+
+    The install-node-version script is designed with "Privacy by Design"
+    principles. It operates as a local utility and does not include any
+    telemetry, tracking, or automated data transmission to external servers or
+    third parties.
+
+3.  Data Collection:
+
+    3.1. Personal Data:
+         The script does not collect, store, or transmit personal data such as
+         names, emails, or IP addresses.
+    3.2. Technical Data:
+         The script interacts only with your local system environment (e.g.,
+         file paths, environment variables, and tool versions) to perform its
+         intended function. This data remains local to your machine.
+
+4.  Log and Error Handling:
+
+    Any logs or error reports generated during execution are stored on your
+    local file system (e.g., in the tests/logs/ directory if applicable). These
+    files are for your own diagnostic use and are not shared automatically.
+
+5.  Data Transmission:
+
+    No data is transmitted to external entities unless explicitly initiated by
+    the user (for example, by manually sharing an error log via email for
+    support).
+
+6.  User Rights:
+
+    Consistent with global privacy laws, you have the following rights:
+    6.1. Right to Access: You have full access to the source code and local
+         outputs of the script.
+    6.2. Right to Erasure: You can erase all local data related to the project
+         simply by deleting the repository folder and the local Volta
+         configuration.
+    6.3. Right to Object: You can object to data processing by choosing not to
+         execute the script.
+
+7.  Cookies and Tracking:
+
+    This project does not use cookies, pixels, or any other tracking
+    technologies.
+
+8.  Contact Information:
+
+    For any questions regarding this policy or to exercise your privacy rights,
+    please contact:
+
+    Richeve Bebedor <richeve.bebedor+vs-scripts@gmail.com>
+
+9.  References:
+
+    9.1. GDPR: https://gdpr.eu
+    9.2. CCPA: https://oag.ca.gov/privacy/ccpa
+
+------------------------------------ ENDED-RFC ------------------------------------

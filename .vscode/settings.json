@@ -1,0 +1,47 @@
+{
+  "editor.rulers": [83],
+  "editor.wordWrap": "off",
+  "editor.formatOnSave": true,
+  "editor.defaultFormatter": "EditorConfig.EditorConfig",
+  "prettier.enable": false,
+  "files.trimTrailingWhitespace": true,
+  "files.insertFinalNewline": true,
+  "files.autoSave": "afterDelay",
+  "files.autoSaveDelay": 1000,
+  "editor.bracketPairColorization.enabled": true,
+  "editor.guides.bracketPairs": "active",
+  "workbench.editor.centeredLayoutAutoResize": false,
+  "editor.minimap.maxColumn": 83,
+  "editor.minimap.size": "proportional",
+  "editor.minimap.showSlider": "always",
+  "editor.scrollBeyondLastColumn": 0,
+  "editor.lineNumbers": "on",
+  "editor.glyphMargin": false,
+  "editor.folding": false,
+  "editor.occurrencesHighlight": "off",
+  "editor.selectionHighlight": false,
+  "files.associations": {
+    "*- BEGIN-RFC -*": "text",
+    "*- ENDED-RFC -*": "text",
+    "CHANGELOG": "text",
+    "FORMAT": "text",
+    "README": "text",
+    "AUTHOR": "text",
+    "LICENSE": "text",
+    "CONTRIBUTING": "text",
+    "METADATA": "text",
+    "ORIGIN": "text",
+    "PRIVACY": "text",
+    "REFERENCES": "text",
+    "SECURITY": "text",
+    "VERSION": "text",
+    "CONTRIBUTORS": "text",
+    "EMAIL": "text"
+  },
+  "terminal.integrated.profiles.windows": {
+    "PowerShell (Admin)": {
+      "path": "pwsh.exe",
+      "args": ["-Command", "Start-Process pwsh -Verb RunAs"]
+    }
+  }
+}

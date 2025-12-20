@@ -1,0 +1,229 @@
+----------------------------------- BEGIN-CRFCF -----------------------------------
+
+NOTICE: UNAUTHORIZED MODIFICATION OF THIS DOCUMENT IS EXPRESSLY PROHIBITED.
+EDITING PRIVILEGES ARE EXCLUSIVELY RESERVED FOR THE AUTHOR, DESIGNATED
+CONTRIBUTORS, AND AUTHORIZED ARTIFICIAL INTELLIGENCE AGENTS. DOCUMENT INTEGRITY
+IS SECURED BY A CRYPTOGRAPHIC CHECKSUM; AUTOMATED VERIFICATION SCRIPTS ARE
+EMPLOYED TO DETECT AND PREVENT UNAUTHORIZED ALTERATIONS.
+
+0.  METADATA:
+
+    - RFC:      CONCISE-RFC-000000
+    - TITLE:    CONCISE RFC FORMAT
+    - ACRONYM:  CRFCF
+    - AUTHOR:   Richeve Bebedor <richeve.bebedor+vs-scripts@gmail.com>
+    - CATEGORY: SPECIFICATION
+    - STATUS:   DRAFT
+    - VERSION:  000000 (0.0.0)
+    - CREATED:  2025-12-20
+    - CHECKSUM: <SHA-256>
+
+1.  Summary:
+
+    This document defines the canonical structure, sections, and rules for all
+    CONCISE-RFC-000000 documents in this repository. It serves as the authoritative
+    template for contributors, AI agents, and tooling.
+
+2.  Contents:
+
+    0.  METADATA ........................................................... 005
+    1.  Summary ............................................................ 014
+    2.  Contents ........................................................... 020
+    3.  Document Status .................................................... 025
+    4.  Normative Language ................................................. 030
+    5.  Naming Conventions ................................................. 035
+    6.  Structure .......................................................... 040
+    7.  Introduction ....................................................... 045
+    8.  Terminology ........................................................ 050
+    9.  Goals .............................................................. 055
+    10. Architecture ....................................................... 060
+    11. Specification ...................................................... 065
+    12. Issue Handling ..................................................... 070
+    13. Security ........................................................... 075
+    14. Privacy ............................................................ 080
+    15. Versioning ......................................................... 085
+    16. References ......................................................... 090
+
+3.  Document Status:
+
+    - This document is a STABLE repository-level RFC.
+    - It is not an Internet Standards Track specification.
+    - It is intended to enforce,
+        - uniformity,
+        - clarity,
+        - conciseness,
+        - and machine-parsable
+      structure across all CONCISE-RFC-000000 documents.
+
+4.  Normative Language:
+
+    - The key words,
+        - MUST,
+        - MUST NOT,
+        - SHOULD,
+        - and SHOULD NOT
+      in this document SHOULD follow RFC-2119 and RFC-8174.
+    - This document MUST NOT use MAY.
+
+6.  Naming Conventions:
+
+    - All CONCISE-RFC-000000 documents MUST be named in ALL CAPS.
+    - All CONCISE-RFC-000000 documents titles SHOULD be one word.
+    - All CONCISE-RFC-000000 documents MUST be in text format.
+
+7.  Structure:
+
+    All CONCISE-RFC-000000 documents MUST NOT exceed 999 lines of text.
+
+    All CONCISE-RFC-000000 documents MUST be 83 characters in column width.
+
+    All CONCISE-RFC-000000 documents MUST start with 35 (-) characters
+    followed by space separated BEGIN-CRFCF then followed by another 35
+    (-) characters.
+
+    All CONCISE-RFC-000000 documents MUST end with 35 (-) characters
+    followed by space separated ENDED-CRFCF then followed by another 35
+    (-) characters.
+
+    All CONCISE-RFC-000000 documents MUST have the NOTICE for unauthorized
+    modifications with the following format:
+
+        UNAUTHORIZED MODIFICATION OF THIS DOCUMENT IS EXPRESSLY PROHIBITED.
+        EDITING PRIVILEGES ARE EXCLUSIVELY RESERVED FOR THE AUTHOR,
+        DESIGNATED CONTRIBUTORS, AND AUTHORIZED ARTIFICIAL INTELLIGENCE
+        AGENTS. DOCUMENT INTEGRITY IS SECURED BY A CRYPTOGRAPHIC CHECKSUM;
+        AUTOMATED VERIFICATION SCRIPTS ARE EMPLOYED TO DETECT AND PREVENT
+        UNAUTHORIZED ALTERATIONS.
+
+    All repositories MUST contain the following METADATA documents:
+
+    - AUTHOR
+    - CHANGELOG
+
+        - This MUST contain the changelog of this repository.
+        - Each entry SHOULD respect the 83 characters column width.
+        - Each entry SHOULD respect the conventional commits 1.0.0 specification
+          as describe in this document:
+
+          https://www.conventionalcommits.org/en/v1.0.0/
+
+        - Each changelog item must be in this format,
+
+          <YYYY-MM-DD> <action>: <description-small-case>
+
+          Example:
+
+            2025-12-20 chore: update documentation
+
+    - CONTRIBUTING
+    - EMAIL
+    - FORMAT
+    - LICENSE
+
+        - This MUST contain the license of this repository.
+        - Each entry SHOULD respect the 83 characters column width.
+        - This MUST follow the CRFCF begin and ended format.
+        - This MUST contain the NOTICE for the unauthorized modification.
+        - This MUST only contain two sections, METADATA and License.
+
+    - METADATA
+    - ORIGIN
+    - PRIVACY
+    - README
+    - REFERENCES
+    - SECURITY
+    - VERSION
+
+    All single-line text formatted METADATA documents MUST follow a single line,
+    no end of line and no final new line format.
+
+    All list text formatted METADATA documents MUST follow a multiple line with
+    line feed end of line and no final new line format.
+
+    All CONCISE-RFC-000000 documents MUST follow this structure and order:
+
+        X.  Metadata:
+
+            This MUST contain the metadata of this document.
+
+            The metadata of this document MUST be in the following format
+            and order:
+
+            - RFC:      CONCISE-RFC-000000
+            - TITLE:    <UNIQUE-CONCISE-DOCUMENT-TITLE>
+            - ACRONYM:  <UNIQUE-CONCISE-DOCUMENT-ACRONYM>
+            - AUTHOR:   <FIRST-NAME> <LAST-NAME> <email>
+            - CATEGORY: (SPECIFICATION | INFORMATIONAL | EXPERIMENTAL)
+            - STATUS:   (DRAFT | REVIEW | STABLE | DEPRECATED | OBSOLETE)
+            - VERSION:  XXXXXX <X.X.X>
+            - CREATED:  <YYYY-MM-DD>
+            - CHECKSUM: <SHA-256>
+
+        X.  Summary:
+
+            This MUST contain the abstract of this document.
+
+        X.  License:
+
+            This MUST contain the license text of this document. This MUST only be
+            used on LICENSE documents. LICENSE documents MUST only contain this and
+            the METADATA section.
+
+        X.  Contents:
+
+            This MUST contain the table of contents of this document.
+
+        X.  Document Status
+
+            This must contain the descriptive status of this document.
+
+        X.  Normative Language
+
+            This must contain the normative language of this document.
+
+        X.  Naming Conventions
+
+            This must contain the naming conventions of this document.
+
+        X.  Structure
+
+            This MUST contain the structure of the repository and/or this document.
+
+        X.  Compliance
+
+            This MUST contain the compliance of this document to this format,
+            styles, principles and tools which includes any AI agent tools.
+
+    All CONCISE-RFC-000000 documents MUST follow this principles:
+
+    - Single Responsibility Principle. CONCISE-RFC-000000 documents MUST address
+      one and only one concern or feature.
+    - Open-Closed Principle. CONCISE-RFC-000000 documents MUST be open for
+      extension but closed for modification. Once the status is STABLE, the
+      CONCISE-RFC-000000 documents MUST NOT be modified. New
+      CONCISE-RFC-000000 documents MUST be created for updates. If an
+      CONCISE-RFC-000000 document has issues, then the entire
+      CONCISE-RFC-000000 document must be marked for deprecation and a new
+      CONCISE-RFC-000000 document must be published.
+    - Liskov Principle.
+    - Interface Segregation Principle.
+    - Dependency Inversion Principle.
+
+    All CONCISE-RFC-000000 documents MUST follow this style:
+
+    - Section headers MUST be clear, concise, and well-defined.
+    - Section contents MUST only contain the following styles,
+        - Descriptive paragraphs in normal conversational english language.
+        - List that starts in (-) followed by single space and then the list item.
+        - Formatted structures that is different from this format.
+    - All formatted structures ordered components MUST be strictly followed.
+
+8.  Compliance:
+
+    - All AI agents MUST read the FORMAT file first.
+    - All AI agents MUST add to their context list this FORMAT file.
+    - All AI agents MUST follow this FORMAT file when editing any
+    CONCISE-RFC-000000 documents.
+    - All AI agents MUST NOT edit this FORMAT file.
+
+----------------------------------- ENDED-CRFCF -----------------------------------

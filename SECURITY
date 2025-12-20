@@ -1,0 +1,17 @@
+Begin RFC:
+RFC: 0.0.0
+Title: Security Policy
+Author: Richeve Bebedor <richeve.bebedor+vs-scripts@gmail.com>
+Status: Draft
+Created: 2025-12-20
+
+1. Reporting Vulnerabilities:
+
+   If you discover a security vulnerability within this project, please send an
+   email to Richeve Bebedor at richeve.bebedor+vs-scripts@gmail.com.
+
+2. Policy:
+
+   All security vulnerabilities will be promptly addressed. We maintain a proactive
+   stance on the security of the install-node-version script and related assets.
+End RFC:

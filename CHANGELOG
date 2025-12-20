@@ -1,0 +1,17 @@
+2025-12-20 feat: initial release install-node-version script
+2025-12-20 feat: modularized PowerShell script with structured help documentation
+2025-12-20 feat: integrated Volta for repository-scoped Node.js version
+2025-12-20 feat: added support for winget-based tool installation
+2025-12-20 feat: configured RFC-style README and editor settings
+2025-12-20 chore: update METADATA file CHANGELOG format to TEXT LIST
+2025-12-20 chore: update FORMAT file changelog specification
+2025-12-20 chore: update FORMAT file LICENSE specification
+2025-12-20 chore: configure VSCode file associations for METADATA files
+2025-12-20 chore: update LICENSE file to follow CRFCF format
+2025-12-20 fix: ensure all files follow 83-character word wrap format
+2025-12-20 fix: format file lines exceeding 83 characters
+2025-12-20 fix: editorconfig file lines exceeding 83 characters
+2025-12-20 fix: powershell script lines exceeding 83 characters
+2025-12-20 fix: FORMAT file NOTICE section word wrap formatting
+2025-12-20 feat: add start-global-ssh-agent PowerShell script
+2025-12-20 chore: update VSCode settings configuration

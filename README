@@ -1,0 +1,77 @@
+Begin RFC:
+RFC: 0.0.0
+Title: Install-Node-Version Script Documentation
+Author: Richeve Bebedor <richeve.bebedor+vs-scripts@gmail.com>
+Status: Draft
+Created: 2025-12-20
+
+1.  Introduction:
+
+    This document specifies the design and usage of the install-node-version
+    PowerShell script. The goal of this script is to provide a seamless,
+    repository-scoped Node.js LTS environment initialization using Volta.
+
+2.  Scope:
+
+    This specification applies to Windows-based terminal environments running
+    either Windows PowerShell 5.1 or PowerShell Core 7+.
+
+3.  Technical Summary:
+
+    The script automates the following sequence:
+    3.1. Environment preparation and preference setting.
+    3.2. Administrative privilege verification and auto-elevation.
+    3.3. Platform verification (Windows-only).
+    3.4. Volta tool manager installation (via winget) and path configuration.
+    3.5. Repository root detection (via Git or CWD).
+    3.6. Local package.json initialization (if required).
+    3.7. LTS Node.js pinning to the detected repository scope.
+
+4.  Implementation Details:
+
+    The script is composed of modular functions designed for isolation and unit
+    testing:
+
+    - Set-ScriptEnvironment: Configures execution context.
+    - Test-IsAdmin / Invoke-Elevation: Handles privilege escalation.
+    - Assert-WindowsPlatform: Guards against non-Windows execution.
+    - Ensure-VoltaInstalled: Manages tool lifecycle.
+    - Invoke-NodePinningWorkflow: Orchestrates the core logic.
+
+5.  Operations:
+
+    5.1. Initialization
+    To initialize a folder-scoped Node.js environment, run the script without
+    arguments from the target directory:
+
+        powershell.exe -File .\install-node-version.ps1
+
+    5.2. Verification
+    Upon completion, the script verifies the active Node.js version and lists
+    the Volta-managed tools for the current folder.
+
+6.  Security Considerations:
+
+    The script requires administrative privileges for winget installations and
+    binary path modifications. Users should review the script before executing
+    it with elevated permissions.
+
+7.  Project Metadata:
+
+    Additional documentation and project metadata can be found in the following
+    files:
+
+    - AUTHOR: Primary script maintainer details.
+    - CHANGELOG: Chronological record of all notable changes.
+    - CONTRIBUTING: Guidelines for submitting contributions.
+    - LICENSE: The MIT License terms.
+    - ORIGIN: Canonical source repository URL.
+    - REFERENCES: External tools and specification links.
+    - SECURITY: Vulnerability reporting and policy details.
+    - VERSION: Current version identifier.
+
+8.  References:
+
+    - Volta: https://volta.sh
+    - Windows Package Manager (winget): https://github.com/microsoft/winget-cli
+End RFC:
