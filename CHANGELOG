@@ -16,3 +16,9 @@
 2025-12-20 feat: add start-global-ssh-agent PowerShell script
 2025-12-20 chore: update VSCode settings configuration
 2025-12-20 chore: verify CHANGELOG compliance with FORMAT specification
+2025-12-20 chore: update contributing document to crfcf format
+2025-12-20 chore: update readme document to crfcf format
+2025-12-20 chore: update privacy policy document to crfcf format
+2025-12-20 chore: update references document to crfcf format
+2025-12-20 chore: update security policy document to crfcf format
+2025-12-20 chore: update format specification structure and metadata rules

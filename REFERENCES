@@ -1,17 +1,58 @@
-Begin RFC:
-RFC: 0.0.0
-Title: External References and Dependencies
-Author: Richeve Bebedor <richeve.bebedor+vs-scripts@gmail.com>
-Status: Draft
-Created: 2025-12-20
+----------------------------------- BEGIN-CRFCF -----------------------------------
 
-1. Tools:
+NOTICE: UNAUTHORIZED MODIFICATION OF THIS DOCUMENT IS EXPRESSLY PROHIBITED.
+EDITING PRIVILEGES ARE EXCLUSIVELY RESERVED FOR THE AUTHOR, DESIGNATED
+CONTRIBUTORS, AND AUTHORIZED ARTIFICIAL INTELLIGENCE AGENTS. DOCUMENT INTEGRITY
+IS SECURED BY A CRYPTOGRAPHIC CHECKSUM; AUTOMATED VERIFICATION SCRIPTS ARE
+EMPLOYED TO DETECT AND PREVENT UNAUTHORIZED ALTERATIONS.
 
-   - Volta Tool Manager: https://volta.sh
-   - Windows Package Manager (winget): https://github.com/microsoft/winget-cli
+0.  METADATA:
 
-2. Documentation:
+    - RFC:      CONCISE-RFC-000000
+    - TITLE:    EXTERNAL REFERENCES AND DEPENDENCIES
+    - ACRONYM:  ERAD
+    - AUTHOR:   Richeve Bebedor <richeve.bebedor+vs-scripts@gmail.com>
+    - CATEGORY: SPECIFICATION
+    - STATUS:   DRAFT
+    - VERSION:  000000 (0.0.0)
+    - CREATED:  2025-12-20
+    - CHECKSUM: <SHA-256>
 
-   - PowerShell Documentation: https://learn.microsoft.com/en-us/powershell/
-   - EditorConfig Specification: https://editorconfig.org/
-End RFC:
+1.  Summary:
+
+    This document provides external references and dependencies for the
+    install-node-version script project.
+
+2.  Contents:
+
+    0.  METADATA ........................................................... 005
+    1.  Summary ............................................................ 014
+    2.  Contents ........................................................... 020
+    3.  Document Status .................................................... 025
+    4.  Normative Language ................................................. 030
+    5.  Tools .............................................................. 035
+    6.  Documentation ...................................................... 040
+
+3.  Document Status:
+
+    - This document is a DRAFT repository-level RFC.
+    - It is not an Internet Standards Track specification.
+    - It is intended to provide external references for this repository.
+
+4.  Normative Language:
+
+    - The key words "MUST", "MUST NOT", "SHOULD", and "SHOULD NOT" in this
+      document SHOULD follow RFC-2119 and RFC-8174.
+    - This document MUST NOT use MAY.
+
+5.  Tools:
+
+    - Volta Tool Manager: https://volta.sh
+    - Windows Package Manager (winget): https://github.com/microsoft/winget-cli
+
+6.  Documentation:
+
+    - PowerShell Documentation: https://learn.microsoft.com/en-us/powershell/
+    - EditorConfig Specification: https://editorconfig.org/
+
+----------------------------------- ENDED-CRFCF -----------------------------------

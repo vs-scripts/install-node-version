@@ -1,62 +1,117 @@
-Begin RFC:
-RFC: 0.0.0
-Title: Install-Node-Version Script Documentation
-Author: Richeve Bebedor <richeve.bebedor+vs-scripts@gmail.com>
-Status: Draft
-Created: 2025-12-20
+----------------------------------- BEGIN-CRFCF -----------------------------------
 
-1.  Introduction:
+NOTICE: UNAUTHORIZED MODIFICATION OF THIS DOCUMENT IS EXPRESSLY PROHIBITED.
+EDITING PRIVILEGES ARE EXCLUSIVELY RESERVED FOR THE AUTHOR, DESIGNATED
+CONTRIBUTORS, AND AUTHORIZED ARTIFICIAL INTELLIGENCE AGENTS. DOCUMENT INTEGRITY
+IS SECURED BY A CRYPTOGRAPHIC CHECKSUM; AUTOMATED VERIFICATION SCRIPTS ARE
+EMPLOYED TO DETECT AND PREVENT UNAUTHORIZED ALTERATIONS.
+
+0.  METADATA:
+
+    - RFC:      CONCISE-RFC-000000
+    - TITLE:    INSTALL-NODE-VERSION SCRIPT DOCUMENTATION
+    - ACRONYM:  INVSD
+    - AUTHOR:   Richeve Bebedor <richeve.bebedor+vs-scripts@gmail.com>
+    - CATEGORY: SPECIFICATION
+    - STATUS:   DRAFT
+    - VERSION:  000000 (0.0.0)
+    - CREATED:  2025-12-20
+    - CHECKSUM: <SHA-256>
+
+1.  Summary:
 
     This document specifies the design and usage of the install-node-version
     PowerShell script. The goal of this script is to provide a seamless,
     repository-scoped Node.js LTS environment initialization using Volta.
 
-2.  Scope:
+2.  Contents:
+
+    0.  METADATA ........................................................... 005
+    1.  Summary ............................................................ 014
+    2.  Contents ........................................................... 020
+    3.  Document Status .................................................... 025
+    4.  Normative Language ................................................. 030
+    5.  Introduction ....................................................... 035
+    6.  Scope .............................................................. 040
+    7.  Technical Summary .................................................. 045
+    8.  Implementation Details ............................................. 050
+    9.  Operations ......................................................... 055
+    10. Security Considerations ............................................ 060
+    11. Project Metadata ................................................... 065
+    12. References ......................................................... 070
+
+3.  Document Status:
+
+    - This document is a DRAFT repository-level RFC.
+    - It is not an Internet Standards Track specification.
+    - It is intended to provide technical documentation
+      for the install-node-version script.
+
+4.  Normative Language:
+
+    - The key words "MUST", "MUST NOT", "SHOULD", and "SHOULD NOT" in this
+      document SHOULD follow RFC-2119 and RFC-8174.
+    - This document MUST NOT use MAY.
+
+5.  Introduction:
+
+    This document specifies the design and usage of the install-node-version
+    PowerShell script. The goal of this script is to provide a seamless,
+    repository-scoped Node.js LTS environment initialization using Volta.
+
+6.  Scope:
 
     This specification applies to Windows-based terminal environments running
     either Windows PowerShell 5.1 or PowerShell Core 7+.
 
-3.  Technical Summary:
+7.  Technical Summary:
 
     The script automates the following sequence:
-    3.1. Environment preparation and preference setting.
-    3.2. Administrative privilege verification and auto-elevation.
-    3.3. Platform verification (Windows-only).
-    3.4. Volta tool manager installation (via winget) and path configuration.
-    3.5. Repository root detection (via Git or CWD).
-    3.6. Local package.json initialization (if required).
-    3.7. LTS Node.js pinning to the detected repository scope.
+    - Environment preparation and preference setting.
+    - Interactive PowerShell session verification.
+    - Administrative privilege verification and auto-elevation.
+    - PowerShell Core transition optimization (if available).
+    - Platform verification (Windows-only).
+    - Volta tool manager installation (via winget) and PATH configuration.
+    - Repository root detection (via Git or CWD).
+    - Local package.json initialization (if required).
+    - LTS Node.js pinning to the detected repository scope.
 
-4.  Implementation Details:
+8.  Implementation Details:
 
     The script is composed of modular functions designed for isolation and unit
     testing:
 
     - Set-ScriptEnvironment: Configures execution context.
+    - Test-IsInteractivePowerShell: Ensures interactive execution.
     - Test-IsAdmin / Invoke-Elevation: Handles privilege escalation.
+    - Invoke-PowerShellCoreTransition: Optimizes for PowerShell Core.
     - Assert-WindowsPlatform: Guards against non-Windows execution.
-    - Ensure-VoltaInstalled: Manages tool lifecycle.
+    - Write-Step: Provides formatted console output.
+    - Install-PackageWithWinget: Standardizes winget installations.
+    - Ensure-VoltaInstalled: Manages Volta lifecycle.
+    - Ensure-VoltaOnPath: Handles PATH configuration.
+    - Get-RepoRoot: Detects repository context.
+    - Ensure-PackageJson: Creates package.json if needed.
     - Invoke-NodePinningWorkflow: Orchestrates the core logic.
 
-5.  Operations:
+9.  Operations:
 
-    5.1. Initialization
-    To initialize a folder-scoped Node.js environment, run the script without
-    arguments from the target directory:
+    - Initialization: To initialize a folder-scoped Node.js environment, run the
+      script without arguments from the target directory:
 
-        powershell.exe -File .\install-node-version.ps1
+      powershell.exe -File .\scripts\install-node-version.ps1
 
-    5.2. Verification
-    Upon completion, the script verifies the active Node.js version and lists
-    the Volta-managed tools for the current folder.
+    - Verification: Upon completion, the script verifies the active Node.js
+      version and lists the Volta-managed tools for the current folder.
 
-6.  Security Considerations:
+10. Security Considerations:
 
     The script requires administrative privileges for winget installations and
     binary path modifications. Users should review the script before executing
     it with elevated permissions.
 
-7.  Project Metadata:
+11. Project Metadata:
 
     Additional documentation and project metadata can be found in the following
     files:
@@ -64,14 +119,28 @@ Created: 2025-12-20
     - AUTHOR: Primary script maintainer details.
     - CHANGELOG: Chronological record of all notable changes.
     - CONTRIBUTING: Guidelines for submitting contributions.
+    - CONTRIBUTORS: List of project contributors.
+    - EMAIL: Contact email address.
+    - FORMAT: Document formatting specifications.
     - LICENSE: The MIT License terms.
+    - METADATA: File type and format specifications.
     - ORIGIN: Canonical source repository URL.
+    - PRIVACY: Privacy policy and data handling details.
     - REFERENCES: External tools and specification links.
     - SECURITY: Vulnerability reporting and policy details.
     - VERSION: Current version identifier.
 
-8.  References:
+    Scripts Directory:
+    - get-rfc-checksum.js: RFC checksum generation utility.
+    - install-node-version.ps1: Node.js environment setup script.
+    - start-global-ssh-agent.ps1: SSH-Agent service configuration script.
 
+12. References:
+
+    - CONCISE-RFC-000000 Specification: Internal documentation standard
+    - Node.js: https://nodejs.org
+    - PowerShell Core: https://github.com/PowerShell/PowerShell
     - Volta: https://volta.sh
     - Windows Package Manager (winget): https://github.com/microsoft/winget-cli
-End RFC:
+
+----------------------------------- ENDED-CRFCF -----------------------------------
