@@ -27,3 +27,4 @@
 2025-12-20 chore: add email and website to metadata specifications
 2025-12-20 fix: correct acronyms in rfc metadata headers
 2025-12-21 chore: add INDEX target entry file and metadata references
+2025-12-21 chore: sort list entries in gitignore, gitattributes, and vscode settings

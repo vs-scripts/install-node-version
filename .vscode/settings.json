@@ -33,22 +33,22 @@
     "files.associations": {
         "*- BEGIN-RFC -*": "text",
         "*- ENDED-RFC -*": "text",
-        "CHANGELOG": "text",
-        "FORMAT": "text",
-        "README": "text",
         "AUTHOR": "text",
-        "LICENSE": "text",
+        "CHANGELOG": "text",
         "CONTRIBUTING": "text",
+        "CONTRIBUTORS": "text",
+        "EMAIL": "text",
+        "FORMAT": "text",
+        "INDEX": "text",
+        "LICENSE": "text",
         "METADATA": "text",
         "ORIGIN": "text",
         "PRIVACY": "text",
+        "README": "text",
         "REFERENCES": "text",
         "SECURITY": "text",
         "VERSION": "text",
-        "CONTRIBUTORS": "text",
-        "EMAIL": "text",
-        "WEBSITE": "text",
-        "INDEX": "text"
+        "WEBSITE": "text"
     },
     "terminal.integrated.profiles.windows": {
         "PowerShell (Admin)": {

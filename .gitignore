@@ -9,22 +9,22 @@
 !.gitignore
 !.prettierignore
 
-!LICENSE
-!ORIGIN
-!README
-!VERSION
-!CONTRIBUTORS
-!CONTRIBUTING
 !AUTHOR
-!METADATA
-!SECURITY
-!REFERENCES
 !CHANGELOG
-!FORMAT
-!PRIVACY
+!CONTRIBUTING
+!CONTRIBUTORS
 !EMAIL
-!WEBSITE
+!FORMAT
 !INDEX
+!LICENSE
+!METADATA
+!ORIGIN
+!PRIVACY
+!README
+!REFERENCES
+!SECURITY
+!VERSION
+!WEBSITE
 
 !package.json
 
@@ -46,10 +46,10 @@
 !tests/
 !tests/e2e/
 !tests/lib/
-!tests/reports/
-!tests/units/
 !tests/logs/
+!tests/reports/
 !tests/scripts/
+!tests/units/
 !tests/**/*.js
 !tests/**/*.ps1
 !tests/**/*.sh
