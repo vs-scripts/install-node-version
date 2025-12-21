@@ -9,6 +9,7 @@ EMPLOYED TO DETECT AND PREVENT UNAUTHORIZED ALTERATIONS.
 0.  METADATA:
 
     - RFC:      CONCISE-RFC-000000
+    - GROUP:    VS-SCRIPTS
     - TITLE:    CONCISE RFC FORMAT
     - ACRONYM:  CRFCF
     - AUTHOR:   Richeve Bebedor <richeve.bebedor+vs-scripts@gmail.com>
@@ -99,7 +100,7 @@ EMPLOYED TO DETECT AND PREVENT UNAUTHORIZED ALTERATIONS.
 
         - This NOTICE format MUST NOT be STRICTLY modified.
 
-    - All repositories MUST contain the following METADATA documents:
+    - All repositories MUST STRICTLY contain the following METADATA documents:
 
         - AUTHOR
         - CHANGELOG
@@ -171,16 +172,18 @@ EMPLOYED TO DETECT AND PREVENT UNAUTHORIZED ALTERATIONS.
     - All list text formatted METADATA documents MUST follow a multiple line with
       line feed end of line and no final new line format.
 
-    - All CONCISE-RFC-000000 documents MUST follow this structure and order:
+    - All CONCISE-RFC-000000 documents MUST STRICTLY follow this structure
+      in this order:
 
-        X.  Metadata:
+        X.  METADATA:
 
             This MUST contain the metadata of this document.
 
-            The metadata of this document MUST be in the following format
-            and order:
+            The metadata of this document MUST STRICTLY follows this format
+            in this order:
 
             - RFC:      CONCISE-RFC-000000
+            - GROUP:    <GROUP-PROJECT-NAME>
             - TITLE:    <UNIQUE-CONCISE-DOCUMENT-TITLE>
             - ACRONYM:  <UNIQUE-CONCISE-DOCUMENT-ACRONYM>
             - AUTHOR:   <FIRST-NAME> <LAST-NAME> <email>
@@ -211,7 +214,8 @@ EMPLOYED TO DETECT AND PREVENT UNAUTHORIZED ALTERATIONS.
                 THE LICENSE AGREEMENT SPECIFIED IN THE LICENSE FILE.
                 PLEASE REFER TO THE LICENSE FILE FOR DETAILS.
 
-            - This MUST be contained in all CONCISE-RFC-000000 documents.
+            - This MUST be contained in all CONCISE-RFC-000000 documents except
+              the LICENSE file.
 
         X.  Contents:
 
@@ -262,6 +266,18 @@ EMPLOYED TO DETECT AND PREVENT UNAUTHORIZED ALTERATIONS.
               the list item.
             - Formatted structures that is different from this format.
         - All formatted structures ordered components MUST be STRICTLY followed.
+
+    - All repositories MUST STRICTLY contain the following basic directories,
+
+        - .vscode
+        - .github
+        - .husky
+        - dist
+        - public
+        - scripts
+        - src
+        - tests
+        - todo
 
 8.  Compliance:
 

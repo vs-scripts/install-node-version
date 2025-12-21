@@ -28,3 +28,8 @@
 2025-12-20 fix: correct acronyms in rfc metadata headers
 2025-12-21 chore: add INDEX target entry file and metadata references
 2025-12-21 chore: sort list entries in gitignore, gitattributes, and vscode settings
+2025-12-21 fix: split editorconfig metadata patterns to respect 83 columns
+2025-12-21 chore: allow template and todo directories in gitignore
+2025-12-21 chore: update format specification metadata fields and directories
+2025-12-21 chore: update metadata registry to include readme entry
+2025-12-21 chore: add prettierignore to prevent automatic formatting

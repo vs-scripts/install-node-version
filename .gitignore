@@ -43,6 +43,9 @@
 !scripts/
 !scripts/**/*.js
 
+!template/
+!template/**/*.template
+
 !tests/
 !tests/e2e/
 !tests/lib/
@@ -53,3 +56,6 @@
 !tests/**/*.js
 !tests/**/*.ps1
 !tests/**/*.sh
+
+!todo/
+!todo/**/*.todo
