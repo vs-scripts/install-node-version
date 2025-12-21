@@ -1,4 +1,4 @@
------------------------------------ BEGIN-CRFCF -----------------------------------
+|<------------------------------->[ BEGIN-CRFCF ]<------------------------------->|
 
 NOTICE: UNAUTHORIZED MODIFICATION OF THIS DOCUMENT IS EXPRESSLY PROHIBITED.
 EDITING PRIVILEGES ARE EXCLUSIVELY RESERVED FOR THE AUTHOR, DESIGNATED
@@ -65,7 +65,7 @@ EMPLOYED TO DETECT AND PREVENT UNAUTHORIZED ALTERATIONS.
         - and SHOULD NOT
       in this document SHOULD follow RFC-2119 and RFC-8174.
     - This document MUST NOT use MAY.
-    - The key word STRICTLY defines absolute non-negotiable intent.
+    - The key word STRICTLY defines absolute and non-negotiable intent.
 
 6.  Naming Conventions:
 
@@ -76,20 +76,35 @@ EMPLOYED TO DETECT AND PREVENT UNAUTHORIZED ALTERATIONS.
 
     - All CONCISE-RFC-000000 documents MUST be in text format.
 
-    - All CONCISE-RFC-000000 documents MUST NOT exceed 999 lines of text.
+    - All CONCISE-RFC-000000 documents MUST NOT exceed 997 lines of text.
 
-    - All CONCISE-RFC-000000 documents MUST be 83 characters in column width.
+    - All CONCISE-RFC-000000 documents MUST be STRICTLY within 83 characters
+      in column width.
 
-    - All CONCISE-RFC-000000 documents MUST start with 35 (-) characters
-      followed by space separated BEGIN-CRFCF then followed by another
-      35 (-) characters.
+    - All CONCISE-RFC-000000 documents MUST STRICTLY start with,
+        - 1 (|) pipe character, then
+        - 1 less than (<) character, then
+        - 31 hyphen (-) characters, then
+        - 1 opening square bracket ([) character
+        - followed by space separated BEGIN-CRFCF, then
+        - 1 closing square bracket (]) character
+        - 31 hyphen (-) characters, then
+        - 1 greater than (>) character, and then, lastly,
+        - 1 (|) pipe character.
 
-    - All CONCISE-RFC-000000 documents MUST end with 35 (-) characters
-      followed by space separated ENDED-CRFCF then followed by another
-      35 (-) characters.
+    - All CONCISE-RFC-000000 documents MUST STRICTLY end with,
+        - 1 (|) pipe character, then
+        - 1 less than (<) character, then
+        - 31 hyphen (-) characters, then
+        - 1 opening square bracket ([) character
+        - followed by space separated ENDED-CRFCF, then
+        - 1 closing square bracket (]) character
+        - 31 hyphen (-) characters, then
+        - 1 greater than (>) character, and then, lastly,
+        - 1 (|) pipe character.
 
-    - All CONCISE-RFC-000000 documents MUST have the NOTICE for unauthorized
-      modifications with the following format:
+    - All CONCISE-RFC-000000 documents MUST STRICTLY have the NOTICE
+      for unauthorized modifications with the following format:
 
         UNAUTHORIZED MODIFICATION OF THIS DOCUMENT IS EXPRESSLY PROHIBITED.
         EDITING PRIVILEGES ARE EXCLUSIVELY RESERVED FOR THE AUTHOR,
@@ -114,7 +129,7 @@ EMPLOYED TO DETECT AND PREVENT UNAUTHORIZED ALTERATIONS.
 
             - Each changelog item must be in this format:
 
-                <YYYY-MM-DD> <action>: <description-small-case>
+                <YYYY-MM-DD> <action>: <concise-description>
 
                 Example:
 
@@ -269,22 +284,43 @@ EMPLOYED TO DETECT AND PREVENT UNAUTHORIZED ALTERATIONS.
 
     - All repositories MUST STRICTLY contain the following basic directories,
 
-        - .vscode
-        - .github
-        - .husky
-        - dist
-        - public
-        - scripts
-        - src
-        - tests
-        - todo
+        - .vscode/
+        - .github/
+        - .husky/
+        - dist/
+        - public/
+        - scripts/
+        - src/
+        - template/
+        - tests/
+        - todo/
+
+            - All todo files MUST STRICTLY follow CONCISE-RFC-000000.
+            - All todo files MUST STRICTLY end with *.todo file extension.
+            - All todo files MUST be STRICTLY interpreted as text files.
+            - There are five issue categories for todo,
+
+                - critical
+                - major
+                - minor
+                - prototype
+                - reported
+
+            - All todo files MUST STRICTLY follow the file name format:
+
+                <priority>-issue-<YYYY-MM-DD>-<short-title>.todo
+
+                Example:
+
+                    critical-issue-2025-12-21-fix-e2e-tests.todo
 
 8.  Compliance:
 
-    - All AI agents MUST STRICTLY read the FORMAT file.
-    - All AI agents MUST STRICTLY add to their context list this FORMAT file.
-    - All AI agents MUST STRICTLY follow this FORMAT file.
-    - All AI agents MUST NOT STRICTLY edit this FORMAT file.
-    - All AI agents MUST NOT STRICTLY modify the VERSION file.
+        - All AI agents MUST STRICTLY read the FORMAT file.
+        - All AI agents MUST STRICTLY add to their context list this FORMAT file.
+        - All AI agents MUST STRICTLY follow this FORMAT file.
+        - All AI agents MUST NOT STRICTLY edit this FORMAT file.
+        - All AI agents MUST NOT STRICTLY modify the VERSION file.
+        - All AI agents MUST STRICTLY follow rules with "STRICTLY" word.
 
------------------------------------ ENDED-CRFCF -----------------------------------
+|<------------------------------->[ ENDED-CRFCF ]<------------------------------->|

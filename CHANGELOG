@@ -33,3 +33,5 @@
 2025-12-21 chore: update format specification metadata fields and directories
 2025-12-21 chore: update metadata registry to include readme entry
 2025-12-21 chore: add prettierignore to prevent automatic formatting
+2025-12-21 chore: add template files for git and vscode configuration
+2025-12-21 fix: correct typos in format specification
