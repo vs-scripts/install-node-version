@@ -126,6 +126,10 @@ EMPLOYED TO DETECT AND PREVENT UNAUTHORIZED ALTERATIONS.
 
             - This file itself.
 
+        - INDEX
+
+            - The target entry of this repository.
+
         - LICENSE
 
             - This MUST contain the license of this repository.

@@ -20,6 +20,7 @@ REFERENCES text eol=lf
 SECURITY text eol=lf
 VERSION text eol=lf
 WEBSITE text eol=lf
+INDEX text eol=lf
 
 *.ps1 text eol=lf
 *.sh text eol=lf
