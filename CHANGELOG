@@ -35,3 +35,4 @@
 2025-12-21 chore: add prettierignore to prevent automatic formatting
 2025-12-21 chore: add template files for git and vscode configuration
 2025-12-21 fix: correct typos in format specification
+2025-12-22 chore: refine format specification newline rules and STRICTLY usage
