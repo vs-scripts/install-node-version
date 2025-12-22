@@ -1,0 +1,93 @@
+**What I’m Comparing**
+- Script inventory: `scripts/install-node-version.ps1`, `scripts/start-global-ssh-agent.ps1`, `scripts/copy-vscode-settings-template.ps1`
+- Comparison axes:
+  - Prolog + structure (batch guard, section headers, main flow ordering)
+  - Shared helper functions (presence + implementation style)
+  - Error handling + output conventions (try/catch, `Write-Step`, `Write-Verbose`, `Write-Error`)
+
+**Initial Findings (Differences / Missing Pieces)**
+
+- `scripts/copy-vscode-settings-template.ps1:12-66` is missing the comment-based help blocks (`<# .SYNOPSIS ... #>`) that both larger scripts include on shared helpers like `Set-ScriptEnvironment`, `Assert-WindowsPlatform`, `Test-IsInteractivePowerShell`, `Invoke-PowerShellCoreTransition`, and `Write-Step` (see `scripts/install-node-version.ps1:14-134`, `scripts/start-global-ssh-agent.ps1:14-133`).
+- `scripts/copy-vscode-settings-template.ps1` is missing the section dividers:
+  - `# --- Configuration & Helpers ---`
+  - `# --- Main Script Execution ---`
+  Both exist in the other two scripts (`scripts/install-node-version.ps1:12,310` and `scripts/start-global-ssh-agent.ps1:12,257`).
+- Elevation pattern:
+  - Present in `install-node-version` and `start-global-ssh-agent`: `Test-IsAdmin` + `Invoke-Elevation` + main flow uses them (`scripts/install-node-version.ps1:28-100,314-316`, `scripts/start-global-ssh-agent.ps1:28-99,261-263`).
+  - Missing in `copy-vscode-settings-template` entirely (no `Test-IsAdmin` / `Invoke-Elevation`, and no admin gating in main).
+- Repo-root detection:
+  - Present in `install-node-version` and `copy-vscode-settings-template`: `Get-RepoRoot` (`scripts/install-node-version.ps1:215-237`, `scripts/copy-vscode-settings-template.ps1:52-66`).
+  - Missing in `start-global-ssh-agent` (it doesn’t need repo context).
+- Main flow ordering differs:
+  - Both “big scripts” do: `Set-ScriptEnvironment` → `Test-IsInteractivePowerShell` → **elevation if needed** → `Invoke-PowerShellCoreTransition` → `try { ... } catch { ... }` (`scripts/install-node-version.ps1:310-331`, `scripts/start-global-ssh-agent.ps1:257-282`).
+  - `copy-vscode-settings-template` does: `Set-ScriptEnvironment` → `Test-IsInteractivePowerShell` → `Invoke-PowerShellCoreTransition` → `try { ... } catch { ... }` (`scripts/copy-vscode-settings-template.ps1:88-103`), skipping the elevation step entirely.
+- Error output formatting:
+  - The two big scripts use a single-line `Write-Error "Failed ..."` in `catch` (`scripts/install-node-version.ps1:328-331`, `scripts/start-global-ssh-agent.ps1:279-282`).
+  - `copy-vscode-settings-template` splits `Write-Error` across lines (`scripts/copy-vscode-settings-template.ps1:99-103`), which is stylistically different (functionally fine).
+
+**Plan**
+- Step 1: Extract a “canonical baseline pattern” from the overlap of `install-node-version.ps1` and `start-global-ssh-agent.ps1` (prolog, section headers, shared helper set, main flow ordering).
+- Step 2: Build a small matrix of “feature blocks” and mark presence/absence per script:
+  - Prolog/batch guard, section headers, comment-based help
+  - `Set-ScriptEnvironment`, `Test-IsInteractivePowerShell`, `Assert-WindowsPlatform`, `Invoke-PowerShellCoreTransition`, `Write-Step`
+  - Elevation block (`Test-IsAdmin` + `Invoke-Elevation`)
+  - Repo-root block (`Get-RepoRoot`)
+  - Script-specific workflow block(s)
+- Step 3: Summarize “missing from each other” in two categories:
+  - Structural/convention differences (things you likely want consistent everywhere)
+  - Intentional scope differences (things only needed by certain scripts, like elevation)
+- Step 4: Propose a concrete harmonization target for `copy-vscode-settings-template.ps1` (e.g., add section headers + help blocks; optionally add elevation as a toggle), without changing behavior.
+
+**Baseline Pattern (Canonical Skeleton)**
+- All three scripts use the same “batch-guard prolog” to force PowerShell: `install-node-version.ps1:1-7`, `start-global-ssh-agent.ps1:1-7`, `copy-vscode-settings-template.ps1:1-7`
+- The two “full” scripts share a near-identical baseline block set + main ordering:
+  - `Set-ScriptEnvironment` → `Test-IsInteractivePowerShell` → `if (-not (Test-IsAdmin)) { Invoke-Elevation }` → `Invoke-PowerShellCoreTransition` → `try { Assert-WindowsPlatform; <workflow> } catch { Write-Error; Write-Debug; exit 1 }`
+  - See `install-node-version.ps1:310-331` and `start-global-ssh-agent.ps1:257-282`
+
+**Pattern Matrix (Present / Missing)**
+| Pattern block | `install-node-version.ps1` | `start-global-ssh-agent.ps1` | `copy-vscode-settings-template.ps1` |
+|---|---:|---:|---:|
+| Batch guard prolog | ✓ `:1-7` | ✓ `:1-7` | ✓ `:1-7` |
+| `[CmdletBinding()]` + `param()` | ✓ `:9-10` | ✓ `:9-10` | ✓ `:9-10` |
+| Section dividers (`# --- ... ---`) | ✓ `:12`, `:310` | ✓ `:12`, `:257` | ✗ (none) |
+| Comment-based help on shared helpers | ✓ `:14-134` | ✓ `:14-133` | ✗ (helpers are undocumented) |
+| `Set-ScriptEnvironment` | ✓ `:14-26` | ✓ `:14-26` | ✓ but minimal `:12-17` |
+| `Test-IsInteractivePowerShell` | ✓ `:62-75` | ✓ `:61-74` | ✓ but minimal `:27-33` |
+| `Assert-WindowsPlatform` | ✓ `:44-60` | ✓ `:44-59` | ✓ but minimal `:19-25` |
+| `Invoke-PowerShellCoreTransition` | ✓ `:102-119` | ✓ `:101-118` | ✓ but minimal `:35-45` |
+| Admin elevation block (`Test-IsAdmin` + `Invoke-Elevation` + main check) | ✓ `:28-100` + `:314-316` | ✓ `:28-99` + `:261-263` | ✗ (no admin helpers, no gating) |
+| `Write-Step` helper | ✓ `:121-133` | ✓ `:120-132` | ✓ but minimal `:47-50` |
+| `Get-RepoRoot` helper | ✓ `:215-237` | ✗ | ✓ `:52-66` |
+| Workflow function(s) | ✓ node pinning `:271-308` | ✓ ssh-agent `:234-255` | ✓ vscode copy `:68-86` |
+| “Extra verification” at end | ✓ node versions inside workflow `:295-305` | ✓ final service check `:271-277` | ✗ (no post-copy validation) |
+| `catch` style (single-line `Write-Error ...`) | ✓ `:328-330` | ✓ `:279-281` | ✗ (split `Write-Error` across lines) `:99-102` |
+
+**What Each Script Has That The Others Don’t**
+- `install-node-version.ps1`
+  - Winget + Volta install/pin workflow helpers: `Install-PackageWithWinget` `:135-161`, `Ensure-VoltaInstalled` `:163-178`, `Ensure-VoltaOnPath` `:180-213`, `Ensure-PackageJson` `:239-269`, `Invoke-NodePinningWorkflow` `:271-308`
+  - Repo-root discovery used for “folder-scoped” behavior: `Get-RepoRoot` `:215-237`
+- `start-global-ssh-agent.ps1`
+  - Windows Capability install + service + registry configuration workflow: `Install-OpenSSHClient` `:134-149`, `Ensure-SSHAgentService` `:151-173`, `Configure-SSHAgentService` `:175-203`, `Start-SSHAgentService` `:204-232`
+  - Post-work “final status check” in main: `:271-277`
+- `copy-vscode-settings-template.ps1`
+  - Minimal repo-root + file-copy workflow: `Get-RepoRoot` `:52-66`, `Invoke-VSCodeSettingsTemplateCopy` `:68-86`
+
+**What Each Script Is Missing Compared To The Others (Actionable Deltas)**
+- `copy-vscode-settings-template.ps1` is missing (vs both larger scripts)
+  - Section dividers: `# --- Configuration & Helpers ---` and `# --- Main Script Execution ---`
+  - Comment-based help blocks on shared helpers (`Set-ScriptEnvironment`, `Assert-WindowsPlatform`, `Test-IsInteractivePowerShell`, `Invoke-PowerShellCoreTransition`, `Write-Step`)
+  - Elevation pattern (`Test-IsAdmin`/`Invoke-Elevation` + main check) used by the two “system-changing” scripts
+  - Consistent `catch` formatting (currently uses a line-broken `Write-Error` at `copy-vscode-settings-template.ps1:99-102`)
+- `start-global-ssh-agent.ps1` is missing (vs install/copy)
+  - Repo-root detection (`Get-RepoRoot`) because it operates purely at system scope
+- `install-node-version.ps1` is missing (vs ssh-agent)
+  - A final “post-flight” verification step in main (it does verification inside the workflow instead, at `install-node-version.ps1:298-305`)
+
+**Proposed Harmonization Target (Plan For Next Change Set)**
+- Define a shared “baseline template” for scripts:
+  - Keep: batch guard, `[CmdletBinding()] param()`, section dividers, shared helper set, main flow ordering, single-line `Write-Error` in `catch`, stack trace debug, `exit 1`
+  - Make admin elevation an explicit “optional block” only for scripts that require admin (so `copy-vscode-settings-template.ps1` can remain non-admin by intent)
+- Apply to `copy-vscode-settings-template.ps1` first (lowest risk):
+  - Add section dividers and align helper documentation style to match the two existing scripts
+  - Align `catch` formatting to the one-line `Write-Error "...$($_.Exception.Message)"` style
+  - Optionally add a small post-copy verification (e.g., confirm destination exists and report byte size), matching the “verification mindset” of the other scripts

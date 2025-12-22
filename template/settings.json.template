@@ -42,6 +42,7 @@
         "CONTRIBUTING": "text",
         "CONTRIBUTORS": "text",
         "EMAIL": "text",
+        "FLOW": "text",
         "FORMAT": "text",
         "INDEX": "text",
         "LICENSE": "text",
@@ -57,10 +58,9 @@
     "prettier.enable": false,
     "terminal.integrated.profiles.windows": {
         "PowerShell (Admin)": {
-            "path": "pwsh.exe",
+            "path": "gsudo.exe",
             "args": [
-                "-Command",
-                "Start-Process pwsh -Verb RunAs"
+                "pwsh"
             ]
         }
     },

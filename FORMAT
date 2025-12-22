@@ -126,17 +126,46 @@ EMPLOYED TO DETECT AND PREVENT UNAUTHORIZED ALTERATIONS.
 
                 https://www.conventionalcommits.org/en/v1.0.0/
 
+              with few caveats:
+
+                - This document MUST only contain the following action types:
+
+                    - fix
+                    - feat
+                    - build
+                    - chore
+                    - ci
+                    - docs
+                    - style
+                    - test
+                    - rfctr
+                    - rvrt
+                    - perf
+
+                - rfctr SHOULD be interpreted as refactor.
+                - rvrt SHOULD be interpreted as revert
+                - All action types SHOULD have maximum character length of 5.
+
             - Each changelog item MUST be in this format:
 
-                <YYYY-MM-DD> <action>: <concise-description>
+                <YYYY-MM-DD> <action-type>: <concise-description>
 
                 Example:
 
                     2025-12-20 chore: update documentation
 
+            - Concise description MUST STRICTLY have a maximum character
+              length of 65.
+            - The format for each changelog item MUST STRICTLY consist of,
+
+                - 10 characters date in YYYY-MM-DD format, followed by space then,
+                - action type right padded to length 5, then colon and space then,
+                - lastly, a maximum of 65 character length concise description.
+
         - CONTRIBUTING
         - CONTRIBUTORS
         - EMAIL
+        - FLOW
         - FORMAT
 
             - This file itself.
@@ -274,8 +303,11 @@ EMPLOYED TO DETECT AND PREVENT UNAUTHORIZED ALTERATIONS.
     - All CONCISE-RFC-000000 documents MUST follow this style:
 
         - Section headers MUST be clear, concise, and well-defined.
+        - Section headers MUST STRICTLY always define one and only one meaning.
         - Section contents MUST only contain the following styles,
             - Descriptive paragraphs in normal conversational English language.
+            - Descriptive paragraphs must not contain complex
+              conversational English words.
             - Lists that start with 1 hyphen (-) character followed by
               a single space and then the list item.
             - Formatted structures that are different from this format.
