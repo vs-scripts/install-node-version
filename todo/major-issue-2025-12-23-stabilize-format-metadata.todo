@@ -1,0 +1,127 @@
+|<------------------------------->[ BEGIN-CRFCF ]<------------------------------->|
+
+NOTICE: UNAUTHORIZED MODIFICATION OF THIS DOCUMENT IS EXPRESSLY PROHIBITED.
+EDITING PRIVILEGES ARE EXCLUSIVELY RESERVED FOR THE AUTHOR,
+DESIGNATED CONTRIBUTORS, AND AUTHORIZED ARTIFICIAL INTELLIGENCE
+AGENTS. DOCUMENT INTEGRITY IS SECURED BY A CRYPTOGRAPHIC CHECKSUM;
+AUTOMATED VERIFICATION SCRIPTS ARE EMPLOYED TO DETECT AND PREVENT
+UNAUTHORIZED ALTERATIONS.
+
+0.  METADATA:
+
+    - RFC:      CONCISE-RFC-000000
+    - GROUP:    VS-SCRIPTS
+    - TITLE:    STABILIZE FORMAT METADATA RULES
+    - ACRONYM:  SFMDR
+    - AUTHOR:   Richeve Bebedor <richeve.bebedor+vs-scripts@gmail.com>
+    - CATEGORY: SPECIFICATION
+    - STATUS:   DRAFT
+    - VERSION:  000000 (0.0.0)
+    - CREATED:  2025-12-23
+    - CHECKSUM: <SHA-256>
+
+1.  Summary:
+
+    Stabilize and clarify the RFC FORMAT specification by removing ambiguity,
+    resolving inconsistencies, and tightening testable rules before adding
+    further sections or expanding scope.
+
+2.  Structure:
+
+    - Clarify the RFC identifier pattern:
+
+        - Define whether CONCISE-RFC-000000 is a template placeholder or a
+          literal identifier.
+        - Define the canonical RFC naming pattern (e.g., CONCISE-RFC-XXXXXX).
+
+            Answer:
+
+                - Instead of using CONCISE-RFC-000000 as a template placeholder,
+                  use CONCISE-RFC-XXXXXX as the literal identifier.
+
+    - Clarify file encoding and line endings:
+
+        - Define required text encoding (e.g., UTF-8, BOM or no BOM).
+        - Define required EOL style (LF vs CRLF).
+        - Clarify whether files MUST end with a trailing newline.
+
+            Answer:
+
+                - Add a structural clause in the Structure section that
+                  all CONCISE-RFC-XXXXXX documents MUST be encoded in
+                  UTF-8 without BOM.
+                - Add a structural clause in the Structure section that
+                  all CONCISE-RFC-XXXXXX documents MUST use LF as the EOL style.
+                - Add a structural clause in the Structure section that
+                  all CONCISE-RFC-XXXXXX documents MUST end with a trailing newline.
+
+    - Define STRICTLY precisely:
+
+        - Define whether STRICTLY means exact, byte-for-byte literal match.
+        - Remove redundant MUST STRICTLY combinations if semantics overlap.
+
+            Answer:
+
+                - Remove the STRICTLY word from all affected clauses.
+                - Add compliance clause in the compliance section that
+                  all AI agents must adhere to the normative language requirements.
+
+    - Normalize begin/end sentinels:
+
+        - Specify exact literal sentinel lines rather than character-by-character
+          construction, or define computed length and validate against 83 cols.
+        - Decide on ENDED-CRFCF vs END-CRFCF and standardize.
+
+            Answer:
+
+                - We will use ENDED-CRFCF.
+                - Character by character construction is a must because it
+                  is the structural representation in descriptive format.
+                - Modify the phrase not to use space separated but rather
+                  "surrounded by 1 space" if this is correct in your sense.
+
+    - Define CHECKSUM scope and verification:
+
+        - Define what is hashed (entire file, excluding CHECKSUM line, etc.).
+        - Define canonical hashing algorithm usage and whitespace handling.
+
+    - Resolve naming convention scope conflicts:
+
+        - Clarify what rules apply to RFC docs vs repo metadata docs vs todo
+          issue files (e.g., lowercase hyphenated *.todo).
+
+            Answer:
+
+                - All METADATA files must follow all uppercase one word file name.
+                - All *.todo files MUST follow the prescribed naming convention
+                  its file names in the FORMAT file.
+
+    - Resolve scope creep / SRP conflicts:
+
+        - Decide whether repository layout, versioning rules, changelog rules,
+          and todo taxonomy belong in FORMAT or should be separate RFCs.
+
+            Answer:
+
+                - We will follow the METADATA file for the non-negotiable
+                  format category.
+                - We will follow the FORMAT file for the non-negotiable
+                  format structure.
+
+    - Clarify table-of-contents numbering:
+
+        - Define whether TOC numbers are line offsets and MUST be updated, or
+          remove numeric offsets if not stable.
+
+            Answer:
+
+                - It will always be updated whenever there are changes.
+
+3.  Compliance:
+
+    - This todo is complete when all clarified rules are unambiguous, testable
+      by tooling, and do not contradict each other within the FORMAT document.
+    - Any changes MUST preserve the existing high-level section order unless
+      explicitly approved by a new STABLE RFC.
+
+|<------------------------------->[ ENDED-CRFCF ]<------------------------------->|
