@@ -113,15 +113,15 @@ EMPLOYED TO DETECT AND PREVENT UNAUTHORIZED ALTERATIONS.
         - 1 greater than (>) character, and then, lastly,
         - 1 (|) pipe character.
 
-    - All CONCISE-RFC-XXXXXX documents MUST have the NOTICE
-      for unauthorized modifications with the following format:
+    - All CONCISE-RFC-XXXXXX documents MUST have the NOTICE for unauthorized
+      modifications with the following format:
 
         NOTICE: UNAUTHORIZED MODIFICATION OF THIS DOCUMENT IS EXPRESSLY PROHIBITED.
         EDITING PRIVILEGES ARE EXCLUSIVELY RESERVED FOR THE AUTHOR,
-        DESIGNATED CONTRIBUTORS, AND AUTHORIZED ARTIFICIAL INTELLIGENCE
-        AGENTS. DOCUMENT INTEGRITY IS SECURED BY A CRYPTOGRAPHIC CHECKSUM;
-        AUTOMATED VERIFICATION SCRIPTS ARE EMPLOYED TO DETECT AND PREVENT
-        UNAUTHORIZED ALTERATIONS.
+        DESIGNATED CONTRIBUTORS, AND AUTHORIZED ARTIFICIAL INTELLIGENCE AGENTS.
+        DOCUMENT INTEGRITY IS SECURED BY A CRYPTOGRAPHIC CHECKSUM;
+        AUTOMATED VERIFICATION SCRIPTS ARE EMPLOYED TO DETECT
+        AND PREVENT UNAUTHORIZED ALTERATIONS.
 
         - This NOTICE format MUST NOT be modified.
 
@@ -141,21 +141,31 @@ EMPLOYED TO DETECT AND PREVENT UNAUTHORIZED ALTERATIONS.
 
                 - This document MUST only contain the following action types:
 
-                    - fix
-                    - feat
-                    - build
-                    - chore
-                    - ci
-                    - docs
-                    - style
-                    - test
-                    - rfctr
-                    - rvrt
-                    - perf
+                    - specs
 
-                - rfctr SHOULD be interpreted as refactor.
-                - rvrt SHOULD be interpreted as revert
-                - All action types SHOULD have maximum character length of 5.
+                        - These commits SHOULD only contain changes and messages
+                          regarding changes to the todo/ directory.
+
+                    - issue
+                    - tests
+                    - helps
+                    - break
+
+                - tests SHOULD be interpreted as test
+                - helps SHOULD be interpreted as docs
+                - revert SHOULD be interpreted as issue
+                - fix SHOULD be interpreted as issue
+                - feat SHOULD be interpreted as issue
+                - perf SHOULD be interpreted as issue
+                - ci SHOULD be interpreted as issue
+                - style SHOULD be interpreted as issue
+                - chore SHOULD be interpreted as issue
+                - build SHOULD be interpreted as issue
+                - specs SHOULD be interpreted as docs and chore combined
+                - specs SHOULD be for issue specification only
+                - break SHOULD be interpreted as a commit history break
+                - commit history break provides historical grouping
+                - All action types SHOULD have a character length of 5.
 
             - Each changelog item MUST be in this format:
 

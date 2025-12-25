@@ -52,9 +52,9 @@ function Assert-WindowsPlatform {
         Volta and winget dependencies in this script are currently targeted
         at Windows users.
     #>
-    $isWindows = ($PSVersionTable.Platform -eq 'Win32NT') -or
+    $runningOnWindows = ($PSVersionTable.Platform -eq 'Win32NT') -or
         ($env:OS -eq 'Windows_NT')
-    if (-not $isWindows) {
+    if (-not $runningOnWindows) {
         throw "This script is currently Windows-only."
     }
 }
@@ -111,8 +111,7 @@ function Invoke-PowerShellCoreTransition {
         $pwsh = Get-Command pwsh -ErrorAction SilentlyContinue
         if ($pwsh) {
             Write-Debug "Relaunching in PowerShell Core for better performance..."
-            & $pwsh.Source -NoProfile -ExecutionPolicy Bypass -File
-                $PSCommandPath @args
+            & $pwsh.Source -NoProfile -ExecutionPolicy Bypass -File $PSCommandPath @args
             exit $LASTEXITCODE
         }
     }
@@ -152,15 +151,14 @@ function Install-PackageWithWinget {
     Write-Debug
         "Executing: winget install --id $PackageId --silent
         --accept-package-agreements"
-    & winget install --id $PackageId --source winget --silent
-        --accept-package-agreements --accept-source-agreements
+    & winget install --id $PackageId --source winget --silent --accept-package-agreements --accept-source-agreements
     if ($LASTEXITCODE -ne 0) {
         Write-Warning
             "winget installation for $PackageId failed (Code: $LASTEXITCODE)"
     }
 }
 
-function Ensure-VoltaInstalled {
+function Install-Volta {
     <#
     .SYNOPSIS
         Ensures the Volta tool manager is installed on the system.
@@ -177,7 +175,7 @@ function Ensure-VoltaInstalled {
     Install-PackageWithWinget -PackageId "Volta.Volta"
 }
 
-function Ensure-VoltaOnPath {
+function Add-VoltaToPath {
     <#
     .SYNOPSIS
         Ensures the Volta binary directory is in the current session's PATH.
@@ -236,7 +234,7 @@ function Get-RepoRoot {
     return $PWD.Path
 }
 
-function Ensure-PackageJson {
+function Initialize-PackageJson {
     <#
     .SYNOPSIS
         Ensures a package.json file exists for Volta pinning.
@@ -283,11 +281,11 @@ function Invoke-NodePinningWorkflow {
     Write-Debug "Target Directory: $TargetDir"
 
     # 1. Ensure Volta is available
-    Ensure-VoltaInstalled
-    Ensure-VoltaOnPath
+    Install-Volta
+    Add-VoltaToPath
 
     # 2. Ensure package.json exists
-    $null = Ensure-PackageJson -Root $TargetDir
+    $null = Initialize-PackageJson -Root $TargetDir
 
     # 3. Bind Node.js LTS to this folder
     Push-Location $TargetDir
