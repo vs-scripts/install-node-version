@@ -63,36 +63,34 @@ EMPLOYED TO DETECT AND PREVENT UNAUTHORIZED ALTERATIONS.
         - and SHOULD NOT
       in this document SHOULD follow RFC-2119 and RFC-8174.
     - This document MUST NOT use MAY.
-    - The key word STRICTLY defines absolute and non-negotiable intent and
-      SHOULD be interpreted as is.
 
 6.  Naming Conventions:
 
     - CONCISE-RFC-XXXXXX document file names MUST be in ALL CAPS.
-        
+
         Exceptions:
             - *.todo files
-    
+
     - All CONCISE-RFC-XXXXXX document file names SHOULD be one word.
-    
+
         Exceptions:
             - *.todo files
 
 7.  Structure:
 
     - All CONCISE-RFC-XXXXXX documents MUST be in text format.
-    
+
     - All CONCISE-RFC-XXXXXX documents MUST be encoded in UTF-8 without BOM.
-    
+
     - All CONCISE-RFC-XXXXXX documents MUST use LF as the EOL style.
-    
+
     - All CONCISE-RFC-XXXXXX documents MUST end with a trailing newline.
-    
+
     - All CONCISE-RFC-XXXXXX documents MUST NOT exceed 997 lines of text.
-    
+
     - All CONCISE-RFC-XXXXXX documents MUST be within 83 characters
       in column width.
-    
+
     - All CONCISE-RFC-XXXXXX documents MUST start with,
         - 1 (|) pipe character, then
         - 1 less than (<) character, then
@@ -127,7 +125,7 @@ EMPLOYED TO DETECT AND PREVENT UNAUTHORIZED ALTERATIONS.
 
         - This NOTICE format MUST NOT be modified.
 
-    - All repositories MUST STRICTLY contain the following METADATA documents:
+    - All repositories MUST contain the following METADATA documents:
 
         - AUTHOR
         - CHANGELOG
@@ -167,9 +165,9 @@ EMPLOYED TO DETECT AND PREVENT UNAUTHORIZED ALTERATIONS.
 
                     2025-12-20 chore: update documentation
 
-            - Concise description MUST STRICTLY have a maximum character
+            - Concise description MUST have a maximum character
               length of 65.
-            - The format for each changelog item MUST STRICTLY consist of,
+            - The format for each changelog item MUST consist of,
 
                 - 10 characters date in YYYY-MM-DD format, followed by space then,
                 - action type right padded to length 5, then colon and space then,
@@ -190,7 +188,7 @@ EMPLOYED TO DETECT AND PREVENT UNAUTHORIZED ALTERATIONS.
         - LICENSE
 
             - This MUST contain the license of this repository.
-            - This MUST STRICTLY follow the FORMAT file.
+            - This MUST follow the FORMAT file.
             - This MUST only contain two sections, METADATA and License.
 
         - METADATA
@@ -235,7 +233,7 @@ EMPLOYED TO DETECT AND PREVENT UNAUTHORIZED ALTERATIONS.
 
             This MUST contain the metadata of this document.
 
-            The metadata of this document MUST STRICTLY follow this format
+            The metadata of this document MUST follow this format
             in this order:
 
             - RFC:      CONCISE-RFC-XXXXXX
@@ -270,7 +268,7 @@ EMPLOYED TO DETECT AND PREVENT UNAUTHORIZED ALTERATIONS.
                 THE LICENSE AGREEMENT SPECIFIED IN THE LICENSE FILE.
                 PLEASE REFER TO THE LICENSE FILE FOR DETAILS.
 
-            - This MUST be contained in all CONCISE-RFC-000000 documents except
+            - This MUST be contained in all CONCISE-RFC-XXXXXX documents except
               the LICENSE file.
 
         X.  Contents:
@@ -316,7 +314,7 @@ EMPLOYED TO DETECT AND PREVENT UNAUTHORIZED ALTERATIONS.
     - All CONCISE-RFC-XXXXXX documents MUST follow this style:
 
         - Section headers MUST be clear, concise, and well-defined.
-        - Section headers MUST STRICTLY always define one and only one meaning.
+        - Section headers MUST always define one and only one meaning.
         - Section contents MUST only contain the following styles,
             - Descriptive paragraphs in normal conversational English language.
             - Descriptive paragraphs must not contain complex
@@ -324,10 +322,10 @@ EMPLOYED TO DETECT AND PREVENT UNAUTHORIZED ALTERATIONS.
             - Lists that start with 1 hyphen (-) character followed by
               a single space and then the list item.
             - Formatted structures that are different from this format.
-        - All formatted structures with ordered components MUST be STRICTLY
+        - All formatted structures with ordered components MUST be
           followed.
 
-    - All repositories MUST STRICTLY contain the following basic directories,
+    - All repositories MUST contain the following basic directories,
 
         - .vscode/
         - .github/
@@ -341,8 +339,8 @@ EMPLOYED TO DETECT AND PREVENT UNAUTHORIZED ALTERATIONS.
         - todo/
 
             - All todo files MUST follow CONCISE-RFC-XXXXXX.
-            - All todo files MUST STRICTLY end with *.todo file extension.
-            - All todo files MUST STRICTLY be interpreted as text files.
+            - All todo files MUST end with *.todo file extension.
+            - All todo files MUST be interpreted as text files.
             - There are five issue categories for todo,
 
                 - critical
@@ -351,7 +349,7 @@ EMPLOYED TO DETECT AND PREVENT UNAUTHORIZED ALTERATIONS.
                 - prototype
                 - reported
 
-            - All todo files MUST STRICTLY follow the file name format:
+            - All todo files MUST follow the file name format:
 
                 <priority>-issue-<YYYY-MM-DD>-<short-title>.todo
 
@@ -366,7 +364,7 @@ EMPLOYED TO DETECT AND PREVENT UNAUTHORIZED ALTERATIONS.
         - All AI agents MUST follow this FORMAT file.
         - All AI agents MUST NOT edit this FORMAT file.
         - All AI agents MUST NOT modify the VERSION file.
-        - All AI agents MUST adhere to the normative language requirements 
+        - All AI agents MUST adhere to the normative language requirements
           in this document.
 
 |<------------------------------->[ ENDED-CRFCF ]<------------------------------->|
