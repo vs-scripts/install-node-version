@@ -22,7 +22,7 @@ EMPLOYED TO DETECT AND PREVENT UNAUTHORIZED ALTERATIONS.
 1.  Summary:
 
     This document defines the canonical structure, sections, and rules for all
-    CONCISE-RFC-000000 documents in this repository. It serves as
+    CONCISE-RFC-XXXXXX documents in this repository. It serves as
     the authoritative template for contributors, AI agents, and tooling.
 
 2.  Permission:
@@ -39,9 +39,9 @@ EMPLOYED TO DETECT AND PREVENT UNAUTHORIZED ALTERATIONS.
     3.  Contents ........................................................... 034
     4.  Document Status .................................................... 046
     5.  Normative Language ................................................. 057
-    6.  Naming Conventions ................................................. 069
-    7.  Structure .......................................................... 074
-    8.  Compliance ......................................................... 317
+    6.  Naming Conventions ................................................. 071
+    7.  Structure .......................................................... 076
+    8.  Compliance ......................................................... 354
 
 4.  Document Status:
 
@@ -52,7 +52,7 @@ EMPLOYED TO DETECT AND PREVENT UNAUTHORIZED ALTERATIONS.
         - clarity,
         - conciseness,
         - and machine-parsable
-      structure across all CONCISE-RFC-000000 documents.
+      structure across all CONCISE-RFC-XXXXXX documents.
 
 5.  Normative Language:
 
@@ -68,41 +68,54 @@ EMPLOYED TO DETECT AND PREVENT UNAUTHORIZED ALTERATIONS.
 
 6.  Naming Conventions:
 
-    - All CONCISE-RFC-000000 document file names MUST be in ALL CAPS.
-    - All CONCISE-RFC-000000 document file names SHOULD be one word.
+    - CONCISE-RFC-XXXXXX document file names MUST be in ALL CAPS.
+        
+        Exceptions:
+            - *.todo files
+    
+    - All CONCISE-RFC-XXXXXX document file names SHOULD be one word.
+    
+        Exceptions:
+            - *.todo files
 
 7.  Structure:
 
-    - All CONCISE-RFC-000000 documents MUST be in text format.
-
-    - All CONCISE-RFC-000000 documents MUST NOT exceed 997 lines of text.
-
-    - All CONCISE-RFC-000000 documents MUST be STRICTLY within 83 characters
+    - All CONCISE-RFC-XXXXXX documents MUST be in text format.
+    
+    - All CONCISE-RFC-XXXXXX documents MUST be encoded in UTF-8 without BOM.
+    
+    - All CONCISE-RFC-XXXXXX documents MUST use LF as the EOL style.
+    
+    - All CONCISE-RFC-XXXXXX documents MUST end with a trailing newline.
+    
+    - All CONCISE-RFC-XXXXXX documents MUST NOT exceed 997 lines of text.
+    
+    - All CONCISE-RFC-XXXXXX documents MUST be within 83 characters
       in column width.
-
-    - All CONCISE-RFC-000000 documents MUST STRICTLY start with,
+    
+    - All CONCISE-RFC-XXXXXX documents MUST start with,
         - 1 (|) pipe character, then
         - 1 less than (<) character, then
         - 31 hyphen (-) characters, then
         - 1 opening square bracket ([) character
-        - followed by space separated BEGIN-CRFCF, then
+        - followed by BEGIN-CRFCF surrounded by 1 space on each side, then
         - 1 closing square bracket (]) character
         - 31 hyphen (-) characters, then
         - 1 greater than (>) character, and then, lastly,
         - 1 (|) pipe character.
 
-    - All CONCISE-RFC-000000 documents MUST STRICTLY end with,
+    - All CONCISE-RFC-XXXXXX documents MUST end with,
         - 1 (|) pipe character, then
         - 1 less than (<) character, then
         - 31 hyphen (-) characters, then
         - 1 opening square bracket ([) character
-        - followed by space separated ENDED-CRFCF, then
+        - followed by ENDED-CRFCF surrounded by 1 space on each side, then
         - 1 closing square bracket (]) character
         - 31 hyphen (-) characters, then
         - 1 greater than (>) character, and then, lastly,
         - 1 (|) pipe character.
 
-    - All CONCISE-RFC-000000 documents MUST STRICTLY have the NOTICE
+    - All CONCISE-RFC-XXXXXX documents MUST have the NOTICE
       for unauthorized modifications with the following format:
 
         NOTICE: UNAUTHORIZED MODIFICATION OF THIS DOCUMENT IS EXPRESSLY PROHIBITED.
@@ -112,7 +125,7 @@ EMPLOYED TO DETECT AND PREVENT UNAUTHORIZED ALTERATIONS.
         AUTOMATED VERIFICATION SCRIPTS ARE EMPLOYED TO DETECT AND PREVENT
         UNAUTHORIZED ALTERATIONS.
 
-        - This NOTICE format MUST NOT be modified, STRICTLY.
+        - This NOTICE format MUST NOT be modified.
 
     - All repositories MUST STRICTLY contain the following METADATA documents:
 
@@ -215,7 +228,7 @@ EMPLOYED TO DETECT AND PREVENT UNAUTHORIZED ALTERATIONS.
     - All list text formatted METADATA documents MUST be multiple lines
       with line feed end of line and no final line feed.
 
-    - All CONCISE-RFC-000000 documents MUST STRICTLY follow this structure
+    - All CONCISE-RFC-XXXXXX documents MUST follow this structure
       in this order:
 
         X.  METADATA:
@@ -225,7 +238,7 @@ EMPLOYED TO DETECT AND PREVENT UNAUTHORIZED ALTERATIONS.
             The metadata of this document MUST STRICTLY follow this format
             in this order:
 
-            - RFC:      CONCISE-RFC-000000
+            - RFC:      CONCISE-RFC-XXXXXX
             - GROUP:    <GROUP-PROJECT-NAME>
             - TITLE:    <UNIQUE-CONCISE-DOCUMENT-TITLE>
             - ACRONYM:  <UNIQUE-CONCISE-DOCUMENT-ACRONYM>
@@ -285,22 +298,22 @@ EMPLOYED TO DETECT AND PREVENT UNAUTHORIZED ALTERATIONS.
             This MUST contain the compliance of this document to this format,
             styles, principles, and tools which include any AI agent tools.
 
-    - All CONCISE-RFC-000000 documents MUST follow these principles:
+    - All CONCISE-RFC-XXXXXX documents MUST follow these principles:
 
-        - Single Responsibility Principle. CONCISE-RFC-000000 documents
+        - Single Responsibility Principle. CONCISE-RFC-XXXXXX documents
           MUST address one and only one concern or feature.
-        - Open-Closed Principle. CONCISE-RFC-000000 documents MUST be open for
+        - Open-Closed Principle. CONCISE-RFC-XXXXXX documents MUST be open for
           extension but closed for modification. Once the status is STABLE, the
-          CONCISE-RFC-000000 documents MUST NOT be modified. New
-          CONCISE-RFC-000000 documents MUST be created for updates. If an
-          CONCISE-RFC-000000 document has issues, then the entire
-          CONCISE-RFC-000000 document MUST be marked for deprecation and a new
-          CONCISE-RFC-000000 document MUST be published.
-        - Liskov Principle.
-        - Interface Segregation Principle.
-        - Dependency Inversion Principle.
+          CONCISE-RFC-XXXXXX documents MUST NOT be modified. New
+          CONCISE-RFC-XXXXXX documents MUST be created for updates. If a
+          CONCISE-RFC-XXXXXX document has issues, then the entire
+          CONCISE-RFC-XXXXXX document MUST be marked for deprecation and a new
+          CONCISE-RFC-XXXXXX document MUST be published.
+        - Liskov Principle. <todo: Please fill this>
+        - Interface Segregation Principle. <todo: Please fill this>
+        - Dependency Inversion Principle. <todo: Please fill this>
 
-    - All CONCISE-RFC-000000 documents MUST follow this style:
+    - All CONCISE-RFC-XXXXXX documents MUST follow this style:
 
         - Section headers MUST be clear, concise, and well-defined.
         - Section headers MUST STRICTLY always define one and only one meaning.
@@ -327,7 +340,7 @@ EMPLOYED TO DETECT AND PREVENT UNAUTHORIZED ALTERATIONS.
         - tests/
         - todo/
 
-            - All todo files MUST STRICTLY follow CONCISE-RFC-000000.
+            - All todo files MUST follow CONCISE-RFC-XXXXXX.
             - All todo files MUST STRICTLY end with *.todo file extension.
             - All todo files MUST STRICTLY be interpreted as text files.
             - There are five issue categories for todo,
@@ -348,12 +361,12 @@ EMPLOYED TO DETECT AND PREVENT UNAUTHORIZED ALTERATIONS.
 
 8.  Compliance:
 
-        - All AI agents MUST STRICTLY read the FORMAT file.
-        - All AI agents MUST STRICTLY add to their context list this FORMAT file.
-        - All AI agents MUST STRICTLY follow this FORMAT file.
-        - All AI agents, STRICTLY, MUST NOT edit this FORMAT file.
-        - All AI agents, STRICTLY, MUST NOT modify the VERSION file.
-        - All AI agents MUST STRICTLY follow all rules containing the word
-          STRICTLY.
+        - All AI agents MUST read the FORMAT file.
+        - All AI agents MUST add to their context list this FORMAT file.
+        - All AI agents MUST follow this FORMAT file.
+        - All AI agents MUST NOT edit this FORMAT file.
+        - All AI agents MUST NOT modify the VERSION file.
+        - All AI agents MUST adhere to the normative language requirements 
+          in this document.
 
 |<------------------------------->[ ENDED-CRFCF ]<------------------------------->|
