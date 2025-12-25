@@ -1,0 +1,31 @@
+{
+  "name": "install-node-version",
+  "version": "0.0.0",
+  "description": "install node version",
+  "keywords": [
+    "install",
+    "node",
+    "version"
+  ],
+  "homepage": "https://github.com/vs-scripts/install-node-version#readme",
+  "bugs": {
+    "url": "https://github.com/vs-scripts/install-node-version/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vs-scripts/install-node-version.git"
+  },
+  "license": "MIT",
+  "author": "Richeve Bebedor <richeve.bebedor+vs-scripts@gmail.com>",
+  "type": "module",
+  "main": "scripts/install-node-version.*",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@commitlint/config-conventional": "^20.3.1",
+    "commitlint": "^20.3.1",
+    "husky": "^9.1.7"
+  }
+}
