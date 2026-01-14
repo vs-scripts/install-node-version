@@ -1,0 +1,4 @@
+#!/bin/sh
+. "$(dirname "$0")/_/husky.sh"
+
+pwsh -Command "& '$HUSKY_GIT_PARAMS/../scripts/restrict-pre-push-atomic.ps1'"
