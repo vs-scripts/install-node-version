@@ -3,7 +3,6 @@
 .editorconfig text eol=lf
 .gitattributes text eol=lf
 .gitignore text eol=lf
-.vscode/*.json text eol=lf
 
 AUTHOR text eol=lf
 CHANGELOG text eol=lf
@@ -26,3 +25,7 @@ WEBSITE text eol=lf
 *.ps1 text eol=lf
 *.sh text eol=lf
 *.json text eol=lf
+*.js text eol=lf
+*.mjs text eol=lf
+*.bash text eol=lf
+*.zig text eol=lf
