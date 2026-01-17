@@ -46,7 +46,8 @@ pub fn main() !void {
     const allocator = std.heap.page_allocator;
 
     // Retrieve the full path to this executable
-    const executable_path = std.process.getExecutablePath() catch {
+    var exe_path_buffer: [std.fs.max_path_bytes]u8 = undefined;
+    const executable_path = std.fs.selfExePath(exe_path_buffer[0..]) catch {
         std.log.err("Failed to get executable path", .{});
         return error.ExecutablePathError;
     };
@@ -62,15 +63,9 @@ pub fn main() !void {
             return error.FilenameExtractionError;
         } + 1;
 
-    // Extract the command name without the file extension
-    // Example: "restrict-pre-commit-atomic.exe" -> "restrict-pre-commit-atomic"
-    const filename_only =
-        std.mem.lastIndexOf(u8, executable_path[full_filename..], '.') orelse {
-            std.log.err("Failed to extract filename only", .{});
-            return error.ExtensionExtractionError;
-        };
-
-    const command_name = executable_path[full_filename .. full_filename + filename_only];
+    const filename_slice = executable_path[full_filename..];
+    const dot_index = std.mem.lastIndexOf(u8, filename_slice, ".") orelse filename_slice.len;
+    const command_name = filename_slice[0..dot_index];
 
     // Capture all command-line arguments passed to this dispatcher
     const arguments = try std.process.argsAlloc(allocator);
@@ -83,8 +78,9 @@ pub fn main() !void {
     };
     defer allocator.free(script_path);
 
-    // Get the interpreter command for the current OS
-    const command_prefix = determine_os_specific_command();
+    const command_prefix = determine_os_specific_command() catch |err| {
+        return err;
+    };
 
     // Construct the complete argv array: [interpreter, args..., script_path, original_args...]
     // Size: command_prefix + script_path + remaining arguments (skip argv[0])
@@ -113,8 +109,8 @@ pub fn main() !void {
         // Forward the exit code from the child process
         switch (term) {
             .Exited => |code| std.process.exit(code),
-            .Signal => |sig| std.process.exit(128 + sig),
-            .Stopped => |sig| std.process.exit(128 + sig),
+            .Signal => |sig| std.process.exit(@as(u8, @intCast(128 + sig))),
+            .Stopped => |sig| std.process.exit(@as(u8, @intCast(128 + sig))),
             .Unknown => std.process.exit(1),
         }
     } else {
@@ -228,7 +224,7 @@ fn build_script_path(
 /// # Returns
 /// - Slice of strings containing the interpreter and its arguments
 /// - Lifetime is static (compile-time constant)
-fn determine_os_specific_command() []const []const u8 {
+fn determine_os_specific_command() ![]const []const u8 {
     return switch (builtin.os.tag) {
         .windows => &[_][]const u8{
             "pwsh", // PowerShell Core
@@ -243,6 +239,9 @@ fn determine_os_specific_command() []const []const u8 {
         .macos => &[_][]const u8{
             "sh", // POSIX shell
         },
-        else => unreachable,
+        else => {
+            std.log.err("Unsupported operating system detected", .{});
+            return error.UnsupportedOperatingSystem;
+        },
     };
 }
