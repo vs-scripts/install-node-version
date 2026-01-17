@@ -40,6 +40,7 @@ const builtin = @import("builtin");
 /// Returns error if:
 /// - Executable path cannot be determined
 /// - Filename extraction fails (malformed path)
+/// - Script path construction fails
 /// - Operating system is not supported
 /// - Command execution fails
 pub fn main() !void {
@@ -63,6 +64,9 @@ pub fn main() !void {
             return error.FilenameExtractionError;
         } + 1;
 
+    // Extract the command name without the file extension
+    // Example: "restrict-pre-commit-atomic.exe" -> "restrict-pre-commit-atomic"
+    // If no extension exists, use the entire filename
     const filename_slice = executable_path[full_filename..];
     const dot_index = std.mem.lastIndexOf(u8, filename_slice, ".") orelse filename_slice.len;
     const command_name = filename_slice[0..dot_index];
@@ -78,9 +82,7 @@ pub fn main() !void {
     };
     defer allocator.free(script_path);
 
-    const command_prefix = determine_os_specific_command() catch |err| {
-        return err;
-    };
+    const command_prefix = try determine_os_specific_command();
 
     // Construct the complete argv array: [interpreter, args..., script_path, original_args...]
     // Size: command_prefix + script_path + remaining arguments (skip argv[0])
