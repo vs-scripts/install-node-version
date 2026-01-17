@@ -1,62 +1,81 @@
 #!/usr/bin/env pwsh
+
 <#
 .SYNOPSIS
-Enforces atomic commits by restricting staged files to exactly one file.
+    Enforces atomic commits by restricting staged files to exactly one file.
 
 .DESCRIPTION
-This script is used as a pre-commit hook to ensure that only a single file
-is staged for commit. This enforces the atomic commit convention.
+    This script is used as a pre-commit hook to ensure that only a single file
+    is staged for commit. This enforces the atomic commit convention where each
+    commit should contain changes to exactly one file.
+
+.NOTES
+    Author: Development Team
+    Version: 1.0.0
+    Platform: Windows only
+    Requirements: PowerShell 5.1 or later (pwsh 7+ preferred)
+    Hook Type: Pre-commit Git hook
+
+.EXAMPLE
+    .\restrict-pre-commit-atomic.ps1
+    Validates that exactly one file is staged for commit.
 
 .EXIT CODES
-0 - Success (atomic commit allowed)
-1 - Failure (multiple files staged or hook error)
+    0 - Success (atomic commit allowed)
+    1 - Failure (multiple files staged or hook error)
 #>
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
-function Check-AtomicCommit {
+# --- Core Functions ---
+
+function Test-AtomicCommit {
     <#
     .SYNOPSIS
-    Checks if the current commit is atomic (contains exactly one file).
+        Checks if the current commit is atomic (contains exactly one file).
 
     .DESCRIPTION
-    This function checks if the staged files meet the atomic commit requirement
-    by verifying that exactly one file is staged for commit.
+        This function checks if the staged files meet the atomic commit requirement
+        by verifying that exactly one file is staged for commit. Uses git to retrieve
+        the list of staged files.
 
     .OUTPUTS
-    Boolean
-    Returns $true if the commit is atomic, $false otherwise.
+        Boolean - Returns $true if the commit is atomic, $false otherwise.
+
+    .EXAMPLE
+        if (Test-AtomicCommit) { Write-Host "Commit is atomic" }
+        Validates the atomic commit requirement.
     #>
+    [CmdletBinding()]
+    param()
 
     try {
-        # Get the list of staged files from git
-        $stagedFiles = @(git diff --cached --name-only 2>&1 | Where-Object { $_ -and $_ -notmatch '^\s*$' })
-        $stagedFileCount = $stagedFiles.Count
+        $stagedFileList = @(git diff --cached --name-only 2>&1 | Where-Object { $_ -and $_ -notmatch '^\s*$' })
+        $stagedFileCount = $stagedFileList.Count
 
         if ($stagedFileCount -gt 1) {
-            Write-Error "ATOMIC_COMMIT_REQUIRED: $stagedFileCount files staged (1 required)"
-            $stagedFiles | ForEach-Object { Write-Error $_ }
+            Write-Error -Message "ATOMIC_COMMIT_REQUIRED: $stagedFileCount files staged (1 required)"
+            $stagedFileList | ForEach-Object { Write-Error -Message $_ }
             return $false
         }
 
         return $true
-    }
-    catch {
-        Write-Error "HOOK_ERROR: $($_.Exception.Message)"
+    } catch {
+        Write-Error -Message "HOOK_ERROR: $($_.Exception.Message)"
         return $false
     }
 }
 
-# Main execution
+# --- Main Script Execution ---
+
 try {
-    $isAtomicCommit = Check-AtomicCommit
+    $isAtomicCommit = Test-AtomicCommit
     if (-not $isAtomicCommit) {
         exit 1
     }
     exit 0
-}
-catch {
-    Write-Error "HOOK_ERROR: $($_.Exception.Message)"
+} catch {
+    Write-Error -Message "HOOK_ERROR: $($_.Exception.Message)"
     exit 1
 }
