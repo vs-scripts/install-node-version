@@ -14,10 +14,16 @@
 // - Single responsibility: OS detection and command execution
 // - Process terminates after execution (no control regain)
 //
+// Platform Requirements:
+// - Windows: Requires PowerShell Core (pwsh) - no backward compatibility
+//   with Windows PowerShell 5.x (powershell.exe)
+// - Linux: Standard bash shell
+// - macOS: POSIX shell (sh)
+//
 // Design Principles:
 // - SOLID: Single Responsibility Principle
 // - Firmware-like: Minimal, focused, deterministic
-// - No side effects: Pure execution flow
+// - Minimal side effects: Deterministic execution flow with logging
 // - Self-documenting: Clear purpose and behavior
 
 const std = @import("std");
@@ -34,7 +40,8 @@ const builtin = @import("builtin");
 ///
 /// # Memory Management
 /// All allocations use page_allocator with explicit defer statements for cleanup.
-/// Memory is freed before process termination.
+/// Allocations are bounded and process lifetime is short; OS reclaims all memory
+/// on termination via exit() or execv().
 ///
 /// # Errors
 /// Returns error if:
@@ -58,7 +65,7 @@ pub fn main() !void {
 
     // Extract the filename portion from the full executable path
     // Example: "/path/to/restrict-pre-commit-atomic" -> "restrict-pre-commit-atomic"
-    const full_filename = if (std.mem.lastIndexOfScalar(u8, executable_path, sep)) |index|
+    const filename_start_index = if (std.mem.lastIndexOfScalar(u8, executable_path, sep)) |index|
         index + 1
     else
         0; // If no separator found, use entire path as filename
@@ -66,13 +73,19 @@ pub fn main() !void {
     // Extract the command name without the file extension
     // Example: "restrict-pre-commit-atomic.exe" -> "restrict-pre-commit-atomic"
     // If no extension exists, use the entire filename
-    const filename_slice = executable_path[full_filename..];
+    const filename_slice = executable_path[filename_start_index..];
     const dot_index = std.mem.lastIndexOf(u8, filename_slice, ".") orelse filename_slice.len;
     const command_name = filename_slice[0..dot_index];
 
     // Capture all command-line arguments passed to this dispatcher
     const arguments = try std.process.argsAlloc(allocator);
     defer std.process.argsFree(allocator, arguments);
+
+    // Ensure we have at least one argument (argv[0])
+    if (arguments.len == 0) {
+        std.log.err("No arguments provided", .{});
+        std.process.exit(1);
+    }
 
     // Build the full path to the OS-specific script
     const script_path = build_script_path(allocator, executable_path, command_name) catch |err| {
@@ -178,10 +191,7 @@ fn build_script_path(
         .windows => ".ps1",
         .linux => ".bash",
         .macos => ".sh",
-        else => {
-            std.log.err("Unsupported operating system detected", .{});
-            return error.UnsupportedOperatingSystem;
-        },
+        else => return error.UnsupportedOperatingSystem,
     };
 
     // Construct the script path using proper path joining
@@ -201,6 +211,7 @@ fn build_script_path(
 ///
 /// Command structure by OS:
 /// - Windows: ["pwsh", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File"]
+///            (Requires PowerShell Core - no backward compatibility with powershell.exe)
 /// - Linux:   ["bash"]
 /// - macOS:   ["sh"]
 ///
@@ -212,7 +223,7 @@ fn build_script_path(
 fn determine_os_specific_command() ![]const []const u8 {
     return switch (builtin.os.tag) {
         .windows => &[_][]const u8{
-            "pwsh", // PowerShell Core
+            "pwsh", // PowerShell Core (required - no backward compatibility)
             "-NoProfile", // Skip profile loading for faster startup
             "-ExecutionPolicy", // Allow script execution
             "Bypass", // Bypass execution policy for this invocation
@@ -224,9 +235,6 @@ fn determine_os_specific_command() ![]const []const u8 {
         .macos => &[_][]const u8{
             "sh", // POSIX shell
         },
-        else => {
-            std.log.err("Unsupported operating system detected", .{});
-            return error.UnsupportedOperatingSystem;
-        },
+        else => return error.UnsupportedOperatingSystem,
     };
 }
