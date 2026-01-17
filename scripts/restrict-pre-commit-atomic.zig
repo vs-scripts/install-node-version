@@ -40,9 +40,24 @@ pub fn main() !void {
     const allocator = std.heap.page_allocator;
 
     // Extract the command name from the executable filename
-    // For now, we'll use the filename without extension as the command name
-    // In a real implementation, you would get the actual executable path
-    const command_name = "restrict-pre-commit-atomic";
+    const executable_path = std.process.getExecutablePath() catch {
+        std.log.err("Failed to get executable path", .{});
+        return error.ExecutablePathError;
+    };
+
+    // Extract the filename from the path
+    const filename = std.mem.lastIndexOf(u8, executable_path, '/') orelse {
+        std.log.err("Failed to extract filename", .{});
+        return error.FilenameExtractionError;
+    } + 1;
+
+    // Extract the filename without the extension
+    const filename_without_extension = std.mem.lastIndexOf(u8, filename, '.') orelse {
+        std.log.err("Failed to extract filename without extension", .{});
+        return error.ExtensionExtractionError;
+    };
+
+    const command_name = filename[0..filename_without_extension];
 
     // Determine the appropriate command based on the operating system
     const command_prefix = determine_os_specific_command(command_name);
@@ -118,7 +133,7 @@ fn determine_os_specific_command(command_name: []const u8) []const []const u8 {
 
     return switch (builtin.os.tag) {
         .windows => &[_][]const u8{
-            "powershell",
+            "pwsh",
             "-NoProfile",
             "-ExecutionPolicy",
             "Bypass",
