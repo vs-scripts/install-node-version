@@ -33,10 +33,13 @@
 
 !package.json
 
+!*.ts
 !*.js
 !*.mjs
 !*.ps1
 !*.sh
+!*.bash
+!*.zig
 
 !.githooks/
 !.githooks/pre-commit
@@ -72,6 +75,9 @@
 !tests/**/*.mjs
 !tests/**/*.ps1
 !tests/**/*.sh
+!tests/**/*.bash
+!tests/**/*.ts
+!tests/**/*.zig
 
 !todo/
 !todo/**/*.todo
