@@ -10,8 +10,8 @@
     commit should contain changes to exactly one file.
 
 .NOTES
-    Author: Development Team
-    Version: 1.0.0
+    Author: Richeve Bebedor <richeve.bebedor+vs-scripts@gmail.com>
+    Version: 0.0.0
     Platform: Windows only
     Requirements: PowerShell 5.1 or later (pwsh 7+ preferred)
     Hook Type: Pre-commit Git hook
