@@ -8,7 +8,8 @@
 //
 // Contract:
 // - No CLI argument parsing or interpretation
-// - No memory allocation
+// - Must use safe and secured handling of memory allocation,
+//   such as page allocation
 // - No configuration handling
 // - Single responsibility: OS detection and command execution
 // - Process terminates after execution (no control regain)
