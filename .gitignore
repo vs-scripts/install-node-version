@@ -4,11 +4,15 @@
 .*
 .*/**
 
+!*/**/.gitkeep
+!.*/**/.gitkeep
+
 !.editorconfig
 !.gitattributes
 !.gitignore
 !.prettierignore
 
+!5LAWS
 !AUTHOR
 !CHANGELOG
 !CONTRIBUTING
@@ -33,6 +37,8 @@
 !*.mjs
 !*.ps1
 !*.sh
+!*.bash
+!*.zig
 
 !.githooks/
 !.githooks/pre-commit
@@ -49,6 +55,10 @@
 !scripts/
 !scripts/**/*.js
 !scripts/**/*.mjs
+!scripts/**/*.ps1
+!scripts/**/*.sh
+!scripts/**/*.bash
+!scripts/**/*.zig
 
 !template/
 !template/**/*.template
@@ -67,3 +77,6 @@
 
 !todo/
 !todo/**/*.todo
+
+!helps/
+!helps/**/*.help
