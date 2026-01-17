@@ -1,4 +1,12 @@
 #!/bin/sh
 . "$(dirname "$0")/_/husky.sh"
 
+# Check for --no-verify flag
+for arg in "$@"; do
+    if [ "$arg" = "--no-verify" ] || [ "$arg" = "-n" ]; then
+        echo "Error: The --no-verify flag is not allowed."
+        exit 1
+    fi
+done
+
 pwsh -Command "& '$(dirname "$0")/../scripts/restrict-pre-push-atomic.ps1'"
