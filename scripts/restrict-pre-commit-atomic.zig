@@ -89,13 +89,13 @@ pub fn main() !void {
 
     // Build the full path to the OS-specific script
     const script_path = build_script_path(allocator, executable_path, command_name) catch |err| {
-        std.log.err("Failed to build script path: {}", .{err});
+        std.log.err("Failed to build script path for command '{}': {}", .{ command_name, err });
         std.process.exit(1);
     };
     defer allocator.free(script_path);
 
     const command_prefix = determine_os_specific_command() catch |err| {
-        std.log.err("Unsupported operating system: {}", .{err});
+        std.log.err("Unsupported operating system '{}': {}", .{ builtin.os.tag, err });
         std.process.exit(1);
     };
 
@@ -118,8 +118,8 @@ pub fn main() !void {
     if (builtin.os.tag == .windows) {
         // Windows: Use std.process.Child to spawn and wait for the process
         var child = std.process.Child.init(argv, allocator);
-        const term = child.spawnAndWait() catch {
-            std.log.err("Failed to execute command", .{});
+        const term = child.spawnAndWait() catch |err| {
+            std.log.err("Failed to execute command '{}': {}", .{ argv[0], err });
             std.process.exit(1);
         };
 
@@ -139,8 +139,8 @@ pub fn main() !void {
     } else {
         // Unix-like systems: Use execv to replace the current process
         // This is more efficient as it doesn't spawn a child process
-        std.process.execv(allocator, argv) catch {
-            std.log.err("Failed to execute command", .{});
+        std.process.execv(allocator, argv) catch |err| {
+            std.log.err("Failed to execute command '{}': {}", .{ argv[0], err });
             std.process.exit(1);
         };
     }
@@ -199,6 +199,12 @@ fn build_script_path(
         try std.fmt.allocPrint(allocator, "{s}{s}", .{ command_name, extension })
     else
         try std.fmt.allocPrint(allocator, "{s}{c}{s}{s}", .{ exe_dir, sep, command_name, extension });
+
+    // Basic validation: ensure the script path doesn't contain suspicious patterns
+    if (std.mem.indexOf(u8, script_path, "..") != null) {
+        allocator.free(script_path);
+        return error.InvalidScriptPath;
+    }
 
     return script_path;
 }
