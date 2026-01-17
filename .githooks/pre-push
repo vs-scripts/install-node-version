@@ -1,0 +1,10 @@
+# Check if the --no-verify flag is being used
+$args | ForEach-Object {
+    if ($_ -eq "--no-verify" -or $_ -eq "-n") {
+        Write-Error "Error: The --no-verify flag is not allowed."
+        exit 1
+    }
+}
+
+# If the --no-verify flag is not found, allow the push to proceed
+exit 0
