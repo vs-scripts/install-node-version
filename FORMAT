@@ -127,6 +127,7 @@ EMPLOYED TO DETECT AND PREVENT UNAUTHORIZED ALTERATIONS.
 
     - All repositories MUST contain the following METADATA documents:
 
+        - 5LAWS
         - AUTHOR
         - CHANGELOG
 
