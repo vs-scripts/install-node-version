@@ -354,7 +354,7 @@ EMPLOYED TO DETECT AND PREVENT UNAUTHORIZED ALTERATIONS.
         - .github/
         - .husky/
         - dist/
-        - help/
+        - helps/
         - public/
         - scripts/
         - src/
