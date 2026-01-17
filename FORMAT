@@ -157,7 +157,7 @@ EMPLOYED TO DETECT AND PREVENT UNAUTHORIZED ALTERATIONS.
                     - helps
 
                         - These commits SHOULD only contain files and messages
-                          regarding changes to the help/ directory.
+                          regarding changes to the helps/ directory.
 
                     - break
 
