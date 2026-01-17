@@ -58,11 +58,10 @@ pub fn main() !void {
 
     // Extract the filename portion from the full executable path
     // Example: "/path/to/restrict-pre-commit-atomic" -> "restrict-pre-commit-atomic"
-    const full_filename =
-        std.mem.lastIndexOfScalar(u8, executable_path, sep) orelse {
-            std.log.err("Failed to extract filename", .{});
-            return error.FilenameExtractionError;
-        } + 1;
+    const full_filename = if (std.mem.lastIndexOfScalar(u8, executable_path, sep)) |index|
+        index + 1
+    else
+        0; // If no separator found, use entire path as filename
 
     // Extract the command name without the file extension
     // Example: "restrict-pre-commit-atomic.exe" -> "restrict-pre-commit-atomic"
@@ -78,11 +77,14 @@ pub fn main() !void {
     // Build the full path to the OS-specific script
     const script_path = build_script_path(allocator, executable_path, command_name) catch |err| {
         std.log.err("Failed to build script path: {}", .{err});
-        return err;
+        std.process.exit(1);
     };
     defer allocator.free(script_path);
 
-    const command_prefix = try determine_os_specific_command();
+    const command_prefix = determine_os_specific_command() catch |err| {
+        std.log.err("Unsupported operating system: {}", .{err});
+        std.process.exit(1);
+    };
 
     // Construct the complete argv array: [interpreter, args..., script_path, original_args...]
     // Size: command_prefix + script_path + remaining arguments (skip argv[0])
@@ -111,8 +113,14 @@ pub fn main() !void {
         // Forward the exit code from the child process
         switch (term) {
             .Exited => |code| std.process.exit(code),
-            .Signal => |sig| std.process.exit(@as(u8, @intCast(128 + sig))),
-            .Stopped => |sig| std.process.exit(@as(u8, @intCast(128 + sig))),
+            .Signal => |sig| {
+                const exit_code = if (sig <= 127) @as(u8, @intCast(128 + sig)) else 255;
+                std.process.exit(exit_code);
+            },
+            .Stopped => |sig| {
+                const exit_code = if (sig <= 127) @as(u8, @intCast(128 + sig)) else 255;
+                std.process.exit(exit_code);
+            },
             .Unknown => std.process.exit(1),
         }
     } else {
@@ -149,9 +157,8 @@ pub fn main() !void {
 /// - Caller is responsible for freeing the returned string
 ///
 /// # Errors
-/// - Returns error.DirectoryExtractionFailed if executable directory cannot be extracted
 /// - Returns error.UnsupportedOperatingSystem if operating system is not supported
-/// - Returns error.AllocationFailed if memory allocation fails
+/// - Returns error.OutOfMemory if memory allocation fails
 fn build_script_path(
     allocator: std.mem.Allocator,
     executable_path: []const u8,
@@ -161,16 +168,10 @@ fn build_script_path(
     const sep = if (builtin.os.tag == .windows) '\\' else '/';
 
     // Extract the directory portion of the executable path
-    const last_sep = std.mem.lastIndexOfScalar(
-        u8,
-        executable_path,
-        sep,
-    ) orelse {
-        std.log.err("Failed to extract executable directory", .{});
-        return error.DirectoryExtractionFailed;
-    };
-
-    const exe_dir = executable_path[0..last_sep];
+    const exe_dir = if (std.mem.lastIndexOfScalar(u8, executable_path, sep)) |last_sep|
+        executable_path[0..last_sep]
+    else
+        "."; // If no separator found, assume current directory
 
     // Determine the script extension based on the OS
     const extension = switch (builtin.os.tag) {
@@ -183,29 +184,11 @@ fn build_script_path(
         },
     };
 
-    // Calculate the total length needed for the path
-    const path_len =
-        exe_dir.len + 1 + command_name.len + extension.len;
-    const script_path = allocator.alloc(u8, path_len) catch {
-        std.log.err("Memory allocation failed", .{});
-        return error.AllocationFailed;
-    };
-
-    // Construct the path by concatenating: directory + separator + command_name + extension
-    var offset: usize = 0;
-    @memcpy(script_path[offset .. offset + exe_dir.len], exe_dir);
-    offset += exe_dir.len;
-    script_path[offset] = sep;
-    offset += 1;
-    @memcpy(
-        script_path[offset .. offset + command_name.len],
-        command_name,
-    );
-    offset += command_name.len;
-    @memcpy(
-        script_path[offset .. offset + extension.len],
-        extension,
-    );
+    // Construct the script path using proper path joining
+    const script_path = if (std.mem.eql(u8, exe_dir, "."))
+        try std.fmt.allocPrint(allocator, "{s}{s}", .{ command_name, extension })
+    else
+        try std.fmt.allocPrint(allocator, "{s}{c}{s}{s}", .{ exe_dir, sep, command_name, extension });
 
     return script_path;
 }
