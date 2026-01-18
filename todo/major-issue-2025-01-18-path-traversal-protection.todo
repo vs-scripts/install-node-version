@@ -1,0 +1,64 @@
+|<------------------------------->[ BEGIN-CRFCF ]<------------------------------->|
+
+NOTICE: UNAUTHORIZED MODIFICATION OF THIS DOCUMENT IS EXPRESSLY PROHIBITED.
+EDITING PRIVILEGES ARE EXCLUSIVELY RESERVED FOR THE AUTHOR,
+DESIGNATED CONTRIBUTORS, AND AUTHORIZED ARTIFICIAL INTELLIGENCE
+AGENTS. DOCUMENT INTEGRITY IS SECURED BY A CRYPTOGRAPHIC CHECKSUM;
+AUTOMATED VERIFICATION SCRIPTS ARE EMPLOYED TO DETECT AND PREVENT
+UNAUTHORIZED ALTERATIONS.
+
+0.  METADATA:
+
+    - RFC:      CONCISE-RFC-000000
+    - GROUP:    VS-SCRIPTS
+    - TITLE:    PATH TRAVERSAL PROTECTION FOR RESTRICT PRE COMMIT ATOMIC
+    - ACRONYM:  PTPRPCA
+    - AUTHOR:   Richeve Bebedor <richeve.bebedor+vs-scripts@gmail.com>
+    - CATEGORY: SPECIFICATION
+    - STATUS:   DRAFT
+    - VERSION:  000000 (0.0.0)
+    - CREATED:  2025-01-18
+    - CHECKSUM: <SHA-256>
+
+1.  Summary:
+
+    Enhanced path traversal protection for restrict-pre-commit-atomic.zig
+    dispatcher to address incomplete security validation in buildScriptPath
+    function.
+
+2.  Structure:
+
+    - Current Limitation:
+
+        The buildScriptPath function has incomplete path traversal protection
+        that only checks for literal ".." strings but does not handle other
+        traversal attack vectors.
+
+    - Security Gaps:
+
+        - Does not handle encoded variants like %2e%2e, %2E%2E
+        - Does not validate against absolute paths
+        - Does not protect against symlink attacks
+        - Does not handle Unicode normalization attacks
+        - Does not enforce directory boundary validation
+
+    - Security Impact:
+
+        Potential for path traversal attacks if executable is placed in
+        malicious directory could lead to execution of unintended scripts
+        outside the expected directory.
+
+    - Proposed Solution:
+
+        Implement comprehensive path validation including canonical path
+        resolution, encoded character detection and decoding, absolute path
+        rejection, symlink resolution and validation, Unicode normalization
+        checks, and directory boundary enforcement.
+
+3.  Compliance:
+
+    - Priority: Medium (mitigated by controlled deployment environment)
+    - This issue is complete when comprehensive path validation is implemented
+      or explicitly documented as out of scope with security implications.
+
+|<------------------------------->[ ENDED-CRFCF ]<------------------------------->|
