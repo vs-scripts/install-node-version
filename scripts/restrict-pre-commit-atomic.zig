@@ -18,6 +18,7 @@
 // This dispatcher explicitly associates OS platform types to specific file extensions
 // to ensure type safety and predictable execution behavior:
 //
+// SUPPORTED PLATFORMS (by design - limited to 3 most popular):
 // - Windows: Executes ONLY .ps1 files (PowerShell Core scripts)
 //   - Requires PowerShell Core (pwsh) - NO backward compatibility with
 //     Windows PowerShell 5.x (powershell.exe) due to complexity and
@@ -32,6 +33,11 @@
 // - macOS: Executes ONLY .sh files (POSIX shell scripts)
 //   - Uses POSIX-compliant sh for maximum compatibility
 //   - Avoids bash-specific features that may not be available
+//
+// UNSUPPORTED PLATFORMS (by design):
+// Other Unix-like systems (FreeBSD, OpenBSD, etc.) are intentionally not supported
+// to maintain simplicity and focus on the 3 most common/popular OS platforms.
+// This is a conscious design decision to avoid complexity creep.
 //
 // Current Platform Stability:
 // - Windows: STABLE - Full support with restrict-pre-commit-atomic.ps1
@@ -50,9 +56,22 @@
 // - Minimal side effects: Deterministic execution flow with logging
 // - Self-documenting: Clear purpose and behavior
 // - Explicit platform contracts: Clear file extension to OS mapping
+//
+// Security Limitations (by design):
+// - Command injection protection is LIMITED to basic path validation
+// - If executable is placed in malicious directory, script paths could be exploited
+// - TOCTOU (Time-of-Check-Time-of-Use) race condition exists between file validation and execution
+//   * File could be replaced/modified between access() check and actual execution
+//   * Mitigation is complex and out of scope for this simple dispatcher
+//   * Risk is acceptable in controlled deployment environments with proper permissions
+// - Users/developers must ensure secure deployment and directory permissions
+// - Advanced security hardening is out of scope for this simple dispatcher
 
 const std = @import("std");
 const builtin = @import("builtin");
+
+/// Platform-specific path separator
+const PATH_SEPARATOR = if (builtin.os.tag == .windows) '\\' else '/';
 
 /// Main entry point for the OS-specific command dispatcher
 ///
@@ -68,6 +87,15 @@ const builtin = @import("builtin");
 /// All allocations use page_allocator with explicit defer statements for cleanup.
 /// Allocations are bounded and process lifetime is short; OS reclaims all memory
 /// on termination via exit() or execv().
+///
+/// NOTE: page_allocator is intentionally chosen over GeneralPurposeAllocator for this
+/// short-lived dispatcher program because:
+/// - Program has very short lifetime (seconds)
+/// - Memory usage is minimal and bounded
+/// - OS will reclaim all memory on process termination
+/// - GeneralPurposeAllocator would add unnecessary complexity for debugging
+/// This design decision is documented to prevent future "enhancement" attempts
+/// that would add complexity without benefit for this specific use case.
 ///
 /// # Error Handling & Exit Codes
 /// The function uses specific exit codes for different failure scenarios:
@@ -94,8 +122,8 @@ pub fn main() !void {
         return error.ExecutablePathError;
     };
 
-    // Determine the path separator for the current OS
-    const sep = if (builtin.os.tag == .windows) '\\' else '/';
+    // Use centralized path separator
+    const sep = PATH_SEPARATOR;
 
     // Extract the filename portion from the full executable path
     // Example: "/path/to/restrict-pre-commit-atomic" -> "restrict-pre-commit-atomic"
@@ -125,15 +153,15 @@ pub fn main() !void {
     const script_path = buildScriptPath(allocator, executable_path, command_name) catch |err| {
         switch (err) {
             error.UnsupportedOperatingSystem => {
-                std.log.err("Unsupported operating system '{}'. Supported platforms: Windows (.ps1), Linux (.bash), macOS (.sh)", .{builtin.os.tag});
+                std.log.err("Unsupported operating system '{s}'. Supported platforms: Windows (.ps1), Linux (.bash), macOS (.sh)", .{@tagName(builtin.os.tag)});
                 std.process.exit(3);
             },
             error.OutOfMemory => {
                 std.log.err("Memory allocation failed while building script path for command '{s}'", .{command_name});
                 std.process.exit(4);
             },
-            else => {
-                std.log.err("Failed to build script path for command '{s}': {}", .{ command_name, err });
+            error.InvalidScriptPath => {
+                std.log.err("Invalid script path generated for command '{s}'", .{command_name});
                 std.process.exit(4);
             },
         }
@@ -157,21 +185,21 @@ pub fn main() !void {
                     .macos => ".sh",
                     else => "unknown",
                 };
-                std.log.err("Platform {} is supported but script implementation is not yet available.", .{platform_name});
+                std.log.err("Platform {s} is supported but script implementation is not yet available.", .{platform_name});
                 std.log.err("Expected script file: {s}", .{script_path});
                 std.log.err("This platform requires a {s} file for execution.", .{extension});
-                std.log.err("Current implementation status: Windows (STABLE), Linux (PLANNED), macOS (PLANNED)");
+                std.log.err("Current implementation status: Windows (STABLE), Linux (PLANNED), macOS (PLANNED)", .{});
                 std.process.exit(2);
             },
             else => {
-                std.log.err("Cannot access script file '{}': {}", .{ script_path, err });
+                std.log.err("Cannot access script file '{s}': {}", .{ script_path, err });
                 std.process.exit(4);
             },
         }
     };
 
     const command_prefix = determineOsSpecificCommand() catch |err| {
-        std.log.err("Failed to determine command for operating system '{}': {}", .{ builtin.os.tag, err });
+        std.log.err("Failed to determine command for operating system '{s}': {}", .{ @tagName(builtin.os.tag), err });
         std.process.exit(3);
     };
 
@@ -195,7 +223,7 @@ pub fn main() !void {
         // Windows: Use std.process.Child to spawn and wait for the process
         var child = std.process.Child.init(argv, allocator);
         const term = child.spawnAndWait() catch |err| {
-            std.log.err("Failed to execute command '{}': {}", .{ argv[0], err });
+            std.log.err("Failed to execute command '{s}': {}", .{ argv[0], err });
             std.process.exit(1);
         };
 
@@ -218,7 +246,7 @@ pub fn main() !void {
                 std.process.exit(exit_code);
             },
             .Unknown => {
-                std.log.err("Process terminated with unknown status");
+                std.log.err("Process terminated with unknown status", .{});
                 std.process.exit(1);
             },
         }
@@ -226,7 +254,7 @@ pub fn main() !void {
         // Unix-like systems: Use execv to replace the current process
         // This is more efficient as it doesn't spawn a child process
         std.process.execv(allocator, argv) catch |err| {
-            std.log.err("Failed to execute command '{}': {}", .{ argv[0], err });
+            std.log.err("Failed to execute command '{s}': {}", .{ argv[0], err });
             std.process.exit(1);
         };
     }
@@ -276,9 +304,9 @@ fn buildScriptPath(
     allocator: std.mem.Allocator,
     executable_path: []const u8,
     command_name: []const u8,
-) ![]u8 {
-    // Determine the path separator for the current OS
-    const sep = if (builtin.os.tag == .windows) '\\' else '/';
+) (std.mem.Allocator.Error || error{ UnsupportedOperatingSystem, InvalidScriptPath })![]u8 {
+    // Use centralized path separator
+    const sep = PATH_SEPARATOR;
 
     // Extract the directory portion of the executable path
     const exe_dir = if (std.mem.lastIndexOfScalar(u8, executable_path, sep)) |last_sep|
@@ -299,6 +327,13 @@ fn buildScriptPath(
         try std.fmt.allocPrint(allocator, "{s}{s}", .{ command_name, extension })
     else
         try std.fmt.allocPrint(allocator, "{s}{c}{s}{s}", .{ exe_dir, sep, command_name, extension });
+
+    // Validate that the constructed path doesn't exceed system limits
+    if (script_path.len >= std.fs.max_path_bytes) {
+        allocator.free(script_path);
+        std.log.err("Constructed script path exceeds system maximum ({} >= {}): {s}", .{ script_path.len, std.fs.max_path_bytes, script_path });
+        return error.InvalidScriptPath;
+    }
 
     // Basic validation: ensure the script path doesn't contain suspicious patterns
     // Note: This is basic protection only. Advanced path traversal protection
