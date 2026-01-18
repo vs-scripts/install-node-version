@@ -14,17 +14,42 @@
 // - Single responsibility: OS detection and command execution
 // - Process terminates after execution (no control regain)
 //
-// Platform Requirements:
-// - Windows: Requires PowerShell Core (pwsh) - no backward compatibility
-//   with Windows PowerShell 5.x (powershell.exe)
-// - Linux: Standard bash shell
-// - macOS: POSIX shell (sh)
+// Platform Support & File Extension Mapping:
+// This dispatcher explicitly associates OS platform types to specific file extensions
+// to ensure type safety and predictable execution behavior:
+//
+// - Windows: Executes ONLY .ps1 files (PowerShell Core scripts)
+//   - Requires PowerShell Core (pwsh) - NO backward compatibility with
+//     Windows PowerShell 5.x (powershell.exe) due to complexity and
+//     Microsoft's own deprecation strategy for legacy systems
+//   - Rationale: Following Windows culture of dropping backward compatibility
+//     for obsolete systems to reduce maintenance complexity
+//
+// - Linux: Executes ONLY .bash files (Bash shell scripts)
+//   - Uses bash interpreter for consistent behavior across distributions
+//   - Ensures compatibility with bash-specific features and syntax
+//
+// - macOS: Executes ONLY .sh files (POSIX shell scripts)
+//   - Uses POSIX-compliant sh for maximum compatibility
+//   - Avoids bash-specific features that may not be available
+//
+// Current Platform Stability:
+// - Windows: STABLE - Full support with restrict-pre-commit-atomic.ps1
+// - Linux: PLANNED - Platform supported, script implementation pending
+// - macOS: PLANNED - Platform supported, script implementation pending
+//
+// Graceful Degradation:
+// If a platform is supported but the corresponding script file does not exist,
+// the dispatcher will log an informative message and exit gracefully with
+// appropriate error codes, allowing developers to understand the current
+// implementation status.
 //
 // Design Principles:
 // - SOLID: Single Responsibility Principle
 // - Firmware-like: Minimal, focused, deterministic
 // - Minimal side effects: Deterministic execution flow with logging
 // - Self-documenting: Clear purpose and behavior
+// - Explicit platform contracts: Clear file extension to OS mapping
 
 const std = @import("std");
 const builtin = @import("builtin");
@@ -35,21 +60,30 @@ const builtin = @import("builtin");
 /// 1. Extracts the command name from the executable filename
 /// 2. Detects the current operating system
 /// 3. Constructs the appropriate command for the detected OS
-/// 4. Executes the command using execv (Unix) or std.process.Child (Windows)
-/// 5. Terminates the process (execv replaces current process on Unix)
+/// 4. Validates that the required script file exists for the platform
+/// 5. Executes the command using execv (Unix) or std.process.Child (Windows)
+/// 6. Terminates the process (execv replaces current process on Unix)
 ///
 /// # Memory Management
 /// All allocations use page_allocator with explicit defer statements for cleanup.
 /// Allocations are bounded and process lifetime is short; OS reclaims all memory
 /// on termination via exit() or execv().
 ///
-/// # Errors
+/// # Error Handling & Exit Codes
+/// The function uses specific exit codes for different failure scenarios:
+/// - Exit Code 1: General execution failure (script execution, invalid arguments)
+/// - Exit Code 2: Platform supported but script file not found
+/// - Exit Code 3: Unsupported operating system
+/// - Exit Code 4: System error (executable path, memory allocation)
+///
+/// # Possible Errors
 /// Returns error if:
-/// - Executable path cannot be determined
-/// - Filename extraction fails (malformed path)
-/// - Script path construction fails
-/// - Operating system is not supported
-/// - Command execution fails
+/// - ExecutablePathError: Cannot determine executable path
+/// - InvalidScriptPath: Script path contains invalid characters
+/// - UnsupportedOperatingSystem: Operating system not in supported list
+/// - OutOfMemory: Memory allocation fails
+/// - FileNotFound: Required script file does not exist for supported platform
+/// - CommandExecutionError: Script execution fails
 pub fn main() !void {
     const allocator = std.heap.page_allocator;
 
@@ -88,15 +122,57 @@ pub fn main() !void {
     }
 
     // Build the full path to the OS-specific script
-    const script_path = build_script_path(allocator, executable_path, command_name) catch |err| {
-        std.log.err("Failed to build script path for command '{}': {}", .{ command_name, err });
-        std.process.exit(1);
+    const script_path = buildScriptPath(allocator, executable_path, command_name) catch |err| {
+        switch (err) {
+            error.UnsupportedOperatingSystem => {
+                std.log.err("Unsupported operating system '{}'. Supported platforms: Windows (.ps1), Linux (.bash), macOS (.sh)", .{builtin.os.tag});
+                std.process.exit(3);
+            },
+            error.OutOfMemory => {
+                std.log.err("Memory allocation failed while building script path for command '{s}'", .{command_name});
+                std.process.exit(4);
+            },
+            else => {
+                std.log.err("Failed to build script path for command '{s}': {}", .{ command_name, err });
+                std.process.exit(4);
+            },
+        }
     };
     defer allocator.free(script_path);
 
-    const command_prefix = determine_os_specific_command() catch |err| {
-        std.log.err("Unsupported operating system '{}': {}", .{ builtin.os.tag, err });
-        std.process.exit(1);
+    // Validate that the script file exists before attempting execution
+    // This provides graceful degradation for supported platforms with pending implementations
+    std.fs.cwd().access(script_path, .{}) catch |err| {
+        switch (err) {
+            error.FileNotFound => {
+                const platform_name = switch (builtin.os.tag) {
+                    .windows => "Windows",
+                    .linux => "Linux",
+                    .macos => "macOS",
+                    else => "Unknown",
+                };
+                const extension = switch (builtin.os.tag) {
+                    .windows => ".ps1",
+                    .linux => ".bash",
+                    .macos => ".sh",
+                    else => "unknown",
+                };
+                std.log.err("Platform {} is supported but script implementation is not yet available.", .{platform_name});
+                std.log.err("Expected script file: {s}", .{script_path});
+                std.log.err("This platform requires a {s} file for execution.", .{extension});
+                std.log.err("Current implementation status: Windows (STABLE), Linux (PLANNED), macOS (PLANNED)");
+                std.process.exit(2);
+            },
+            else => {
+                std.log.err("Cannot access script file '{}': {}", .{ script_path, err });
+                std.process.exit(4);
+            },
+        }
+    };
+
+    const command_prefix = determineOsSpecificCommand() catch |err| {
+        std.log.err("Failed to determine command for operating system '{}': {}", .{ builtin.os.tag, err });
+        std.process.exit(3);
     };
 
     // Construct the complete argv array: [interpreter, args..., script_path, original_args...]
@@ -124,17 +200,27 @@ pub fn main() !void {
         };
 
         // Forward the exit code from the child process
+        // Windows signal handling: Convert process termination to appropriate exit codes
         switch (term) {
             .Exited => |code| std.process.exit(code),
             .Signal => |sig| {
+                // Standard Unix convention: 128 + signal number for signal termination
+                // Capped at 255 (maximum exit code value) for signals > 127
                 const exit_code = if (sig <= 127) @as(u8, @intCast(128 + sig)) else 255;
+                std.log.err("Process terminated by signal {}: exit code {}", .{ sig, exit_code });
                 std.process.exit(exit_code);
             },
             .Stopped => |sig| {
+                // Process was stopped (suspended) by signal
+                // Use same convention as signal termination
                 const exit_code = if (sig <= 127) @as(u8, @intCast(128 + sig)) else 255;
+                std.log.err("Process stopped by signal {}: exit code {}", .{ sig, exit_code });
                 std.process.exit(exit_code);
             },
-            .Unknown => std.process.exit(1),
+            .Unknown => {
+                std.log.err("Process terminated with unknown status");
+                std.process.exit(1);
+            },
         }
     } else {
         // Unix-like systems: Use execv to replace the current process
@@ -150,10 +236,19 @@ pub fn main() !void {
 
 /// Constructs the absolute path to the OS-specific script file
 ///
-/// This function:
+/// This function implements explicit platform-to-extension mapping to ensure
+/// type safety and predictable execution behavior across different operating systems.
+///
+/// Platform-Extension Mapping:
+/// - Windows → .ps1 (PowerShell Core scripts only)
+/// - Linux → .bash (Bash shell scripts for distribution compatibility)
+/// - macOS → .sh (POSIX shell scripts for maximum compatibility)
+///
+/// Path Construction Process:
 /// 1. Extracts the directory containing the executable
 /// 2. Determines the appropriate script extension for the OS
 /// 3. Allocates and constructs the full script path
+/// 4. Validates path safety (deferred: advanced path traversal protection)
 ///
 /// Example paths constructed:
 /// - Windows: "C:\path\to\restrict-pre-commit-atomic.ps1"
@@ -169,10 +264,15 @@ pub fn main() !void {
 /// - Allocated string containing the full script path
 /// - Caller is responsible for freeing the returned string
 ///
-/// # Errors
-/// - Returns error.UnsupportedOperatingSystem if operating system is not supported
-/// - Returns error.OutOfMemory if memory allocation fails
-fn build_script_path(
+/// # Possible Errors
+/// - UnsupportedOperatingSystem: Operating system not in supported platform list
+/// - OutOfMemory: Memory allocation fails during path construction
+/// - InvalidScriptPath: Path contains suspicious patterns (basic validation only)
+///
+/// # Security Note
+/// Current implementation includes basic path validation. Advanced path traversal
+/// protection (encoded variants, canonicalization) is deferred for future implementation.
+fn buildScriptPath(
     allocator: std.mem.Allocator,
     executable_path: []const u8,
     command_name: []const u8,
@@ -186,11 +286,11 @@ fn build_script_path(
     else
         "."; // If no separator found, assume current directory
 
-    // Determine the script extension based on the OS
+    // Determine the script extension based on explicit OS-to-extension mapping
     const extension = switch (builtin.os.tag) {
-        .windows => ".ps1",
-        .linux => ".bash",
-        .macos => ".sh",
+        .windows => ".ps1", // PowerShell Core scripts (pwsh) - no backward compatibility
+        .linux => ".bash", // Bash shell scripts for consistent distribution support
+        .macos => ".sh", // POSIX shell scripts for maximum macOS compatibility
         else => return error.UnsupportedOperatingSystem,
     };
 
@@ -201,6 +301,8 @@ fn build_script_path(
         try std.fmt.allocPrint(allocator, "{s}{c}{s}{s}", .{ exe_dir, sep, command_name, extension });
 
     // Basic validation: ensure the script path doesn't contain suspicious patterns
+    // Note: This is basic protection only. Advanced path traversal protection
+    // (handling encoded variants, canonicalization) is deferred for future implementation
     if (std.mem.indexOf(u8, script_path, "..") != null) {
         allocator.free(script_path);
         return error.InvalidScriptPath;
@@ -215,31 +317,53 @@ fn build_script_path(
 /// needed to execute the OS-specific script. The script path is provided
 /// separately by the caller and appended to this command.
 ///
+/// This function implements the explicit platform-to-interpreter mapping
+/// that corresponds to the file extension mapping in buildScriptPath().
+///
 /// Command structure by OS:
 /// - Windows: ["pwsh", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File"]
-///            (Requires PowerShell Core - no backward compatibility with powershell.exe)
-/// - Linux:   ["bash"]
-/// - macOS:   ["sh"]
+///   - Uses PowerShell Core (pwsh) exclusively
+///   - No backward compatibility with Windows PowerShell 5.x (powershell.exe)
+///   - Rationale: Follows Microsoft's deprecation strategy and reduces complexity
+///   - Flags ensure reliable execution without user profile interference
+///
+/// - Linux: ["bash"]
+///   - Uses bash interpreter for consistent behavior across distributions
+///   - Ensures compatibility with bash-specific features and syntax
+///   - Matches .bash file extension requirement
+///
+/// - macOS: ["sh"]
+///   - Uses POSIX-compliant sh for maximum compatibility
+///   - Avoids bash-specific features that may not be available
+///   - Matches .sh file extension requirement
 ///
 /// The script path is appended after these arguments by the caller.
 ///
 /// # Returns
 /// - Slice of strings containing the interpreter and its arguments
 /// - Lifetime is static (compile-time constant)
-fn determine_os_specific_command() ![]const []const u8 {
+///
+/// # Possible Errors
+/// - UnsupportedOperatingSystem: Operating system not in supported platform list
+///
+/// # Platform Support Status
+/// - Windows: STABLE (full implementation available)
+/// - Linux: PLANNED (interpreter ready, script implementation pending)
+/// - macOS: PLANNED (interpreter ready, script implementation pending)
+fn determineOsSpecificCommand() ![]const []const u8 {
     return switch (builtin.os.tag) {
         .windows => &[_][]const u8{
-            "pwsh", // PowerShell Core (required - no backward compatibility)
-            "-NoProfile", // Skip profile loading for faster startup
-            "-ExecutionPolicy", // Allow script execution
-            "Bypass", // Bypass execution policy for this invocation
-            "-File", // Execute the following file
+            "pwsh", // PowerShell Core (required - no backward compatibility with powershell.exe)
+            "-NoProfile", // Skip profile loading for faster startup and reliability
+            "-ExecutionPolicy", // Override execution policy for this invocation
+            "Bypass", // Bypass execution policy restrictions
+            "-File", // Execute the following file argument
         },
         .linux => &[_][]const u8{
-            "bash", // Bash shell
+            "bash", // Bash shell - matches .bash extension requirement
         },
         .macos => &[_][]const u8{
-            "sh", // POSIX shell
+            "sh", // POSIX shell - matches .sh extension requirement
         },
         else => return error.UnsupportedOperatingSystem,
     };
