@@ -1,0 +1,3 @@
+[alias]
+	commit = !pwsh scripts/disable-no-verify-commit.ps1
+	push = !pwsh scripts/disable-no-verify-push.ps1
