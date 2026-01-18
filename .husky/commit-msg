@@ -1,1 +1,5 @@
+#!/bin/sh
+
+pwsh -Command "& '$(dirname "$0")/../scripts/restrict-commit-msg-atomic.ps1' '$1'"
+
 npx --no-install commitlint --edit "$1"

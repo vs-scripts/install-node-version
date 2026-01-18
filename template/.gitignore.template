@@ -11,6 +11,8 @@
 !.gitattributes
 !.gitignore
 !.prettierignore
+!.npmrc
+!.gitconfig
 
 !5LAWS
 !AUTHOR

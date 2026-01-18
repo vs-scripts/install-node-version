@@ -49,7 +49,10 @@
         "REFERENCES": "text",
         "SECURITY": "text",
         "VERSION": "text",
-        "WEBSITE": "text"
+        "WEBSITE": "text",
+        "*.todo": "text",
+        "*.help": "text",
+        "*.template": "text",
     },
     "terminal.integrated.profiles.windows": {
         "PowerShell (Admin)": {
