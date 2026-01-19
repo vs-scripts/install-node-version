@@ -3,6 +3,7 @@
 .editorconfig text eol=lf
 .gitattributes text eol=lf
 .gitignore text eol=lf
+.prettierignore text eol=lf
 
 5LAWS text eol=lf
 AUTHOR text eol=lf
@@ -31,3 +32,5 @@ WEBSITE text eol=lf
 *.bash text eol=lf
 *.zig text eol=lf
 *.ts text eol=lf
+*.help text eol=lf
+*.todo text eol=lf
