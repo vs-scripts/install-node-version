@@ -71,7 +71,7 @@ function Test-AtomicCommitMessage {
             return $false
         }
 
-        $stagedFile = $stagedFileList[0]
+        $stagedFile = $stagedFileList[0].Trim()
 
         Write-Host "Staged file: '$stagedFile'"
 
@@ -85,7 +85,7 @@ function Test-AtomicCommitMessage {
 
         Write-Host "Pattern: '$pattern'"
 
-        $isMatch = $commitMessage.Contains($stagedFile)
+        $isMatch = $commitMessage -match $pattern
 
         Write-Host "Is match: $isMatch"
 
