@@ -43,6 +43,7 @@ PREVENT UNAUTHORIZED ALTERATIONS.
     6.  Naming Conventions ................................................. 049
     7.  Goals and Principles ............................................... 055
     8.  Structure .......................................................... 065
+    8.17 Code Region Folding ............................................... 560
     9.  Compliance ......................................................... 450
 
 4.  Document Status:
@@ -558,9 +559,110 @@ PREVENT UNAUTHORIZED ALTERATIONS.
             exit 1
         }
 
-8.17 Common Patterns
+8.17 Code Region Folding
 
-    8.17.1 Check and Install Pattern
+    - All scripts SHOULD use #region and #endregion comments to organize code
+      into collapsible sections in VS Code.
+    - Regions improve readability and navigation in longer scripts.
+    - Region names MUST be descriptive and match the section purpose.
+
+    8.17.1 Region Organization Pattern
+
+        #region Core Functions
+
+        function Initialize-ScriptEnvironment {
+            # Implementation
+        }
+
+        function Assert-WindowsPlatform {
+            # Implementation
+        }
+
+        #endregion
+
+        #region Helper Functions
+
+        function Test-IsAdministrator {
+            # Implementation
+        }
+
+        #endregion
+
+        #region Main Script Execution
+
+        Initialize-ScriptEnvironment
+        Test-IsInteractivePowerShell
+
+        #endregion
+
+    8.17.2 Nested Regions
+
+        - Regions MAY be nested for deeper organization:
+
+            #region Primary Workflow
+
+            #region Validation
+
+            Assert-WindowsPlatform
+            Validate-Prerequisites
+
+            #endregion
+
+            #region Processing
+
+            Invoke-MainOperation
+
+            #endregion
+
+            #endregion
+
+    8.17.3 Region Naming Conventions
+
+        - Region names SHOULD be PascalCase
+        - Region names SHOULD be concise but descriptive
+        - Region names SHOULD match function grouping or workflow stages
+
+            #region Core Functions
+            #region Helper Functions
+            #region Main Script Execution
+            #region Error Handling
+            #region Configuration
+
+    8.17.4 Function-Level Folding
+
+        - Individual functions are automatically foldable in VS Code
+        - Function bodies can be collapsed by clicking the chevron next to the
+          function declaration
+        - No additional markup is required; VS Code recognizes function blocks
+          automatically
+
+            function Initialize-ScriptEnvironment {
+                <# Function body collapses here #>
+            }
+
+            function Assert-WindowsPlatform {
+                <# Function body collapses here #>
+            }
+
+        - Regions can wrap multiple functions for group-level folding:
+
+            #region Core Functions
+
+            function Initialize-ScriptEnvironment {
+                # Implementation
+            }
+
+            function Assert-WindowsPlatform {
+                # Implementation
+            }
+
+            #endregion
+
+        - This allows both individual function folding and group folding
+
+8.18 Common Patterns
+
+    8.18.1 Check and Install Pattern
 
         function Ensure-ToolInstalled {
             [CmdletBinding()]
@@ -639,6 +741,7 @@ PREVENT UNAUTHORIZED ALTERATIONS.
     - [ ] SOLID principles applied
     - [ ] Main execution flow follows standard pattern
     - [ ] Exit codes: 0 for success, 1 for failure
+    - [ ] Code organized with #region and #endregion for folding
 
 9.2 References
 
