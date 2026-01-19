@@ -295,13 +295,13 @@ function Write-Log {
     # Output based on log level and verbose mode
     switch ($Level) {
         'D' {
-            # Debug level always uses Write-Debug
-            Write-Debug $formattedLog
+            # Debug level always uses built-in Write-Debug
+            [System.Management.Automation.Cmdlet]::Write-Debug($formattedLog)
         }
         'I' {
             # Information level uses Write-Verbose if verbose mode enabled
             if ($script:EnableVerboseMode) {
-                Write-Verbose $formattedLog
+                [System.Management.Automation.Cmdlet]::Write-Verbose($formattedLog)
             } else {
                 Write-LogToHost -Message $formattedLog -Level $Level
             }
@@ -309,18 +309,18 @@ function Write-Log {
         'W' {
             # Warning level uses Write-Verbose if verbose mode enabled
             if ($script:EnableVerboseMode) {
-                Write-Verbose $formattedLog
+                [System.Management.Automation.Cmdlet]::Write-Verbose($formattedLog)
             } else {
                 Write-LogToHost -Message $formattedLog -Level $Level
             }
         }
         'E' {
-            # Error level always uses Write-Error
-            Write-Error $formattedLog
+            # Error level always uses built-in Write-Error
+            [System.Management.Automation.Cmdlet]::Write-Error($formattedLog)
         }
         'X' {
-            # Exception level always uses Write-Error
-            Write-Error $formattedLog
+            # Exception level always uses built-in Write-Error
+            [System.Management.Automation.Cmdlet]::Write-Error($formattedLog)
         }
     }
 
@@ -355,7 +355,7 @@ function Get-LogHash {
     return $hash.Substring(0, 5)
 }
 
-function Write-Debug {
+function Write-DebugLog {
     <#
     .SYNOPSIS
         Writes a debug log entry.
@@ -370,7 +370,7 @@ function Write-Debug {
         The log message.
 
     .EXAMPLE
-        Write-Debug -Scope "DATA-ACCOUNTS" -Message "Debugging account data"
+        Write-DebugLog -Scope "DATA-ACCOUNTS" -Message "Debugging account data"
         Writes a debug log entry.
     #>
     [CmdletBinding()]
@@ -387,7 +387,7 @@ function Write-Debug {
     Write-Log -Level "D" -Scope $Scope -Message $Message
 }
 
-function Write-Info {
+function Write-InfoLog {
     <#
     .SYNOPSIS
         Writes an information log entry.
@@ -402,7 +402,7 @@ function Write-Info {
         The log message.
 
     .EXAMPLE
-        Write-Info -Scope "DATA-ACCOUNTS" -Message "Processing account data"
+        Write-InfoLog -Scope "DATA-ACCOUNTS" -Message "Processing account data"
         Writes an information log entry.
     #>
     [CmdletBinding()]
@@ -419,7 +419,7 @@ function Write-Info {
     Write-Log -Level "I" -Scope $Scope -Message $Message
 }
 
-function Write-Warning {
+function Write-WarningLog {
     <#
     .SYNOPSIS
         Writes a warning log entry.
@@ -434,7 +434,7 @@ function Write-Warning {
         The log message.
 
     .EXAMPLE
-        Write-Warning -Scope "DATA-ACCOUNTS" -Message "Account data may be incomplete"
+        Write-WarningLog -Scope "DATA-ACCOUNTS" -Message "Account data may be incomplete"
         Writes a warning log entry.
     #>
     [CmdletBinding()]
@@ -451,7 +451,7 @@ function Write-Warning {
     Write-Log -Level "W" -Scope $Scope -Message $Message
 }
 
-function Write-Error {
+function Write-ErrorLog {
     <#
     .SYNOPSIS
         Writes an error log entry.
@@ -466,7 +466,7 @@ function Write-Error {
         The log message.
 
     .EXAMPLE
-        Write-Error -Scope "DATA-ACCOUNTS" -Message "Failed to add account data"
+        Write-ErrorLog -Scope "DATA-ACCOUNTS" -Message "Failed to add account data"
         Writes an error log entry.
     #>
     [CmdletBinding()]
@@ -483,7 +483,7 @@ function Write-Error {
     Write-Log -Level "E" -Scope $Scope -Message $Message
 }
 
-function Write-Exception {
+function Write-ExceptionLog {
     <#
     .SYNOPSIS
         Writes an exception log entry.
@@ -498,7 +498,7 @@ function Write-Exception {
         The log message.
 
     .EXAMPLE
-        Write-Exception -Scope "DATA-ACCOUNTS" -Message "Unexpected error in account data"
+        Write-ExceptionLog -Scope "DATA-ACCOUNTS" -Message "Unexpected error in account data"
         Writes an exception log entry.
     #>
     [CmdletBinding()]
@@ -525,7 +525,7 @@ try {
     Assert-WindowsPlatform
     Write-Verbose "Concise log module loaded successfully"
 } catch {
-    Write-Error -Message "Module initialization failed: $($_.Exception.Message)"
-    Write-Debug -Message "Stack Trace: $($_.ScriptStackTrace)"
+    Write-ErrorLog -Scope "INIT-MODULE" -Message "Module initialization failed: $($_.Exception.Message)"
+    Write-DebugLog -Scope "INIT-MODULE" -Message "Stack Trace: $($_.ScriptStackTrace)"
     exit 1
 }
