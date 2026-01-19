@@ -35,6 +35,7 @@
 !PRIVACY
 !README
 !REFERENCES
+!RULES
 !SECURITY
 !VERSION
 !WEBSITE
@@ -88,3 +89,6 @@
 
 !helps/
 !helps/**/*.help
+
+!waste/
+!waste/**/*
