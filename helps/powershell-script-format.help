@@ -54,10 +54,12 @@ PREVENT UNAUTHORIZED ALTERATIONS.
 5.  Normative Language:
 
     - The key words,
+
         - MUST,
         - MUST NOT,
         - SHOULD,
         - and SHOULD NOT
+
       in this document SHOULD follow RFC-2119 and RFC-8174.
     - This document MUST NOT use MAY.
 
@@ -85,8 +87,8 @@ PREVENT UNAUTHORIZED ALTERATIONS.
 
 8.1 Shebang and Batch Fallback Header
 
-    All scripts MUST include a dual-mode header that allows execution from
-    both PowerShell and batch environments:
+    - All scripts MUST include a dual-mode header that allows execution from both
+      PowerShell and batch environments:
 
         <# :
         @echo off
@@ -96,13 +98,13 @@ PREVENT UNAUTHORIZED ALTERATIONS.
         exit /b 1
         #>
 
-    Purpose: Prevents accidental execution from cmd.exe with clear error
-    messaging.
+    - Purpose: Prevents accidental execution from cmd.exe with clear error
+      messaging.
 
 8.2 Script Metadata
 
-    Immediately after the header, scripts MUST include comprehensive
-    documentation:
+    - Immediately after the header, scripts MUST include comprehensive
+      documentation:
 
         <#
         .SYNOPSIS
@@ -130,12 +132,12 @@ PREVENT UNAUTHORIZED ALTERATIONS.
 
 8.3 CmdletBinding and Parameters
 
-    All scripts MUST declare CmdletBinding:
+    - All scripts MUST declare CmdletBinding:
 
         [CmdletBinding()]
         param()
 
-    Scripts accepting arguments MUST use explicit parameters with full names:
+    - Scripts accepting arguments MUST use explicit parameters with full names:
 
         [CmdletBinding()]
         param(
@@ -149,19 +151,18 @@ PREVENT UNAUTHORIZED ALTERATIONS.
 
 8.4 Strict Mode and Error Handling
 
-    All scripts MUST set strict mode and error preferences:
+    - All scripts MUST set strict mode and error preferences:
 
         Set-StrictMode -Version Latest
         $ErrorActionPreference = 'Stop'
 
-    Note: These are set in Initialize-ScriptEnvironment function for
-    consistency.
+    - Note: These are set in Initialize-ScriptEnvironment function for consistency.
 
 8.5 Function Organization
 
 8.5.1 Function Documentation
 
-    All functions MUST include comprehensive documentation:
+    - All functions MUST include comprehensive documentation:
 
         function Initialize-ScriptEnvironment {
             <#
@@ -193,7 +194,7 @@ PREVENT UNAUTHORIZED ALTERATIONS.
 
 8.5.2 Function Parameters
 
-    All parameters MUST be fully named and documented:
+    - All parameters MUST be fully named and documented:
 
         function Copy-TemplateFile {
             [CmdletBinding()]
@@ -212,7 +213,7 @@ PREVENT UNAUTHORIZED ALTERATIONS.
 
 8.5.3 Function Return Values
 
-    Functions SHOULD return values explicitly:
+    - Functions SHOULD return values explicitly:
 
         function Get-RepositoryRoot {
             [CmdletBinding()]
@@ -242,36 +243,44 @@ PREVENT UNAUTHORIZED ALTERATIONS.
     - No abbreviations: Use $repositoryRoot not $repo, $configuration not $config
     - Descriptive names: $isAdministrator not $admin, $windowsCapability not $cap
     - Boolean prefixes: Use $is, $has, $should, $can
-    - Scope prefix for script-level: $script:VerbosePreference not $VerbosePreference
+    - Scope prefix for script-level: $script:VerbosePreference not
+      $VerbosePreference
 
 8.7 Core Functions Required in All Scripts
 
-    Every script MUST include these foundational functions:
+    - Every script MUST include these foundational functions:
 
     8.7.1 Initialize-ScriptEnvironment
-        Sets up PowerShell preferences for consistent behavior.
+
+        - Sets up PowerShell preferences for consistent behavior.
 
     8.7.2 Assert-WindowsPlatform
-        Validates the script is running on Windows.
+
+        - Validates the script is running on Windows.
 
     8.7.3 Test-IsInteractivePowerShell
-        Ensures the script runs in an interactive terminal.
+
+        - Ensures the script runs in an interactive terminal.
 
     8.7.4 Invoke-PowerShellCoreTransition
-        Relaunches in PowerShell Core (pwsh) if available and version < 7.
+
+        - Relaunches in PowerShell Core (pwsh) if available and version < 7.
 
     8.7.5 Write-FormattedStep
-        Outputs formatted step messages to console.
+
+        - Outputs formatted step messages to console.
 
     8.7.6 Test-IsAdministrator
-        Checks for administrative privileges (if elevation needed).
+
+        - Checks for administrative privileges (if elevation needed).
 
     8.7.7 Invoke-ElevationRequest
-        Requests elevation and relaunches the script (if elevation needed).
+
+        - Requests elevation and relaunches the script (if elevation needed).
 
 8.8 Main Execution Flow
 
-    The main execution section MUST follow this pattern:
+    - The main execution section MUST follow this pattern:
 
         # --- Main Script Execution ---
 
@@ -330,7 +339,7 @@ PREVENT UNAUTHORIZED ALTERATIONS.
 
 8.11 Path Handling
 
-    All path operations MUST use -LiteralPath parameter to avoid
+    - All path operations MUST use -LiteralPath parameter to avoid
     interpretation of special characters:
 
         if (Test-Path -LiteralPath $filePath) {
@@ -340,14 +349,14 @@ PREVENT UNAUTHORIZED ALTERATIONS.
 
 8.12 Command Execution
 
-    Dynamic command execution MUST use the call operator &:
+    - Dynamic command execution MUST use the call operator &:
 
         $nodeVersion = & node --version
         $gitRoot = & git rev-parse --show-toplevel
 
 8.13 Validation and Assertions
 
-    Use validation attributes and assertion functions:
+    - Use validation attributes and assertion functions:
 
         # Parameter validation
         [ValidateNotNullOrEmpty()]
@@ -371,7 +380,7 @@ PREVENT UNAUTHORIZED ALTERATIONS.
 
 8.14 No Side Effects
 
-    Functions MUST NOT modify global state unless explicitly documented:
+    - Functions MUST NOT modify global state unless explicitly documented:
 
         # BAD: Modifies global environment
         function Set-GlobalPath {
@@ -397,7 +406,7 @@ PREVENT UNAUTHORIZED ALTERATIONS.
 
     8.15.1 Single Responsibility
 
-        Each function MUST have one clear purpose:
+        - Each function MUST have one clear purpose:
 
             # Good: Single responsibility
             function Test-IsAdministrator { }
@@ -408,8 +417,8 @@ PREVENT UNAUTHORIZED ALTERATIONS.
 
     8.15.2 Open-Closed
 
-        Functions MUST be open for extension via parameters, closed for
-        modification:
+        - Functions MUST be open for extension via parameters, closed for
+          modification:
 
             function Write-FormattedStep {
                 [CmdletBinding()]
@@ -425,7 +434,7 @@ PREVENT UNAUTHORIZED ALTERATIONS.
 
     8.15.3 Liskov Substitution
 
-        Functions MUST follow consistent contracts:
+        - Functions MUST follow consistent contracts:
 
             # All Get-* functions return the same type
             function Get-RepositoryRoot { [string] }
@@ -433,7 +442,7 @@ PREVENT UNAUTHORIZED ALTERATIONS.
 
     8.15.4 Interface Segregation
 
-        Functions MUST accept only necessary parameters:
+        - Functions MUST accept only necessary parameters:
 
             # Good: Only required parameters
             function Initialize-Environment {
@@ -447,7 +456,7 @@ PREVENT UNAUTHORIZED ALTERATIONS.
 
     8.15.5 Dependency Inversion
 
-        Functions MUST depend on abstractions, not concrete implementations:
+        - Functions MUST depend on abstractions, not concrete implementations:
 
             # Good: Accepts command name as parameter
             function Invoke-Command {
@@ -462,7 +471,7 @@ PREVENT UNAUTHORIZED ALTERATIONS.
 
 8.16 Template Structure
 
-    All scripts SHOULD follow this minimal template structure:
+    - All scripts SHOULD follow this minimal template structure:
 
         <# :
         @echo off
