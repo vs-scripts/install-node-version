@@ -116,7 +116,7 @@ EMPLOYED TO DETECT AND PREVENT UNAUTHORIZED ALTERATIONS.
             Version: 0.0.0
             Last Modified: [Date]
             Platform: Windows only
-            Requirements: PowerShell 5.1 or later (pwsh 7+ preferred)
+            Requirements: pwsh 7.5.4+
 
         .EXAMPLE
             .\script-name.ps1
