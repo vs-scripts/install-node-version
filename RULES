@@ -10,6 +10,8 @@ RULE 06: Always create a task list with check list.
 RULE 07: 1 commit = 1 file.
 RULE 08: Follow the commitlint.config.mjs file when creating commit messages.
 RULE 09: Do not use --no-verify flag for any git operations.
-RULE 10: Follow the FORMAT file if applicable.
+RULE 10: Follow the FORMAT file if applicable, related and relevant.
+
+Rule 11: Each entry line must have a maximum of 83 characters.
 
 Rule 99: Create a check list and review if all the rules were followed properly.
