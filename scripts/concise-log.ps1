@@ -35,10 +35,14 @@ exit /b 1
 [CmdletBinding()]
 param(
     [Parameter(Mandatory = $false)]
-    [switch]$DisableLogColors
+    [switch]$DisableLogColors,
+
+    [Parameter(Mandatory = $false)]
+    [switch]$EnableVerboseMode
 )
 
 $script:DisableLogColors = $DisableLogColors
+$script:EnableVerboseMode = $EnableVerboseMode
 
 Set-StrictMode -Version Latest
 
@@ -170,6 +174,44 @@ function Write-FormattedStep {
 
 # --- Logging Functions ---
 
+function Write-LogToHost {
+    <#
+    .SYNOPSIS
+        Writes a log entry to the host console with color.
+
+    .DESCRIPTION
+        Outputs a formatted log entry to the console with color based on log level.
+
+    .PARAMETER Message
+        The formatted log message to display.
+
+    .PARAMETER Level
+        The log level (I, W).
+
+    .EXAMPLE
+        Write-LogToHost -Message "Log message" -Level "I"
+        Displays the log message in dark green.
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Message,
+
+        [Parameter(Mandatory = $true)]
+        [ValidateSet('I', 'W')]
+        [string]$Level
+    )
+
+    if ($script:DisableLogColors) {
+        Write-Host $Message
+    } else {
+        switch ($Level) {
+            'I' { Write-Host $Message -ForegroundColor DarkGreen }
+            'W' { Write-Host $Message -ForegroundColor DarkYellow }
+        }
+    }
+}
+
 function Write-Log {
     <#
     .SYNOPSIS
@@ -178,6 +220,7 @@ function Write-Log {
     .DESCRIPTION
         Generates a log entry following the concise log format specification.
         The log entry includes a timestamp, log level, scope, message, and reference.
+        Output method depends on log level and verbose mode setting.
 
     .PARAMETER Level
         The log level (D, I, W, E, X).
@@ -215,7 +258,6 @@ function Write-Log {
     $reference = "urn:cla:$($Scope.Split('-')[0].ToLower()):$($Scope.Split('-')[1].ToLower()):$hash"
 
     # Format the log entry
-    $logEntryWithoutRef = "# $timestamp $Level $Scope $Message "
     $formattedLog = "# $timestamp $Level $Scope $Message $reference"
 
     # Apply line wrapping if the log entry exceeds 83 characters
@@ -230,7 +272,6 @@ function Write-Log {
 
         # Split the remaining message into chunks that fit within the available space
         $messageChunks = @()
-        $currentChunk = ""
         $remainingText = $remainingMessage.TrimStart()
 
         while ($remainingText.Length -gt 0) {
@@ -251,16 +292,35 @@ function Write-Log {
         }
     }
 
-    # Apply color based on log level
-    if ($script:DisableLogColors) {
-        Write-Host $formattedLog
-    } else {
-        switch ($Level) {
-            'D' { Write-Host $formattedLog -ForegroundColor White }
-            'I' { Write-Host $formattedLog -ForegroundColor DarkGreen }
-            'W' { Write-Host $formattedLog -ForegroundColor DarkYellow }
-            'E' { Write-Host $formattedLog -ForegroundColor Red }
-            'X' { Write-Host $formattedLog -ForegroundColor DarkRed }
+    # Output based on log level and verbose mode
+    switch ($Level) {
+        'D' {
+            # Debug level always uses Write-Debug
+            Write-Debug $formattedLog
+        }
+        'I' {
+            # Information level uses Write-Verbose if verbose mode enabled
+            if ($script:EnableVerboseMode) {
+                Write-Verbose $formattedLog
+            } else {
+                Write-LogToHost -Message $formattedLog -Level $Level
+            }
+        }
+        'W' {
+            # Warning level uses Write-Verbose if verbose mode enabled
+            if ($script:EnableVerboseMode) {
+                Write-Verbose $formattedLog
+            } else {
+                Write-LogToHost -Message $formattedLog -Level $Level
+            }
+        }
+        'E' {
+            # Error level always uses Write-Error
+            Write-Error $formattedLog
+        }
+        'X' {
+            # Exception level always uses Write-Error
+            Write-Error $formattedLog
         }
     }
 
