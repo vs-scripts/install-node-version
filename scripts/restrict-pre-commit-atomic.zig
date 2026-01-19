@@ -146,7 +146,7 @@ pub fn main() !void {
     // Ensure we have at least one argument (argv[0])
     if (arguments.len == 0) {
         std.log.err("No arguments provided", .{});
-        std.process.exit(1);
+        std.process.exit(4); // System error - invalid program state
     }
 
     // Build the full path to the OS-specific script
@@ -200,31 +200,43 @@ pub fn main() !void {
 
     const command_prefix = determineOsSpecificCommand() catch |err| {
         std.log.err("Failed to determine command for operating system '{s}': {}", .{ @tagName(builtin.os.tag), err });
-        std.process.exit(3);
+        std.process.exit(3); // Unsupported operating system
     };
 
     // Construct the complete argv array: [interpreter, args..., script_path, original_args...]
-    // Size: command_prefix + script_path + remaining arguments (skip argv[0])
+    // Size: command_prefix + script_path + remaining arguments (skip argv[0]) + null terminator
     const argv_len = command_prefix.len + 1 + (arguments.len - 1);
     var argv = try allocator.alloc(
-        []const u8,
-        argv_len,
+        ?[]const u8,
+        argv_len + 1, // +1 for null terminator required by execv
     );
     defer allocator.free(argv);
 
-    @memcpy(argv[0..command_prefix.len], command_prefix);
+    for (0..command_prefix.len) |i| {
+        argv[i] = command_prefix[i];
+    }
     argv[command_prefix.len] = script_path;
     if (arguments.len > 1) {
-        @memcpy(argv[command_prefix.len + 1 ..], arguments[1..]);
+        for (0..arguments.len - 1) |i| {
+            argv[command_prefix.len + 1 + i] = arguments[1 + i];
+        }
     }
+    argv[argv_len] = null; // Null terminator required by execv
 
     // Execute the script with the appropriate method for the OS
     if (builtin.os.tag == .windows) {
         // Windows: Use std.process.Child to spawn and wait for the process
-        var child = std.process.Child.init(argv, allocator);
+        // Convert nullable argv back to non-null for Windows (which doesn't need null terminator)
+        var windows_argv = try allocator.alloc([]const u8, argv_len);
+        defer allocator.free(windows_argv);
+        for (0..argv_len) |i| {
+            windows_argv[i] = argv[i].?; // Safe because we know these are non-null
+        }
+
+        var child = std.process.Child.init(windows_argv, allocator);
         const term = child.spawnAndWait() catch |err| {
-            std.log.err("Failed to execute command '{s}': {}", .{ argv[0], err });
-            std.process.exit(1);
+            std.log.err("Failed to execute command '{s}': {}", .{ windows_argv[0], err });
+            std.process.exit(1); // General execution failure
         };
 
         // Forward the exit code from the child process
@@ -247,15 +259,15 @@ pub fn main() !void {
             },
             .Unknown => {
                 std.log.err("Process terminated with unknown status", .{});
-                std.process.exit(1);
+                std.process.exit(1); // General execution failure
             },
         }
     } else {
         // Unix-like systems: Use execv to replace the current process
         // This is more efficient as it doesn't spawn a child process
         std.process.execv(allocator, argv) catch |err| {
-            std.log.err("Failed to execute command '{s}': {}", .{ argv[0], err });
-            std.process.exit(1);
+            std.log.err("Failed to execute command '{s}': {}", .{ argv[0].?, err });
+            std.process.exit(1); // General execution failure
         };
     }
     // Note: execv replaces the current process on Unix-like systems,
