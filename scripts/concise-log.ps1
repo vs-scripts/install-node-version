@@ -33,7 +33,12 @@ exit /b 1
 #>
 
 [CmdletBinding()]
-param()
+param(
+    [Parameter(Mandatory = $false)]
+    [switch]$DisableLogColors
+)
+
+$script:DisableLogColors = $DisableLogColors
 
 Set-StrictMode -Version Latest
 
@@ -247,12 +252,16 @@ function Write-Log {
     }
 
     # Apply color based on log level
-    switch ($Level) {
-        'D' { Write-Host $formattedLog -ForegroundColor Yellow }
-        'I' { Write-Host $formattedLog -ForegroundColor White }
-        'W' { Write-Host $formattedLog -ForegroundColor DarkYellow }
-        'E' { Write-Host $formattedLog -ForegroundColor Red }
-        'X' { Write-Host $formattedLog -ForegroundColor DarkRed }
+    if ($script:DisableLogColors) {
+        Write-Host $formattedLog
+    } else {
+        switch ($Level) {
+            'D' { Write-Host $formattedLog -ForegroundColor Yellow }
+            'I' { Write-Host $formattedLog -ForegroundColor White }
+            'W' { Write-Host $formattedLog -ForegroundColor DarkYellow }
+            'E' { Write-Host $formattedLog -ForegroundColor Red }
+            'X' { Write-Host $formattedLog -ForegroundColor DarkRed }
+        }
     }
 
     return $formattedLog
