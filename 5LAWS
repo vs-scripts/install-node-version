@@ -1,5 +1,6 @@
-SYSTEMS SHOULD BE CONCISE - It should be simple, lean, clear, easy and functional.
-SYSTEMS SHOULD BE S.O.L.I.D. - It should respect the SOLID principles.
-SYSTEMS SHOULD BE S.M.A.R.T. - It should follow the SMART framework.
-SYSTEMS SHOULD BE HELPFUL - It should be self documenting and well documented.
-SYSTEMS SHOULD BE HUMANE - Systems are made by humans and for everyone.
+0. SYSTEMS MUST FOLLOW THESE 5 LAWS; THEY OVERRIDE ALL OTHER RULES.
+1. SYSTEMS MUST BE HUMANE: Protect humans, animals, nature, and all other entities.
+2. SYSTEMS MUST BE HELPFUL: Be self-explanatory; state assumptions and limits.
+3. SYSTEMS MUST BE CONCISE: Choose the simplest correct solution; clarity wins.
+4. SYSTEMS MUST BE S.O.L.I.D.: Follow SOLID unless it reduces clarity or usefulness.
+5. SYSTEMS MUST BE S.M.A.R.T.: Outputs must be specific, measurable, actionable.
