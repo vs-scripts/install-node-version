@@ -12,7 +12,7 @@ EMPLOYED TO DETECT AND PREVENT UNAUTHORIZED ALTERATIONS.
     - GROUP:    VS-SCRIPTS
     - TITLE:    CONCISE RFC FORMAT
     - ACRONYM:  CRFCF
-    - AUTHOR:   Richeve Bebedor <richeve.bebedor+vs-scripts@gmail.com>
+    - AUTHOR:   RICHEVE BEBEDOR <richeve.bebedor+vs-scripts@gmail.com>
     - CATEGORY: SPECIFICATION
     - STATUS:   DRAFT
     - VERSION:  000000 (0.0.0)
@@ -22,8 +22,8 @@ EMPLOYED TO DETECT AND PREVENT UNAUTHORIZED ALTERATIONS.
 1.  Summary:
 
     This document defines the canonical structure, sections, and rules for all
-    CONCISE-RFC-XXXXXX documents in this repository. It serves as
-    the authoritative template for contributors, AI agents, and tooling.
+    CONCISE-RFC-XXXXXX documents in this repository. It serves as the authoritative
+    template for contributors, artificial intelligent agents, and tooling.
 
 2.  Permission:
 
@@ -70,11 +70,13 @@ EMPLOYED TO DETECT AND PREVENT UNAUTHORIZED ALTERATIONS.
 
         Exceptions:
             - *.todo files
+            - *.help files
 
     - All CONCISE-RFC-XXXXXX document file names SHOULD be one word.
 
         Exceptions:
             - *.todo files
+            - *.help files
 
 7.  Structure:
 
@@ -89,7 +91,7 @@ EMPLOYED TO DETECT AND PREVENT UNAUTHORIZED ALTERATIONS.
     - All CONCISE-RFC-XXXXXX documents MUST NOT exceed 997 lines of text.
 
     - All CONCISE-RFC-XXXXXX documents MUST be within 83 characters
-      in column width.
+      in column width per line.
 
     - All CONCISE-RFC-XXXXXX documents MUST start with,
         - 1 (|) pipe character, then
@@ -117,11 +119,10 @@ EMPLOYED TO DETECT AND PREVENT UNAUTHORIZED ALTERATIONS.
       modifications with the following format:
 
         NOTICE: UNAUTHORIZED MODIFICATION OF THIS DOCUMENT IS EXPRESSLY PROHIBITED.
-        EDITING PRIVILEGES ARE EXCLUSIVELY RESERVED FOR THE AUTHOR,
-        DESIGNATED CONTRIBUTORS, AND AUTHORIZED ARTIFICIAL INTELLIGENCE AGENTS.
-        DOCUMENT INTEGRITY IS SECURED BY A CRYPTOGRAPHIC CHECKSUM;
-        AUTOMATED VERIFICATION SCRIPTS ARE EMPLOYED TO DETECT
-        AND PREVENT UNAUTHORIZED ALTERATIONS.
+        EDITING PRIVILEGES ARE EXCLUSIVELY RESERVED FOR THE AUTHOR, DESIGNATED
+        CONTRIBUTORS, AND AUTHORIZED ARTIFICIAL INTELLIGENCE AGENTS. DOCUMENT
+        INTEGRITY IS SECURED BY A CRYPTOGRAPHIC CHECKSUM; AUTOMATED VERIFICATION
+        SCRIPTS ARE EMPLOYED TO DETECT AND PREVENT UNAUTHORIZED ALTERATIONS.
 
         - This NOTICE format MUST NOT be modified.
 
@@ -132,9 +133,9 @@ EMPLOYED TO DETECT AND PREVENT UNAUTHORIZED ALTERATIONS.
         - CHANGELOG
 
             - This MUST contain the changelog of this repository.
-            - Each entry SHOULD respect the 83 characters column width.
-            - Each entry SHOULD respect the conventional commits
-              1.0.0 specification as described in this document:
+            - Each line entry SHOULD respect the 83 characters column width.
+            - Each line entry SHOULD respect the conventional commits 1.0.0
+              specification as described in this document:
 
                 https://www.conventionalcommits.org/en/v1.0.0/
 
@@ -147,13 +148,16 @@ EMPLOYED TO DETECT AND PREVENT UNAUTHORIZED ALTERATIONS.
                         - These commits SHOULD only contain files and messages
                           regarding changes to the todo/ directory.
 
-                    - issue
-                        -
-
                     - tests
 
                         - These commits SHOULD only contain files and messages
                           regarding changes to the tests/ directory.
+
+                    - issue
+
+                        - These commits SHOULD only contain files and messages
+                          regarding changes that is outside of todo/, tests/, and
+                          helps/ directory.
 
                     - helps
 
@@ -187,7 +191,7 @@ EMPLOYED TO DETECT AND PREVENT UNAUTHORIZED ALTERATIONS.
 
                 Example:
 
-                    2025-12-20 chore: update documentation
+                    2025-12-20 specs: update documentation
 
             - Concise description MUST have a maximum character
               length of 65.
@@ -261,13 +265,26 @@ EMPLOYED TO DETECT AND PREVENT UNAUTHORIZED ALTERATIONS.
             in this order:
 
             - RFC:      CONCISE-RFC-XXXXXX
-            - GROUP:    <GROUP-PROJECT-NAME>
-            - TITLE:    <UNIQUE-CONCISE-DOCUMENT-TITLE>
-            - ACRONYM:  <UNIQUE-CONCISE-DOCUMENT-ACRONYM>
-            - AUTHOR:   <FIRST-NAME> <LAST-NAME> <email>
+
+                - This SHOULD be the RFC format version name of the FORMAT file
+                  used by this document.
+
+            - GROUP:    <GROUP PROJECT NAME>
+            - TITLE:    <UNIQUE AND CONCISE DOCUMENT TITLE>
+
+                - This SHOULD have a maximum of 5 letter word.
+
+            - ACRONYM:  <UACDT>
+
+                - This SHOULD be 5 alphanumeric characters uppercase format.
+
+            - AUTHOR:   <FIRST NAME> <LAST NAME> <email>
             - CATEGORY: (SPECIFICATION | INFORMATIONAL | EXPERIMENTAL)
             - STATUS:   (DRAFT | REVIEW | STABLE | DEPRECATED | OBSOLETE)
             - VERSION:  XXXXXX <X.X.X>
+
+                - This SHOULD be the version of this document.
+
             - CREATED:  <YYYY-MM-DD>
             - CHECKSUM: <SHA-256>
 
@@ -278,22 +295,22 @@ EMPLOYED TO DETECT AND PREVENT UNAUTHORIZED ALTERATIONS.
         X.  License:
 
             - This MUST contain the license text of this document.
-            - This MUST only be used on LICENSE documents.
-            - LICENSE documents MUST only contain this and the METADATA section.
+            - This MUST only be used on LICENSE document.
+            - LICENSE document MUST only contain this and the METADATA section.
 
         X.  Permission:
 
-            - This MUST define the permissions for using, modifying, copying,
-              and distributing this document and/or this repository.
+            - This MUST define the permissions for using, modifying, copying, and
+              distributing this document and/or this repository.
             - This MUST contain the NOTICE for permission in this format:
 
-                NOTICE: PERMISSION TO USE, MODIFY, COPY, AND/OR DISTRIBUTE
-                THIS DOCUMENT AND/OR REPOSITORY IS GRANTED UNDER THE TERMS OF
-                THE LICENSE AGREEMENT SPECIFIED IN THE LICENSE FILE.
-                PLEASE REFER TO THE LICENSE FILE FOR DETAILS.
+                NOTICE: PERMISSION TO USE, MODIFY, COPY, AND/OR DISTRIBUTE THIS
+                DOCUMENT AND/OR REPOSITORY IS GRANTED UNDER THE TERMS OF THE
+                LICENSE AGREEMENT SPECIFIED IN THE LICENSE FILE. PLEASE REFER TO
+                THE LICENSE FILE FOR DETAILS.
 
-            - This MUST be contained in all CONCISE-RFC-XXXXXX documents except
-              the LICENSE file.
+            - This MUST be contained in all CONCISE-RFC-XXXXXX documents except the
+              LICENSE file.
 
         X.  Contents:
 
@@ -318,7 +335,8 @@ EMPLOYED TO DETECT AND PREVENT UNAUTHORIZED ALTERATIONS.
         X.  Compliance:
 
             This MUST contain the compliance of this document to this format,
-            styles, principles, and tools which include any AI agent tools.
+            styles, principles, and tools which include any, but not limited, to
+            artificial intelligent agent tools.
 
     - All CONCISE-RFC-XXXXXX documents MUST follow these principles:
 
@@ -341,13 +359,12 @@ EMPLOYED TO DETECT AND PREVENT UNAUTHORIZED ALTERATIONS.
         - Section headers MUST always define one and only one meaning.
         - Section contents MUST only contain the following styles,
             - Descriptive paragraphs in normal conversational English language.
-            - Descriptive paragraphs must not contain complex
-              conversational English words.
-            - Lists that start with 1 hyphen (-) character followed by
-              a single space and then the list item.
+            - Descriptive paragraphs must not contain complex conversational
+              English words.
+            - Lists that start with 1 hyphen (-) character followed by a single
+              space and then the list item.
             - Formatted structures that are different from this format.
-        - All formatted structures with ordered components MUST be
-          followed.
+        - All formatted structures with ordered components MUST be followed.
 
     - All repositories MUST contain the following basic directories,
 
@@ -382,14 +399,18 @@ EMPLOYED TO DETECT AND PREVENT UNAUTHORIZED ALTERATIONS.
 
                     critical-issue-2025-12-21-fix-e2e-tests.todo
 
+        - waste
+
 8.  Compliance:
 
-        - All AI agents MUST read the FORMAT file.
-        - All AI agents MUST add to their context list this FORMAT file.
-        - All AI agents MUST follow this FORMAT file.
-        - All AI agents MUST NOT edit this FORMAT file.
-        - All AI agents MUST NOT modify the VERSION file.
-        - All AI agents MUST adhere to the normative language requirements
-          in this document.
+        - All artificial intelligent agents MUST read the FORMAT file.
+        - All artificial intelligent agents MUST add the FORMAT file in their
+          context list.
+        - All artificial intelligent agents MUST follow the FORMAT file.
+        - All artificial intelligent agents MUST respect the FORMAT file.
+        - All artificial intelligent agents MUST NOT modify the FORMAT file.
+        - All artificial intelligent agents MUST NOT modify the VERSION file.
+        - All artificial intelligent agents MUST adhere to the normative language
+          requirements in the FORMAT file.
 
 |<------------------------------->[ ENDED-CRFCF ]<------------------------------->|
