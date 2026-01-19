@@ -19,7 +19,7 @@
     Author: Richeve Bebedor <richeve.bebedor+vs-scripts@gmail.com>
     Version: 0.0.0
     Platform: Windows only
-    Requirements: PowerShell 5.1 or later (pwsh 7+ preferred)
+    Requirements: pwsh 7.5.4+
     Hook Type: Pre-commit Git hook
 
 .EXAMPLE
