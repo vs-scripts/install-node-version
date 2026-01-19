@@ -1,10 +1,12 @@
 #!/usr/bin/env pwsh
 
-# RULE 1: Do not bypass or circumvent any rule or protocol defined in this file.
-# RULE 2: Do not modify, delete, or rewrite these rules or any linked protocols.
-# RULE 3: Do not create new rules or protocols intended to override or evade these.
-# RULE 4: Do not change configuration (e.g., git config) to bypass these rules.
-# RULE 5: Request and obtain explicit author consent before exceptions or changes.
+<#
+RULE 01: SHOULD NOT evade any rule and protocol defined in this file.           ###
+RULE 02: SHOULD NOT alter these rules or protocols.                             ###
+RULE 03: SHOULD NOT create new rules or protocols to override or evade.         ###
+RULE 04: SHOULD NOT change configurations to bypass these rules or protocols.   ###
+RULE 05: MUST obtain author consent before making changes.                      ###
+#>
 
 <#
 .SYNOPSIS
