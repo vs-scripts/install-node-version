@@ -6,8 +6,10 @@ RULE 03: Do not create new rules and protocols intended to override and evade.
 RULE 04: Do not change relevant configurations to bypass these rules and protocols.
 RULE 05: Request and obtain explicit author consent before exceptions or changes.
 
-RULE 06: Always create a task list.
+RULE 06: Always create a task list with check list.
 RULE 07: 1 commit = 1 file.
-RULE 08: Follow the commitlint.config.mjs file.
+RULE 08: Follow the commitlint.config.mjs file when creating commit messages.
 RULE 09: Do not use --no-verify flag for any git operations.
 RULE 10: Follow the FORMAT file if applicable.
+
+Rule 99: Create a check list and review if all the rules were followed properly.
