@@ -91,33 +91,33 @@ PREVENT UNAUTHORIZED ALTERATIONS.
         - D: Debug
 
             - Verbose mode output
-            - Subtle yellow foreground color MUST be applied for chromatic
-              representation.
+            - White foreground color MUST be applied for chromatic
+              representation if enabled.
 
         - I: Information
 
             - Refers to normal operation messages.
-            - Subtle white foreground color MUST be applied for chromatic
-              representation.
+            - Dark green foreground color MUST be applied for chromatic
+              representation if enabled.
 
         - W: Warning
 
             - Refers to allowable behaviors but with possible unexpected outcomes.
-            - Subtle orange foreground color MUST be applied for chromatic
-              representation.
+            - Dark yellow foreground color MUST be applied for chromatic
+              representation if enabled.
 
         - E: Error
 
             - Refers to actor and code level errors
-            - Bright red foreground color MUST be applied for chromatic
-              representation.
+            - Red foreground color MUST be applied for chromatic
+              representation if enabled.
 
         - X: Exception
 
             - Refers to out of scope issues.
             - These are not errors.
             - Dark red foreground color MUST be applied for chromatic
-              representation.
+              representation if enabled.
 
     - SCP:
 
@@ -141,10 +141,10 @@ PREVENT UNAUTHORIZED ALTERATIONS.
         # 2024-01-15T05:55:00.00Z I DATA-ACCOUNTS Cannot add account data
         # 2024-01-15T05:55:00.00Z I DATA-ACCOUNTS urn:cla:data:accounts:2efgh
 
-    - MSG and REF should be grouped as one.
-    - The maximum number of characters per log entry line should be 83.
+    - MSG and REF MUST be grouped as one.
+    - The maximum number of characters per log entry line MUST be 83.
     - If the number of characters for <# DTS LVL SCP MSG REF> exceeds 83 then it
-      SHOULD be divided into multiple lines but preserving the <# DTS LVL SCP>
+      MUST be divided into multiple lines but preserving the <# DTS LVL SCP>
 
 8.  Compliance:
 
