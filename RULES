@@ -1,10 +1,13 @@
-RULE 0: Respect the 5LAWS file.
+RULE 00: Respect the 5LAWS file.
 
-RULE 1: Do not bypass or circumvent any rule and protocol defined in this file.
-RULE 2: Do not modify, delete, or rewrite these rules and any linked protocols.
-RULE 3: Do not create new rules and protocols intended to override and evade.
-RULE 4: Do not change relevant configurations to bypass these rules and protocols.
-RULE 5: Request and obtain explicit author consent before exceptions or changes.
+RULE 01: Do not bypass or circumvent any rule and protocol defined in this file.
+RULE 02: Do not modify, delete, or rewrite these rules and any linked protocols.
+RULE 03: Do not create new rules and protocols intended to override and evade.
+RULE 04: Do not change relevant configurations to bypass these rules and protocols.
+RULE 05: Request and obtain explicit author consent before exceptions or changes.
 
-RULE 6: 1 commit = 1 file.
-RULE 7: Do not use --no-verify flag.
+RULE 06: Always create a task list.
+RULE 07: 1 commit = 1 file.
+RULE 08: Follow the commitlint.config.mjs file.
+RULE 09: Do not use --no-verify flag for any git operations.
+RULE 10: Follow the FORMAT file if applicable.
