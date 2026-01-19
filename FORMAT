@@ -72,7 +72,7 @@ EMPLOYED TO DETECT AND PREVENT UNAUTHORIZED ALTERATIONS.
             - *.todo files
             - *.help files
 
-    - All CONCISE-RFC-XXXXXX document file names SHOULD be one word.
+    - All CONCISE-RFC-XXXXXX document file names MUST be one word.
 
         Exceptions:
             - *.todo files
@@ -133,7 +133,7 @@ EMPLOYED TO DETECT AND PREVENT UNAUTHORIZED ALTERATIONS.
         - CHANGELOG
 
             - This MUST contain the changelog of this repository.
-            - Each line entry SHOULD respect the 83 characters column width.
+            - Each line entry MUST respect the 83 characters column width.
             - Each line entry SHOULD respect the conventional commits 1.0.0
               specification as described in this document:
 
@@ -145,45 +145,45 @@ EMPLOYED TO DETECT AND PREVENT UNAUTHORIZED ALTERATIONS.
 
                     - specs
 
-                        - These commits SHOULD only contain files and messages
+                        - These commits MUST only contain files and messages
                           regarding changes to the todo/ directory.
 
                     - tests
 
-                        - These commits SHOULD only contain files and messages
+                        - These commits MUST only contain files and messages
                           regarding changes to the tests/ directory.
 
                     - issue
 
-                        - These commits SHOULD only contain files and messages
+                        - These commits MUST only contain files and messages
                           regarding changes that is outside of todo/, tests/, and
                           helps/ directory.
 
                     - helps
 
-                        - These commits SHOULD only contain files and messages
+                        - These commits MUST only contain files and messages
                           regarding changes to the helps/ directory.
 
                     - break
 
-                        - These commits SHOULD only contain the VERSION file
+                        - These commits MUST only contain the VERSION file
                           and messages regarding changes to the VERSION file.
 
-                - tests SHOULD be interpreted as test
-                - helps SHOULD be interpreted as docs
-                - revert SHOULD be interpreted as issue
-                - fix SHOULD be interpreted as issue
-                - feat SHOULD be interpreted as issue
-                - perf SHOULD be interpreted as issue
-                - ci SHOULD be interpreted as issue
-                - style SHOULD be interpreted as issue
-                - chore SHOULD be interpreted as issue
-                - build SHOULD be interpreted as issue
-                - specs SHOULD be interpreted as docs and chore combined
-                - specs SHOULD be for issue specification only
-                - break SHOULD be interpreted as a commit history break
+                - tests MUST be interpreted as test
+                - helps MUST be interpreted as docs
+                - revert MUST be interpreted as issue
+                - fix MUST be interpreted as issue
+                - feat MUST be interpreted as issue
+                - perf MUST be interpreted as issue
+                - ci MUST be interpreted as issue
+                - style MUST be interpreted as issue
+                - chore MUST be interpreted as issue
+                - build MUST be interpreted as issue
+                - specs MUST be interpreted as docs and chore combined
+                - specs MUST be for issue specification only
+                - break MUST be interpreted as a commit history break
                 - commit history break provides historical grouping
-                - All action types SHOULD have a character length of 5.
+                - All action types MUST have a character length of 5.
 
             - Each changelog item MUST be in this format:
 
@@ -266,24 +266,24 @@ EMPLOYED TO DETECT AND PREVENT UNAUTHORIZED ALTERATIONS.
 
             - RFC:      CONCISE-RFC-XXXXXX
 
-                - This SHOULD be the RFC format version name of the FORMAT file
+                - This MUST be the RFC format version name of the FORMAT file
                   used by this document.
 
             - GROUP:    <GROUP PROJECT NAME>
             - TITLE:    <UNIQUE AND CONCISE DOCUMENT TITLE>
 
-                - This SHOULD have a maximum of 5 letter word.
+                - This MUST have a maximum of 5 letter word.
 
             - ACRONYM:  <UACDT>
 
-                - This SHOULD be 5 alphanumeric characters uppercase format.
+                - This MUST be 5 alphanumeric characters uppercase format.
 
             - AUTHOR:   <FIRST NAME> <LAST NAME> <email>
             - CATEGORY: (SPECIFICATION | INFORMATIONAL | EXPERIMENTAL)
             - STATUS:   (DRAFT | REVIEW | STABLE | DEPRECATED | OBSOLETE)
             - VERSION:  XXXXXX <X.X.X>
 
-                - This SHOULD be the version of this document.
+                - This MUST be the version of this document.
 
             - CREATED:  <YYYY-MM-DD>
             - CHECKSUM: <SHA-256>
