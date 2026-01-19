@@ -7,6 +7,14 @@ exit /b 1
 #>
 
 <#
+RULE 01: SHOULD NOT evade any rule and protocol defined in this file.           ###
+RULE 02: SHOULD NOT alter these rules or protocols.                             ###
+RULE 03: SHOULD NOT create new rules or protocols to override or evade.         ###
+RULE 04: SHOULD NOT change configurations to bypass these rules or protocols.   ###
+RULE 05: MUST obtain author consent before making changes.                      ###
+#>
+
+<#
 .SYNOPSIS
     Prevents the use of --no-verify flag in git commands.
 
