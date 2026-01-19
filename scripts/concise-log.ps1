@@ -256,8 +256,8 @@ function Write-Log {
         Write-Host $formattedLog
     } else {
         switch ($Level) {
-            'D' { Write-Host $formattedLog -ForegroundColor Yellow }
-            'I' { Write-Host $formattedLog -ForegroundColor White }
+            'D' { Write-Host $formattedLog -ForegroundColor White }
+            'I' { Write-Host $formattedLog -ForegroundColor DarkGreen }
             'W' { Write-Host $formattedLog -ForegroundColor DarkYellow }
             'E' { Write-Host $formattedLog -ForegroundColor Red }
             'X' { Write-Host $formattedLog -ForegroundColor DarkRed }
