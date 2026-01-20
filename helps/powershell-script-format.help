@@ -746,67 +746,223 @@ PREVENT UNAUTHORIZED ALTERATIONS.
 
 8.19 Concise Log Format Integration
 
-    - All scripts SHOULD use the concise-log.ps1 module for standardized logging.
-    - The concise-log.ps1 module implements the CLOGF specification.
-    - Import the module at the beginning of the script:
+    8.19.1 Mandatory Requirements
 
-        . .\scripts\concise-log.ps1
+        - All executable scripts MUST use the concise-log.ps1 module for ALL
+          logging operations.
+        - The concise-log.ps1 module implements the CLOGF specification.
+        - Scripts MUST NOT define their own logging functions.
+        - Scripts MUST NOT redefine core functions from concise-log.ps1.
+        - All Write-Host, Write-Error, Write-Warning, Write-Verbose, and
+          Write-Debug calls MUST be replaced with concise-log functions.
 
-    - Use concise-log functions for all logging operations:
+    8.19.2 Import Pattern (CRITICAL)
 
-        Write-InfoLog -Scope "PARENT-CHILD" -Message "Operation started"
-        Write-WarningLog -Scope "PARENT-CHILD" -Message "Unexpected condition"
-        Write-ErrorLog -Scope "PARENT-CHILD" -Message "Operation failed"
-        Write-DebugLog -Scope "PARENT-CHILD" -Message "Debug information"
-        Write-ExceptionLog -Scope "PARENT-CHILD" -Message "Out of scope issue"
+        - Import concise-log.ps1 IMMEDIATELY after Set-StrictMode.
+        - Import BEFORE defining any functions.
+        - Import BEFORE calling Initialize-ScriptEnvironment.
+        - Use this exact pattern:
 
-    - Log scope MUST be in PARENT-CHILD format (e.g., DATA-ACCOUNTS).
-    - Log messages MUST be concise and descriptive.
-    - Each log entry automatically includes timestamp, level, scope, and hash.
-    - Log entries MUST NOT exceed 83 characters per line (auto-wrapped).
-    - Use concise-log.ps1 parameters for output control:
+            [CmdletBinding()]
+            param()
 
-        - -DisableLogColors: Disable colored output
-        - -EnableVerboseMode: Route logs through Write-Verbose
+            Set-StrictMode -Version Latest
 
-    - Example script with concise-log.ps1 integration:
+            # Import concise-log module
+            $scriptDir = Split-Path -Parent $MyInvocation.MyCommandPath
+            . "$scriptDir\concise-log.ps1"
 
-        [CmdletBinding()]
-        param()
+            # Now call Initialize-ScriptEnvironment from concise-log
+            Initialize-ScriptEnvironment
 
-        . .\scripts\concise-log.ps1
+    8.19.3 Available Functions from concise-log.ps1
 
-        Initialize-ScriptEnvironment
-        Test-IsInteractivePowerShell
-        Invoke-PowerShellCoreTransition
+        - DO NOT redefine these functions. They are provided by concise-log.ps1:
 
-        try {
-            Assert-WindowsPlatform
-            $startMsg = "Script started"
-            Write-InfoLog -Scope "INIT-SCRIPT" -Message $startMsg
-            # Main logic here
-            $completeMsg = "Script completed"
-            Write-InfoLog -Scope "INIT-SCRIPT" -Message $completeMsg
-        } catch {
-            Write-ErrorLog -Scope "INIT-SCRIPT" -Message "Script failed"
-            $errorMsg = "Error: $($_.Exception.Message)"
-            Write-DebugLog -Scope "INIT-SCRIPT" -Message $errorMsg
-            exit 1
-        }
+            - Initialize-ScriptEnvironment: Sets PowerShell preferences
+            - Assert-WindowsPlatform: Validates Windows platform
+            - Test-IsInteractivePowerShell: Ensures interactive terminal
+            - Invoke-PowerShellCoreTransition: Transitions to pwsh if needed
+            - Write-FormattedStep: Outputs formatted step messages
+            - Write-DebugLog: Writes debug level logs
+            - Write-InfoLog: Writes information level logs
+            - Write-WarningLog: Writes warning level logs
+            - Write-ErrorLog: Writes error level logs
+            - Write-ExceptionLog: Writes exception level logs
 
-    - All scripts MUST read this PWSHF document.
-    - All scripts MUST follow this PWSHF document.
-    - All scripts MUST NOT edit this PWSHF document.
-    - All AI agents MUST read this PWSHF document.
-    - All AI agents MUST add this PWSHF document to their context.
-    - All AI agents MUST follow this PWSHF document.
-    - All AI agents MUST NOT edit this PWSHF document.
-    - All scripts MUST adhere to the normative language requirements.
-    - All scripts MUST respect the 5LAWS.
-    - All scripts SHOULD use concise-log.ps1 for standardized logging.
-    - All scripts using concise-log.ps1 MUST follow CLOGF specification.
-    - All scripts using concise-log.ps1 MUST use PARENT-CHILD scope format.
-    - All log entries MUST NOT exceed 83 characters per line.
+    8.19.4 Logging Function Usage
+
+        - Replace ALL Write-Host, Write-Error, Write-Warning, Write-Verbose,
+          and Write-Debug calls with concise-log functions:
+
+            # WRONG: Do not use these after importing concise-log.ps1
+            Write-Host "Message"
+            Write-Error "Error message"
+            Write-Warning "Warning message"
+            Write-Verbose "Verbose message"
+            Write-Debug "Debug message"
+
+            # CORRECT: Use concise-log functions instead
+            Write-InfoLog -Scope "PARENT-CHILD" -Message "Message"
+            Write-ErrorLog -Scope "PARENT-CHILD" -Message "Error message"
+            Write-WarningLog -Scope "PARENT-CHILD" -Message "Warning message"
+            Write-DebugLog -Scope "PARENT-CHILD" -Message "Debug message"
+
+    8.19.5 Log Scope Naming (PARENT-CHILD Format)
+
+        - Log scope MUST be in PARENT-CHILD format (e.g., REPO-ORIGIN).
+        - PARENT: Describes the primary component or module
+        - CHILD: Describes the specific operation or sub-component
+        - Examples:
+
+            - REPO-ORIGIN: Repository origin validation
+            - INIT-SCRIPT: Script initialization
+            - DATA-ACCOUNTS: Account data processing
+            - FILE-WRITE: File write operations
+            - GIT-COMMIT: Git commit operations
+
+        - Scope names MUST be uppercase with hyphen separator.
+        - Scope names MUST be descriptive and meaningful.
+
+    8.19.6 Log Message Guidelines
+
+        - Log messages MUST be concise and descriptive.
+        - Log messages MUST NOT exceed 83 characters per line (auto-wrapped).
+        - Each log entry automatically includes timestamp, level, scope, hash.
+        - Log levels:
+
+            - D (Debug): Verbose diagnostic information
+            - I (Information): Normal operation messages
+            - W (Warning): Allowable behaviors with unexpected outcomes
+            - E (Error): Actor and code level errors
+            - X (Exception): Out of scope issues (not errors)
+
+    8.19.7 Configuration Parameters
+
+        - concise-log.ps1 provides module-level configuration variables:
+
+            - $script:DisableLogColors: Set to $true to disable colored output
+            - $script:EnableVerboseMode: Set to $true to route logs through
+              Write-Verbose instead of Write-Host
+
+        - Modify these AFTER importing concise-log.ps1 if needed:
+
+            . "$scriptDir\concise-log.ps1"
+            $script:DisableLogColors = $true
+            Initialize-ScriptEnvironment
+
+    8.19.8 Complete Script Example
+
+        - This example shows proper concise-log.ps1 integration:
+
+            <# :
+            @echo off
+            echo.
+            echo Error: This script must be run from PowerShell.
+            echo.
+            exit /b 1
+            #>
+
+            <#
+            .SYNOPSIS
+                Validates repository configuration.
+
+            .DESCRIPTION
+                Checks that the repository is properly configured.
+
+            .NOTES
+                Author: [Author]
+                Version: 0.0.0
+                Platform: Windows only
+                Requirements: pwsh 7.5.4+
+            #>
+
+            [CmdletBinding()]
+            param()
+
+            Set-StrictMode -Version Latest
+
+            # Import concise-log module FIRST
+            $scriptDir = Split-Path -Parent $MyInvocation.MyCommandPath
+            . "$scriptDir\concise-log.ps1"
+
+            #region Helper Functions
+
+            function Get-RepositoryRoot {
+                [CmdletBinding()]
+                param()
+
+                [string]$repositoryRoot = $PWD.Path
+
+                $gitCommand = Get-Command -Name 'git' `
+                    -ErrorAction SilentlyContinue
+                if ($gitCommand) {
+                    try {
+                        $detectedRoot = (& git rev-parse --show-toplevel `
+                            2>$null)
+                        if ($detectedRoot -and (Test-Path -LiteralPath `
+                                $detectedRoot)) {
+                            $msg = "Detected root: $detectedRoot"
+                            Write-DebugLog -Scope "REPO-ORIGIN" `
+                                -Message $msg
+                            $repositoryRoot = $detectedRoot
+                        }
+                    } catch {
+                        $msg = "Git detection failed, using current dir"
+                        Write-DebugLog -Scope "REPO-ORIGIN" -Message $msg
+                    }
+                }
+
+                return $repositoryRoot
+            }
+
+            #endregion
+
+            #region Main Script Execution
+
+            Initialize-ScriptEnvironment
+            Test-IsInteractivePowerShell
+            Invoke-PowerShellCoreTransition
+
+            try {
+                Assert-WindowsPlatform
+
+                Write-InfoLog -Scope "REPO-ORIGIN" `
+                    -Message "Validating repository"
+
+                $root = Get-RepositoryRoot
+                Write-DebugLog -Scope "REPO-ORIGIN" -Message "Root: $root"
+
+                Write-InfoLog -Scope "REPO-ORIGIN" `
+                    -Message "Validation complete"
+                exit 0
+            } catch {
+                Write-ErrorLog -Scope "REPO-ORIGIN" `
+                    -Message "Validation failed"
+                $errorMsg = "Error: $($_.Exception.Message)"
+                Write-DebugLog -Scope "REPO-ORIGIN" -Message $errorMsg
+                exit 1
+            }
+
+            #endregion
+
+    8.19.9 Compliance Requirements
+
+        - All scripts MUST read this PWSHF document.
+        - All scripts MUST follow this PWSHF document.
+        - All scripts MUST NOT edit this PWSHF document.
+        - All AI agents MUST read this PWSHF document.
+        - All AI agents MUST add this PWSHF document to their context.
+        - All AI agents MUST follow this PWSHF document.
+        - All AI agents MUST NOT edit this PWSHF document.
+        - All scripts MUST adhere to the normative language requirements.
+        - All scripts MUST respect the 5LAWS.
+        - All executable scripts MUST use concise-log.ps1 for logging.
+        - All scripts using concise-log.ps1 MUST follow CLOGF specification.
+        - All scripts using concise-log.ps1 MUST use PARENT-CHILD scope.
+        - All log entries MUST NOT exceed 83 characters per line.
+        - Scripts MUST NOT redefine functions from concise-log.ps1.
+        - Scripts MUST import concise-log.ps1 immediately after Set-StrictMode.
 
 8.20 Reusable Module Design
 
