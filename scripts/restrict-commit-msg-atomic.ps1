@@ -40,6 +40,10 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 
+# Import the concise logging module
+$scriptDir = $PSScriptRoot
+. "$scriptDir\concise-log.ps1"
+
 # --- Core Functions ---
 
 function Test-AtomicCommitMessage {
