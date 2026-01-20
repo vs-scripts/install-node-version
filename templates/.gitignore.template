@@ -14,11 +14,12 @@
 !.*/**/.gitkeep
 
 !.editorconfig
+!.gitconfig
+!.gitmessage
 !.gitattributes
 !.gitignore
 !.prettierignore
 !.npmrc
-!.gitconfig
 
 !5LAWS
 !AUTHOR
@@ -70,8 +71,8 @@
 !scripts/**/*.bash
 !scripts/**/*.zig
 
-!template/
-!template/**/*.template
+!templates/
+!templates/**/*.template
 
 !tests/
 !tests/e2e/
