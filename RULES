@@ -10,7 +10,8 @@
 # RULE 07: MUST read and SHOULD follow the ./FORMAT file if applicable.
 # RULE 08: Each entry line MUST have a maximum of 83 characters.
 # RULE 09: Each file MUST have a maximum of 997 entry lines.
-# RULE 10: MUST read and refer to the ./helps/ directory for relevant help.
+# RULE 10: MUST read and refer to the ./helps/ directory for relevant help file.
+
 # RULE 11: A commit MUST have a maximum of 1 file.
 # RULE 12: Commit type MUST be one of: specs, issue, tests, helps, break.
 # RULE 13: Commit scope MUST always be in lowercase.
