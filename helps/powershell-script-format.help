@@ -11,7 +11,7 @@ PREVENT UNAUTHORIZED ALTERATIONS.
     - RFC:      CONCISE-RFC-000000
     - GROUP:    VS-SCRIPTS
     - TITLE:    POWERSHELL SCRIPT FORMAT
-    - ACRONYM:  PWSHF
+    - ACRONYM:  PWSF
     - AUTHOR:   Richeve Bebedor <richeve.bebedor+vs-scripts@gmail.com>
     - CATEGORY: SPECIFICATION
     - STATUS:   DRAFT
@@ -22,7 +22,8 @@ PREVENT UNAUTHORIZED ALTERATIONS.
 1.  Summary:
 
     This document defines the standardized format, conventions, and structure
-    for all PowerShell scripts in this repository. All scripts MUST follow
+    for non-elevated PowerShell scripts (executable .ps1 files that do NOT
+    require administrative privileges). All non-elevated scripts MUST follow
     these patterns to ensure consistency, maintainability, and adherence to
     SOLID principles while remaining concise, helpful, and humane.
 
@@ -48,8 +49,10 @@ PREVENT UNAUTHORIZED ALTERATIONS.
 
 4.  Document Status:
 
-    - This document is a DRAFT specification for PowerShell script standards.
-    - It defines mandatory conventions for all scripts in this repository.
+    - This document is a DRAFT specification for non-elevated PowerShell script
+      standards.
+    - It defines mandatory conventions for all non-elevated executable scripts
+      in this repository.
     - It is intended to enforce consistency, clarity, and SOLID principles.
 
 5.  Normative Language:
@@ -261,9 +264,9 @@ PREVENT UNAUTHORIZED ALTERATIONS.
     - Scope prefix for script-level: $script:VerbosePreference not
       $VerbosePreference
 
-8.7 Core Functions Required in All Scripts
+8.7 Core Functions Required in All Non-Elevated Scripts
 
-    - Every script MUST include these foundational functions:
+    - Every non-elevated script MUST include these foundational functions:
 
     8.7.1 Initialize-ScriptEnvironment
 
@@ -285,13 +288,9 @@ PREVENT UNAUTHORIZED ALTERATIONS.
 
         - Outputs formatted step messages to console.
 
-    8.7.6 Test-IsAdministrator
-
-        - Checks for administrative privileges (if elevation needed).
-
-    8.7.7 Invoke-ElevationRequest
-
-        - Requests elevation and relaunches the script (if elevation needed).
+    - Note: Test-IsAdministrator and Invoke-ElevationRequest are NOT required
+      for non-elevated scripts. Use powershell-elevated-script-format.help if
+      your script requires elevation.
 
 8.8 Main Execution Flow
 
@@ -302,11 +301,6 @@ PREVENT UNAUTHORIZED ALTERATIONS.
         Initialize-ScriptEnvironment
         Test-IsInteractivePowerShell
 
-        # Check for elevation if needed
-        if ($requiresElevation -and -not (Test-IsAdministrator)) {
-            Invoke-ElevationRequest
-        }
-
         Invoke-PowerShellCoreTransition
 
         try {
@@ -316,11 +310,17 @@ PREVENT UNAUTHORIZED ALTERATIONS.
             Invoke-PrimaryWorkflow
 
             Write-FormattedStep "Success: Operation completed successfully"
+            exit 0
         } catch {
-            Write-Error -Message "Operation failed: $($_.Exception.Message)"
-            Write-Debug -Message "Stack Trace: $($_.ScriptStackTrace)"
+            Write-ErrorLog -Scope "SCRIPT-MAIN" `
+                -Message "Operation failed: $($_.Exception.Message)"
+            Write-DebugLog -Scope "SCRIPT-MAIN" `
+                -Message "Stack Trace: $($_.ScriptStackTrace)"
             exit 1
         }
+
+    - Note: Non-elevated scripts do NOT check for elevation. If your script
+      requires elevation, use powershell-elevated-script-format.help instead.
 
 8.9 Error Handling
 
@@ -331,28 +331,19 @@ PREVENT UNAUTHORIZED ALTERATIONS.
 
         try {
             $result = Invoke-Operation
-            Write-Verbose "Operation completed: $result"
+            Write-InfoLog -Scope "OPERATION-NAME" `
+                -Message "Operation completed: $result"
         } catch {
-            Write-Error -Message "Operation failed: $($_.Exception.Message)"
-            Write-Debug -Message "Stack Trace: $($_.ScriptStackTrace)"
+            Write-ErrorLog -Scope "OPERATION-NAME" `
+                -Message "Operation failed: $($_.Exception.Message)"
+            Write-DebugLog -Scope "OPERATION-NAME" `
+                -Message "Stack Trace: $($_.ScriptStackTrace)"
             exit 1
         }
 
 8.10 Output and Logging
 
-    - Use Write-Verbose for detailed diagnostic information
-    - Use Write-Debug for troubleshooting information
-    - Use Write-FormattedStep for major workflow steps
-    - Use Write-Warning for non-fatal issues
-    - Use Write-Error for fatal issues
-    - Use concise-log.ps1 module for standardized logging
-
-        Write-Verbose "Checking for required tool: git"
-        Write-Debug "Git command path: $($gitCommand.Source)"
-        Write-FormattedStep "Installing required packages"
-        Write-Warning "Configuration file not found, using defaults"
-        Write-Error "Critical operation failed"
-
+    - Use concise-log.ps1 module for standardized logging.
     - The concise-log.ps1 module provides standardized logging functions that
       follow the CLOGF (Concise Log Format) specification:
 
@@ -496,7 +487,7 @@ PREVENT UNAUTHORIZED ALTERATIONS.
 
 8.16 Template Structure
 
-    - All scripts SHOULD follow this minimal template structure:
+    - All non-elevated scripts SHOULD follow this minimal template structure:
 
         <# :
         @echo off
@@ -524,89 +515,37 @@ PREVENT UNAUTHORIZED ALTERATIONS.
 
         Set-StrictMode -Version Latest
 
-        # --- Core Functions ---
-
-        function Initialize-ScriptEnvironment {
-            # Implementation
-        }
-
-        function Assert-WindowsPlatform {
-            # Implementation
-        }
-
-        function Test-IsInteractivePowerShell {
-            # Implementation
-        }
-
-        function Invoke-PowerShellCoreTransition {
-            # Implementation
-        }
-
-        function Write-FormattedStep {
-            # Implementation
-        }
-
-        # --- Helper Functions ---
-
-        function Test-IsAdministrator {
-            # Implementation
-        }
-
-        function Invoke-ElevationRequest {
-            # Implementation
-        }
-
-        # --- Primary Functions ---
-
-        function Invoke-PrimaryWorkflow {
-            # Implementation
-        }
-
-        # --- Main Script Execution ---
-
-        Initialize-ScriptEnvironment
-        Test-IsInteractivePowerShell
-
-        if ($requiresElevation -and -not (Test-IsAdministrator)) {
-            Invoke-ElevationRequest
-        }
-
-        Invoke-PowerShellCoreTransition
-
-        try {
-            Assert-WindowsPlatform
-            Invoke-PrimaryWorkflow
-            Write-FormattedStep "Success: Operation completed"
-        } catch {
-            Write-Error "Operation failed: $($_.Exception.Message)"
-            Write-Debug "Stack Trace: $($_.ScriptStackTrace)"
-            exit 1
-        }
-
-8.17 Code Region Folding
-
-    - All scripts SHOULD use #region and #endregion comments to organize code
-      into collapsible sections in VS Code.
-    - Regions improve readability and navigation in longer scripts.
-    - Region names MUST be descriptive and match the section purpose.
-
-    8.17.1 Region Organization Pattern
+        # Import concise-log module
+        $scriptDir = Split-Path -Parent $MyInvocation.MyCommandPath
+        . "$scriptDir\concise-log.ps1"
 
         #region Core Functions
 
         function Initialize-ScriptEnvironment {
-            # Implementation
+            # Implementation (provided by concise-log.ps1)
         }
 
         function Assert-WindowsPlatform {
-            # Implementation
+            # Implementation (provided by concise-log.ps1)
+        }
+
+        function Test-IsInteractivePowerShell {
+            # Implementation (provided by concise-log.ps1)
+        }
+
+        function Invoke-PowerShellCoreTransition {
+            # Implementation (provided by concise-log.ps1)
+        }
+
+        function Write-FormattedStep {
+            # Implementation (provided by concise-log.ps1)
         }
 
         #endregion
 
-        #region Helper Functions
+        #region Primary Functions
 
-        function Test-IsAdministrator {
+        function Invoke-PrimaryWorkflow {
             # Implementation
         }
 
@@ -616,77 +555,76 @@ PREVENT UNAUTHORIZED ALTERATIONS.
 
         Initialize-ScriptEnvironment
         Test-IsInteractivePowerShell
+        Invoke-PowerShellCoreTransition
+
+        try {
+            Assert-WindowsPlatform
+            Invoke-PrimaryWorkflow
+            Write-FormattedStep "Success: Operation completed"
+            exit 0
+        } catch {
+            Write-ErrorLog -Scope "SCRIPT-MAIN" `
+                -Message "Operation failed: $($_.Exception.Message)"
+            Write-DebugLog -Scope "SCRIPT-MAIN" `
+                -Message "Stack Trace: $($_.ScriptStackTrace)"
+            exit 1
+        }
 
         #endregion
 
-    8.17.2 Nested Regions
+8.17 Code Region Folding
 
-        - Regions MAY be nested for deeper organization:
+    - All scripts SHOULD use #region and #endregion comments to organize code
+      into collapsible sections in VS Code.
+    - Regions improve readability and navigation in longer scripts.
+    - Region names MUST be descriptive and match the section purpose.
 
-            #region Primary Workflow
+8.17.1 Region Organization Pattern
 
-            #region Validation
+    #region Core Functions
 
-            Assert-WindowsPlatform
-            Validate-Prerequisites
+    function Initialize-ScriptEnvironment {
+        # Implementation (provided by concise-log.ps1)
+    }
 
-            #endregion
+    function Assert-WindowsPlatform {
+        # Implementation (provided by concise-log.ps1)
+    }
 
-            #region Processing
+    #endregion
 
-            Invoke-MainOperation
+    #region Primary Functions
 
-            #endregion
+    function Invoke-PrimaryWorkflow {
+        # Implementation
+    }
 
-            #endregion
+    #endregion
 
-    8.17.3 Region Naming Conventions
+    #region Main Script Execution
 
-        - Region names SHOULD be PascalCase
-        - Region names SHOULD be concise but descriptive
-        - Region names SHOULD match function grouping or workflow stages
+    Initialize-ScriptEnvironment
+    Test-IsInteractivePowerShell
+    Invoke-PowerShellCoreTransition
 
-            #region Core Functions
-            #region Helper Functions
-            #region Main Script Execution
-            #region Error Handling
-            #region Configuration
+    #endregion
 
-    8.17.4 Function-Level Folding
+8.17.2 Region Naming Conventions
 
-        - Individual functions are automatically foldable in VS Code
-        - Function bodies can be collapsed by clicking the chevron next to the
-          function declaration
-        - No additional markup is required; VS Code recognizes function blocks
-          automatically
+    - Region names SHOULD be PascalCase
+    - Region names SHOULD be concise but descriptive
+    - Common region names:
 
-            function Initialize-ScriptEnvironment {
-                <# Function body collapses here #>
-            }
-
-            function Assert-WindowsPlatform {
-                <# Function body collapses here #>
-            }
-
-        - Regions can wrap multiple functions for group-level folding:
-
-            #region Core Functions
-
-            function Initialize-ScriptEnvironment {
-                # Implementation
-            }
-
-            function Assert-WindowsPlatform {
-                # Implementation
-            }
-
-            #endregion
-
-        - This allows both individual function folding and group folding
+        #region Core Functions
+        #region Primary Functions
+        #region Main Script Execution
 
 8.18 Common Patterns
 
-    8.18.1 Check and Install Pattern
+8.18.1 Check and Install Pattern
+
+    - Utility pattern for checking if a tool is installed and installing if
+      needed:
 
         function Ensure-ToolInstalled {
             [CmdletBinding()]
@@ -701,7 +639,8 @@ PREVENT UNAUTHORIZED ALTERATIONS.
             $toolCommand = Get-Command -Name $ToolName `
                 -ErrorAction SilentlyContinue
             if ($toolCommand) {
-                Write-Verbose "$ToolName is already installed"
+                Write-InfoLog -Scope "TOOL-CHECK" `
+                    -Message "$ToolName is already installed"
                 return
             }
 
@@ -709,7 +648,9 @@ PREVENT UNAUTHORIZED ALTERATIONS.
             Install-PackageWithWinget -PackageId $PackageId
         }
 
-    8.17.2 Validate and Proceed Pattern
+8.18.2 Validate and Proceed Pattern
+
+    - Validation pattern for checking prerequisites:
 
         function Validate-Prerequisites {
             [CmdletBinding()]
@@ -719,10 +660,13 @@ PREVENT UNAUTHORIZED ALTERATIONS.
             Assert-CommandExists -CommandName 'node'
             Assert-WindowsPlatform
 
-            Write-Verbose "All prerequisites validated"
+            Write-InfoLog -Scope "VALIDATION" `
+                -Message "All prerequisites validated"
         }
 
-    8.17.3 Configuration with Defaults Pattern
+8.18.3 Configuration with Defaults Pattern
+
+    - Configuration pattern with sensible defaults:
 
         function Get-Configuration {
             [CmdletBinding()]
@@ -740,7 +684,7 @@ PREVENT UNAUTHORIZED ALTERATIONS.
             }
 
             $message = "Configuration file not found, using defaults"
-            Write-Verbose $message
+            Write-InfoLog -Scope "CONFIG-LOAD" -Message $message
             return @{ DefaultSetting = $true }
         }
 
@@ -748,13 +692,11 @@ PREVENT UNAUTHORIZED ALTERATIONS.
 
     8.19.1 Mandatory Requirements
 
-        - All executable scripts MUST use the concise-log.ps1 module for ALL
+        - All non-elevated scripts MUST use the concise-log.ps1 module for ALL
           logging operations.
         - The concise-log.ps1 module implements the CLOGF specification.
         - Scripts MUST NOT define their own logging functions.
         - Scripts MUST NOT redefine core functions from concise-log.ps1.
-        - All Write-Host, Write-Error, Write-Warning, Write-Verbose, and
-          Write-Debug calls MUST be replaced with concise-log functions.
 
     8.19.2 Import Pattern (CRITICAL)
 
@@ -790,25 +732,7 @@ PREVENT UNAUTHORIZED ALTERATIONS.
             - Write-ErrorLog: Writes error level logs
             - Write-ExceptionLog: Writes exception level logs
 
-    8.19.4 Logging Function Usage
-
-        - Replace ALL Write-Host, Write-Error, Write-Warning, Write-Verbose,
-          and Write-Debug calls with concise-log functions:
-
-            # WRONG: Do not use these after importing concise-log.ps1
-            Write-Host "Message"
-            Write-Error "Error message"
-            Write-Warning "Warning message"
-            Write-Verbose "Verbose message"
-            Write-Debug "Debug message"
-
-            # CORRECT: Use concise-log functions instead
-            Write-InfoLog -Scope "PARENT-CHILD" -Message "Message"
-            Write-ErrorLog -Scope "PARENT-CHILD" -Message "Error message"
-            Write-WarningLog -Scope "PARENT-CHILD" -Message "Warning message"
-            Write-DebugLog -Scope "PARENT-CHILD" -Message "Debug message"
-
-    8.19.5 Log Scope Naming (PARENT-CHILD Format)
+    8.19.4 Log Scope Naming (PARENT-CHILD Format)
 
         - Log scope MUST be in PARENT-CHILD format (e.g., REPO-ORIGIN).
         - PARENT: Describes the primary component or module
@@ -824,7 +748,7 @@ PREVENT UNAUTHORIZED ALTERATIONS.
         - Scope names MUST be uppercase with hyphen separator.
         - Scope names MUST be descriptive and meaningful.
 
-    8.19.6 Log Message Guidelines
+    8.19.5 Log Message Guidelines
 
         - Log messages MUST be concise and descriptive.
         - Log messages MUST NOT exceed 83 characters per line (auto-wrapped).
@@ -837,390 +761,25 @@ PREVENT UNAUTHORIZED ALTERATIONS.
             - E (Error): Actor and code level errors
             - X (Exception): Out of scope issues (not errors)
 
-    8.19.7 Configuration Parameters
-
-        - concise-log.ps1 provides module-level configuration variables:
-
-            - $script:DisableLogColors: Set to $true to disable colored output
-            - $script:EnableVerboseMode: Set to $true to route logs through
-              Write-Verbose instead of Write-Host
-
-        - Modify these AFTER importing concise-log.ps1 if needed:
-
-            . "$scriptDir\concise-log.ps1"
-            $script:DisableLogColors = $true
-            Initialize-ScriptEnvironment
-
-    8.19.8 Complete Script Example
-
-        - This example shows proper concise-log.ps1 integration:
-
-            <# :
-            @echo off
-            echo.
-            echo Error: This script must be run from PowerShell.
-            echo.
-            exit /b 1
-            #>
-
-            <#
-            .SYNOPSIS
-                Validates repository configuration.
-
-            .DESCRIPTION
-                Checks that the repository is properly configured.
-
-            .NOTES
-                Author: [Author]
-                Version: 0.0.0
-                Platform: Windows only
-                Requirements: pwsh 7.5.4+
-            #>
-
-            [CmdletBinding()]
-            param()
-
-            Set-StrictMode -Version Latest
-
-            # Import concise-log module FIRST
-            $scriptDir = Split-Path -Parent $MyInvocation.MyCommandPath
-            . "$scriptDir\concise-log.ps1"
-
-            #region Helper Functions
-
-            function Get-RepositoryRoot {
-                [CmdletBinding()]
-                param()
-
-                [string]$repositoryRoot = $PWD.Path
-
-                $gitCommand = Get-Command -Name 'git' `
-                    -ErrorAction SilentlyContinue
-                if ($gitCommand) {
-                    try {
-                        $detectedRoot = (& git rev-parse --show-toplevel `
-                            2>$null)
-                        if ($detectedRoot -and (Test-Path -LiteralPath `
-                                $detectedRoot)) {
-                            $msg = "Detected root: $detectedRoot"
-                            Write-DebugLog -Scope "REPO-ORIGIN" `
-                                -Message $msg
-                            $repositoryRoot = $detectedRoot
-                        }
-                    } catch {
-                        $msg = "Git detection failed, using current dir"
-                        Write-DebugLog -Scope "REPO-ORIGIN" -Message $msg
-                    }
-                }
-
-                return $repositoryRoot
-            }
-
-            #endregion
-
-            #region Main Script Execution
-
-            Initialize-ScriptEnvironment
-            Test-IsInteractivePowerShell
-            Invoke-PowerShellCoreTransition
-
-            try {
-                Assert-WindowsPlatform
-
-                Write-InfoLog -Scope "REPO-ORIGIN" `
-                    -Message "Validating repository"
-
-                $root = Get-RepositoryRoot
-                Write-DebugLog -Scope "REPO-ORIGIN" -Message "Root: $root"
-
-                Write-InfoLog -Scope "REPO-ORIGIN" `
-                    -Message "Validation complete"
-                exit 0
-            } catch {
-                Write-ErrorLog -Scope "REPO-ORIGIN" `
-                    -Message "Validation failed"
-                $errorMsg = "Error: $($_.Exception.Message)"
-                Write-DebugLog -Scope "REPO-ORIGIN" -Message $errorMsg
-                exit 1
-            }
-
-            #endregion
-
-    8.19.9 Compliance Requirements
-
-        - All scripts MUST read this PWSHF document.
-        - All scripts MUST follow this PWSHF document.
-        - All scripts MUST NOT edit this PWSHF document.
-        - All AI agents MUST read this PWSHF document.
-        - All AI agents MUST add this PWSHF document to their context.
-        - All AI agents MUST follow this PWSHF document.
-        - All AI agents MUST NOT edit this PWSHF document.
-        - All scripts MUST adhere to the normative language requirements.
-        - All scripts MUST respect the 5LAWS.
-        - All executable scripts MUST use concise-log.ps1 for logging.
-        - All scripts using concise-log.ps1 MUST follow CLOGF specification.
-        - All scripts using concise-log.ps1 MUST use PARENT-CHILD scope.
-        - All log entries MUST NOT exceed 83 characters per line.
-        - Scripts MUST NOT redefine functions from concise-log.ps1.
-        - Scripts MUST import concise-log.ps1 immediately after Set-StrictMode.
-
-8.20 Reusable Module Design
-
-    - Reusable modules are non-executable PowerShell files designed to be
-      imported by other scripts via dot-sourcing.
-    - Reusable modules MUST NOT include script-level parameters or CmdletBinding.
-    - Reusable modules MUST NOT execute initialization code at import time.
-    - Reusable modules MUST use module-level configuration variables with
-      defaults instead of parameters.
-    - Reusable modules MUST export public functions using Export-ModuleMember.
-
-    8.20.1 Reusable Module Structure
-
-        <# :
-        @echo off
-        echo.
-        echo Error: This script must be run from a PowerShell terminal.
-        echo.
-        exit /b 1
-        #>
-
-        <#
-        .SYNOPSIS
-            Provides reusable functions for [purpose].
-
-        .DESCRIPTION
-            This module implements [functionality] and provides functions for
-            [specific operations]. It is designed to be imported by other scripts
-            via dot-sourcing.
-
-        .NOTES
-            Author: [Author]
-            Version: 0.0.0
-            Last Modified: [Date]
-            Platform: Windows only
-            Requirements: pwsh 7.5.4+
-
-        .EXAMPLE
-            . .\module-name.ps1
-            Invoke-ModuleFunction -Parameter "value"
-
-        .EXIT CODES
-            0 - Success
-            1 - Failure (with error message)
-        #>
-
-        Set-StrictMode -Version Latest
-
-        # Module-level configuration variables
-        $script:ConfigurationOption1 = $false
-        $script:ConfigurationOption2 = $false
-
-        #region Core Functions
-
-        function Function-One {
-            # Implementation
-        }
-
-        function Function-Two {
-            # Implementation
-        }
-
-        #endregion
-
-        #region Helper Functions
-
-        function Helper-Function {
-            # Implementation
-        }
-
-        #endregion
-
-        # Export all public functions
-        Export-ModuleMember -Function @(
-            'Function-One',
-            'Function-Two',
-            'Helper-Function'
-        )
-
-    8.20.2 Module Import Pattern
-
-        - Calling scripts MUST import reusable modules using dot-sourcing:
-
-            [CmdletBinding()]
-            param()
-
-            Set-StrictMode -Version Latest
-            $ErrorActionPreference = 'Stop'
-
-            # Import the reusable module
-            $scriptDir = Split-Path -Parent $MyInvocation.MyCommandPath
-            . "$scriptDir\module-name.ps1"
-
-            # Now functions from the module are available
-            Function-One -Parameter "value"
-
-    8.20.3 Module Configuration
-
-        - Reusable modules MAY provide configuration variables that calling
-          scripts can modify before using module functions:
-
-            # Module defines defaults
-            $script:DisableLogColors = $false
-            $script:EnableVerboseMode = $false
-
-            # Calling script can modify before using functions
-            . .\concise-log.ps1
-            $script:DisableLogColors = $true
-            Write-InfoLog -Scope "INIT-SCRIPT" -Message "Colors disabled"
-
-    8.20.4 Module Function Documentation
-
-        - All module functions MUST include comprehensive documentation:
-
-            function Write-Log {
-                <#
-                .SYNOPSIS
-                    Writes a log entry in the concise log format.
-
-                .DESCRIPTION
-                    Generates a log entry following the concise log format
-                    specification. The log entry includes a timestamp, log level,
-                    scope, message, and reference.
-
-                .PARAMETER Level
-                    The log level (D, I, W, E, X).
-
-                .PARAMETER Scope
-                    The log scope in PARENT-CHILD format.
-
-                .PARAMETER Message
-                    The log message.
-
-                .EXAMPLE
-                    Write-Log -Level "I" -Scope "DATA-ACCOUNTS" `
-                        -Message "Cannot add account data"
-                    Writes an information log entry.
-                #>
-                [CmdletBinding()]
-                param(
-                    [Parameter(Mandatory = $true)]
-                    [ValidateSet('D', 'I', 'W', 'E', 'X')]
-                    [string]$Level,
-
-                    [Parameter(Mandatory = $true)]
-                    [ValidateNotNullOrEmpty()]
-                    [string]$Scope,
-
-                    [Parameter(Mandatory = $true)]
-                    [ValidateNotNullOrEmpty()]
-                    [string]$Message
-                )
-
-                # Implementation
-            }
-
-    8.20.5 No Auto-Execution in Modules
-
-        - Reusable modules MUST NOT execute any code at import time.
-        - Reusable modules MUST NOT call functions during import.
-        - Reusable modules MUST NOT perform initialization or validation.
-        - All execution logic MUST be contained within functions.
-        - Calling scripts are responsible for calling module functions as needed.
-
-        Example of INCORRECT module design (auto-executes):
-
-            # BAD: This executes when module is imported
-            Initialize-ScriptEnvironment
-            Test-IsInteractivePowerShell
-            Assert-WindowsPlatform
-
-        Example of CORRECT module design (no auto-execution):
-
-            # GOOD: Only function definitions, no execution
-            function Initialize-ScriptEnvironment {
-                # Implementation
-            }
-
-            # Calling script decides when to call
-            . .\module.ps1
-            Initialize-ScriptEnvironment  # Caller invokes
-
-    8.20.6 Module vs Executable Script Differences
-
-        - Executable scripts:
-            - Include [CmdletBinding()] and parameters at script level
-            - Execute initialization and main logic at script level
-            - May call exit with status codes
-            - Designed to be run directly
-
-        - Reusable modules:
-            - NO [CmdletBinding()] or parameters at script level
-            - NO auto-execution of code at import time
-            - Use Export-ModuleMember to expose functions
-            - Designed to be imported and used by other scripts
-            - Return values from functions instead of exiting
-
-    8.20.7 Module Scope Considerations
-
-        - Functions defined in modules are available in the calling script's
-          scope after dot-sourcing.
-        - Module-level variables (prefixed with $script:) are accessible to
-          module functions but not to calling scripts unless explicitly exposed.
-        - Use Export-ModuleMember to control which functions are public.
-        - Private helper functions MAY be defined but not exported.
-
-            #region Public Functions
-
-            function Public-Function {
-                # Available to calling scripts
-            }
-
-            #endregion
-
-            #region Private Functions
-
-            function Private-Helper {
-                # Only available within module
-            }
-
-            #endregion
-
-            # Only export public functions
-            Export-ModuleMember -Function 'Public-Function'
-
 9.1 Review Checklist
 
     - [ ] Shebang and batch fallback header present
     - [ ] Script metadata with SYNOPSIS, DESCRIPTION, NOTES
-    - [ ] CmdletBinding and parameters defined (executable scripts only)
+    - [ ] CmdletBinding and parameters defined
     - [ ] All functions have full documentation
     - [ ] No abbreviations or single-character variables
     - [ ] No side effects outside function scope
     - [ ] Proper error handling with try-catch
-    - [ ] Consistent use of Write-Verbose, Write-Debug, Write-FormattedStep
     - [ ] Path handling uses -LiteralPath
     - [ ] Command execution uses & operator
     - [ ] SOLID principles applied
-    - [ ] Main execution flow follows standard pattern (executable scripts only)
-    - [ ] Exit codes: 0 for success, 1 for failure (executable scripts only)
+    - [ ] Main execution flow follows standard pattern
+    - [ ] Exit codes: 0 for success, 1 for failure
     - [ ] Code organized with #region and #endregion for folding
-    - [ ] concise-log.ps1 module imported if logging is used
-    - [ ] Log scope in PARENT-CHILD format (e.g., DATA-ACCOUNTS)
+    - [ ] concise-log.ps1 module imported
+    - [ ] Log scope in PARENT-CHILD format
     - [ ] Log entries do not exceed 83 characters per line
     - [ ] Appropriate log level used (D, I, W, E, X)
-
-    9.1.1 Additional Checklist for Reusable Modules
-
-        - [ ] NO [CmdletBinding()] or parameters at script level
-        - [ ] NO auto-execution of code at import time
-        - [ ] Module-level configuration variables have defaults
-        - [ ] All public functions are exported via Export-ModuleMember
-        - [ ] Private helper functions are NOT exported
-        - [ ] Functions return values instead of calling exit
-        - [ ] Module can be safely dot-sourced without side effects
-        - [ ] Module documentation includes import example
-        - [ ] All functions use [CmdletBinding()] in their definition
-        - [ ] Module scope variables use $script: prefix
 
 9.2 References
 
