@@ -16,6 +16,7 @@
         "**/EMAIL": true,
         "**/INDEX": true,
         "**/ORIGIN": true,
+        "**/RULES": true,
         "**/VERSION": true,
         "**/WEBSITE": true
     },
