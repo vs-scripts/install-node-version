@@ -11,6 +11,7 @@
     "files.autoSave": "afterDelay",
     "files.autoSaveDelay": 1000,
     "files.readonlyInclude": {
+        "**/5LAWS": true,
         "**/AUTHOR": true,
         "**/EMAIL": true,
         "**/INDEX": true,
@@ -31,8 +32,9 @@
     "editor.occurrencesHighlight": "off",
     "editor.selectionHighlight": false,
     "files.associations": {
-        "*- BEGIN-RFC -*": "text",
-        "*- ENDED-RFC -*": "text",
+        "*[ BEGIN-CRFCF ]*": "text",
+        "*[ ENDED-CRFCF ]*": "text",
+        "5LAWS": "text",
         "AUTHOR": "text",
         "CHANGELOG": "text",
         "CONTRIBUTING": "text",
