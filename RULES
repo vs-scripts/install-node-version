@@ -20,6 +20,7 @@
 # RULE 16: Commit body MUST never be empty.
 # RULE 17: Each commit body line MUST NOT exceed 83 characters.
 # RULE 18: Commit body MUST reference the staged file by path.
-# RULE 19: MUST NOT use --no-verify flag for any git operations.
+# RULE 19: MUST NOT use --no-verify flag with any git operations.
+# RULE 20: MUST NOT use --hard or --mixed flags with any git operations.
 
 # RULE 99: MUST create a check list and review rule compliance.
