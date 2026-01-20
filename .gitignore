@@ -71,8 +71,8 @@
 !scripts/**/*.bash
 !scripts/**/*.zig
 
-!template/
-!template/**/*.template
+!templates/
+!templates/**/*.template
 
 !tests/
 !tests/e2e/
