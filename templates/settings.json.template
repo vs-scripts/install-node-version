@@ -57,7 +57,7 @@
     },
     "prettier.enable": false,
     "terminal.integrated.profiles.windows": {
-        "PowerShell (Admin)": {
+        "Elevated PowerShell": {
             "path": "gsudo.exe",
             "args": [
                 "pwsh"
