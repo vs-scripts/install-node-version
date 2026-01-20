@@ -222,16 +222,20 @@ PREVENT UNAUTHORIZED ALTERATIONS.
 
             [string]$repositoryRoot = $PWD.Path
 
-            $gitCommand = Get-Command -Name 'git' -ErrorAction SilentlyContinue
+            $gitCommand = Get-Command -Name 'git' `
+                -ErrorAction SilentlyContinue
             if ($gitCommand) {
                 try {
                     $detectedRoot = (& git rev-parse --show-toplevel 2>$null)
-                    if ($detectedRoot -and (Test-Path -LiteralPath $detectedRoot)) {
-                        Write-Debug "Detected Git repository root: $detectedRoot"
+                    if ($detectedRoot -and (Test-Path -LiteralPath `
+                            $detectedRoot)) {
+                        $message = "Detected Git repository root: $detectedRoot"
+                        Write-Debug $message
                         $repositoryRoot = $detectedRoot
                     }
                 } catch {
-                    Write-Debug "Git root detection failed, using current directory"
+                    $message = "Git root detection failed, using current directory"
+                    Write-Debug $message
                 }
             }
 
@@ -331,12 +335,22 @@ PREVENT UNAUTHORIZED ALTERATIONS.
     - Use Write-FormattedStep for major workflow steps
     - Use Write-Warning for non-fatal issues
     - Use Write-Error for fatal issues
+    - Use concise-log.ps1 module for standardized logging
 
         Write-Verbose "Checking for required tool: git"
         Write-Debug "Git command path: $($gitCommand.Source)"
         Write-FormattedStep "Installing required packages"
         Write-Warning "Configuration file not found, using defaults"
         Write-Error "Critical operation failed"
+
+    - The concise-log.ps1 module provides standardized logging functions that
+      follow the CLOGF (Concise Log Format) specification:
+
+        - Write-InfoLog: Information level logs (I)
+        - Write-WarningLog: Warning level logs (W)
+        - Write-ErrorLog: Error level logs (E)
+        - Write-DebugLog: Debug level logs (D)
+        - Write-ExceptionLog: Exception level logs (X)
 
 8.11 Path Handling
 
@@ -674,7 +688,8 @@ PREVENT UNAUTHORIZED ALTERATIONS.
                 [string]$PackageId
             )
 
-            $toolCommand = Get-Command -Name $ToolName -ErrorAction SilentlyContinue
+            $toolCommand = Get-Command -Name $ToolName `
+                -ErrorAction SilentlyContinue
             if ($toolCommand) {
                 Write-Verbose "$ToolName is already installed"
                 return
@@ -703,18 +718,71 @@ PREVENT UNAUTHORIZED ALTERATIONS.
             [CmdletBinding()]
             param(
                 [Parameter(Mandatory = $false)]
-                [string]$ConfigurationPath = (Join-Path $env:APPDATA 'MyApp\config.json')
+                [string]$ConfigurationPath = (
+                    Join-Path $env:APPDATA 'MyApp\config.json'
+                )
             )
 
             if (Test-Path -LiteralPath $ConfigurationPath) {
-                return Get-Content -LiteralPath $ConfigurationPath | ConvertFrom-Json
+                $configContent = Get-Content -LiteralPath `
+                    $ConfigurationPath
+                return $configContent | ConvertFrom-Json
             }
 
-            Write-Verbose "Configuration file not found, using defaults"
+            $message = "Configuration file not found, using defaults"
+            Write-Verbose $message
             return @{ DefaultSetting = $true }
         }
 
-9.  Compliance:
+8.19 Concise Log Format Integration
+
+    - All scripts SHOULD use the concise-log.ps1 module for standardized logging.
+    - The concise-log.ps1 module implements the CLOGF specification.
+    - Import the module at the beginning of the script:
+
+        . .\scripts\concise-log.ps1
+
+    - Use concise-log functions for all logging operations:
+
+        Write-InfoLog -Scope "PARENT-CHILD" -Message "Operation started"
+        Write-WarningLog -Scope "PARENT-CHILD" -Message "Unexpected condition"
+        Write-ErrorLog -Scope "PARENT-CHILD" -Message "Operation failed"
+        Write-DebugLog -Scope "PARENT-CHILD" -Message "Debug information"
+        Write-ExceptionLog -Scope "PARENT-CHILD" -Message "Out of scope issue"
+
+    - Log scope MUST be in PARENT-CHILD format (e.g., DATA-ACCOUNTS).
+    - Log messages MUST be concise and descriptive.
+    - Each log entry automatically includes timestamp, level, scope, and hash.
+    - Log entries MUST NOT exceed 83 characters per line (auto-wrapped).
+    - Use concise-log.ps1 parameters for output control:
+
+        - -DisableLogColors: Disable colored output
+        - -EnableVerboseMode: Route logs through Write-Verbose
+
+    - Example script with concise-log.ps1 integration:
+
+        [CmdletBinding()]
+        param()
+
+        . .\scripts\concise-log.ps1
+
+        Initialize-ScriptEnvironment
+        Test-IsInteractivePowerShell
+        Invoke-PowerShellCoreTransition
+
+        try {
+            Assert-WindowsPlatform
+            $startMsg = "Script started"
+            Write-InfoLog -Scope "INIT-SCRIPT" -Message $startMsg
+            # Main logic here
+            $completeMsg = "Script completed"
+            Write-InfoLog -Scope "INIT-SCRIPT" -Message $completeMsg
+        } catch {
+            Write-ErrorLog -Scope "INIT-SCRIPT" -Message "Script failed"
+            $errorMsg = "Error: $($_.Exception.Message)"
+            Write-DebugLog -Scope "INIT-SCRIPT" -Message $errorMsg
+            exit 1
+        }
 
     - All scripts MUST read this PWSHF document.
     - All scripts MUST follow this PWSHF document.
@@ -725,6 +793,10 @@ PREVENT UNAUTHORIZED ALTERATIONS.
     - All AI agents MUST NOT edit this PWSHF document.
     - All scripts MUST adhere to the normative language requirements.
     - All scripts MUST respect the 5LAWS.
+    - All scripts SHOULD use concise-log.ps1 for standardized logging.
+    - All scripts using concise-log.ps1 MUST follow CLOGF specification.
+    - All scripts using concise-log.ps1 MUST use PARENT-CHILD scope format.
+    - All log entries MUST NOT exceed 83 characters per line.
 
 9.1 Review Checklist
 
@@ -742,14 +814,20 @@ PREVENT UNAUTHORIZED ALTERATIONS.
     - [ ] Main execution flow follows standard pattern
     - [ ] Exit codes: 0 for success, 1 for failure
     - [ ] Code organized with #region and #endregion for folding
+    - [ ] concise-log.ps1 module imported if logging is used
+    - [ ] Log scope in PARENT-CHILD format (e.g., DATA-ACCOUNTS)
+    - [ ] Log entries do not exceed 83 characters per line
+    - [ ] Appropriate log level used (D, I, W, E, X)
 
 9.2 References
 
     - PowerShell Scripting Best Practices
-      https://learn.microsoft.com/en-us/powershell/scripting/learn/ps101/09-functions
+      https://learn.microsoft.com/en-us/powershell/scripting/learn/
+      ps101/09-functions
 
     - Approved PowerShell Verbs
-      https://learn.microsoft.com/en-us/powershell/scripting/developer/cmdlet/approved-verbs-for-powershell-commands
+      https://learn.microsoft.com/en-us/powershell/scripting/developer/
+      cmdlet/approved-verbs-for-powershell-commands
 
     - SOLID Principles
       https://en.wikipedia.org/wiki/SOLID
