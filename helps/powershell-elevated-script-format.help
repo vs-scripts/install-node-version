@@ -1,0 +1,665 @@
+|<------------------------------->[ BEGIN-CRFCF ]<------------------------------->|
+
+NOTICE: UNAUTHORIZED MODIFICATION OF THIS DOCUMENT IS EXPRESSLY PROHIBITED. EDITING
+PRIVILEGES ARE EXCLUSIVELY RESERVED FOR THE AUTHOR, DESIGNATED CONTRIBUTORS, AND
+AUTHORIZED ARTIFICIAL INTELLIGENCE AGENTS. DOCUMENT INTEGRITY IS SECURED BY A
+CRYPTOGRAPHIC CHECKSUM; AUTOMATED VERIFICATION SCRIPTS ARE EMPLOYED TO DETECT AND
+PREVENT UNAUTHORIZED ALTERATIONS.
+
+0.  METADATA:
+
+    - RFC:      CONCISE-RFC-000000
+    - GROUP:    VS-SCRIPTS
+    - TITLE:    POWERSHELL ELEVATED SCRIPT FORMAT
+    - ACRONYM:  PWESF
+    - AUTHOR:   Richeve Bebedor <richeve.bebedor+vs-scripts@gmail.com>
+    - CATEGORY: SPECIFICATION
+    - STATUS:   DRAFT
+    - VERSION:  000002 (0.0.2)
+    - CREATED:  2026-01-21
+    - CHECKSUM: <SHA-256>
+
+1.  Summary:
+
+    This document defines the standardized format, conventions, and structure
+    for elevated PowerShell scripts (executable .ps1 files requiring
+    administrative privileges). All elevated scripts MUST follow these patterns
+    to ensure consistency, maintainability, and adherence to SOLID principles
+    while remaining concise, helpful, and humane.
+
+2.  Permission:
+
+    NOTICE: PERMISSION TO USE, MODIFY, COPY, AND/OR DISTRIBUTE THIS DOCUMENT
+    AND/OR REPOSITORY IS GRANTED UNDER THE TERMS OF THE LICENSE AGREEMENT
+    SPECIFIED IN THE LICENSE FILE. PLEASE REFER TO THE LICENSE FILE FOR DETAILS.
+
+3.  Contents:
+
+    0.  METADATA ........................................................... 001
+    1.  Summary ............................................................ 015
+    2.  Permission ......................................................... 021
+    3.  Contents ........................................................... 027
+    4.  Document Status .................................................... 035
+    5.  Normative Language ................................................. 041
+    6.  Naming Conventions ................................................. 049
+    7.  Goals and Principles ............................................... 055
+    8.  Structure .......................................................... 065
+    9.  Compliance ......................................................... 450
+
+4.  Document Status:
+
+    - This document is a DRAFT specification for elevated PowerShell script
+      standards.
+    - It defines mandatory conventions for all elevated scripts in this
+      repository.
+    - It is intended to enforce consistency, clarity, and SOLID principles.
+
+5.  Normative Language:
+
+    - The key words,
+
+        - MUST,
+        - MUST NOT,
+        - SHOULD,
+        - and SHOULD NOT
+
+      in this document SHOULD follow RFC-2119 and RFC-8174.
+    - This document MUST NOT use MAY.
+
+6.  Naming Conventions:
+
+    - PowerShell script file names SHOULD use lowercase with hyphens.
+    - PowerShell script file names SHOULD be descriptive and concise.
+    - Function names MUST use PascalCase with approved PowerShell verbs.
+    - Variable names MUST use camelCase with descriptive full names.
+    - Boolean variables MUST use prefixes: is, has, should, can.
+
+7.  Goals and Principles:
+
+    - Strictly preserve overall logic and purpose.
+    - Follow latest PowerShell standards and conventions.
+    - Produce self-documenting code.
+    - Eliminate abbr
+r: This script must be run from a PowerShell terminal.
+        echo.
+        exit /b 1
+        #>
+
+    - Purpose: Prevents accidental execution from cmd.exe with clear error
+      messaging.
+
+8.2 Script Metadata
+
+    - Immediately after the header, scripts MUST include comprehensive
+      documentation:
+
+        <#
+        .SYNOPSIS
+            Brief one-line description of what the script does.
+
+        .DESCRIPTION
+            Detailed explanation of the script's purpose, what it accomplishes,
+            and any important context about its operation. MUST document that
+            administrative privileges are required.
+
+        .NOTES
+            Author: [Author Name]
+            Version: 0.0.0
+            Last Modified: [Date]
+            Platform: Windows only
+            Requirements: pwsh 7.5.4+, Administrator privileges
+
+        .EXAMPLE
+            .\script-name.ps1
+            Executes the script with default behavior.
+
+        .EXIT CODES
+            0 - Success
+            1 - Failure (with error message)
+        #>
+
+8.3 CmdletBinding and Parameters
+
+    - All elevated scripts MUST declare CmdletBinding:
+
+        [CmdletBinding()]
+        param()
+
+    - Scripts accepting arguments MUST use explicit parameters with full names:
+
+        [CmdletBinding()]
+        param(
+            [Parameter(Mandatory = $true, `
+                HelpMessage = "Description")]
+            [ValidateNotNullOrEmpty()]
+            [string]$ParameterName,
+
+            [Parameter(Mandatory = $false)]
+            [switch]$VerboseOutput
+        )
+
+8.4 Strict Mode and Error Handling
+
+    - All scripts MUST set strict mode and error preferences:
+
+        Set-StrictMode -Version Latest
+        $ErrorActionPreference = 'Stop'
+
+    - Note: These are set in Initialize-ScriptEnvironment function for
+      consistency.
+
+8.5 Core Functions Required in All Elevated Scripts
+
+    - Every elevated script MUST include these foundational functions:
+
+    8.5.1 Initialize-ScriptEnvironment
+
+        - Sets up PowerShell preferences for consistent behavior.
+
+    8.5.2 Assert-WindowsPlatform
+
+        - Validates the script is running on Windows.
+
+    8.5.3 Test-IsInteractivePowerShell
+
+        - Ensures the script runs in an interactive terminal.
+
+    8.5.4 Invoke-PowerShellCoreTransition
+
+        - Relaunches in PowerShell Core (pwsh) if available and version < 7.
+
+    8.5.5 Write-FormattedStep
+
+        - Outputs formatted step messages to console.
+
+    8.5.6 Test-IsAdministrator
+
+        - Checks for administrative privileges (REQUIRED for elevated scripts).
+
+    8.5.7 Invoke-ElevationRequest
+
+        - Requests elevation and relaunches the script (REQUIRED for elevated
+          scripts).
+
+8.6 Elevation Requirement
+
+    - Elevated scripts MUST check for administrative privileges at startup.
+    - Elevated scripts MUST request elevation if not running as administrator.
+    - Elevated scripts MUST use Test-IsAdministrator and Invoke-ElevationRequest
+      functions.
+    - Elevated scripts MUST NOT proceed with operations if elevation fails.
+
+8.7 Function Organization
+
+8.7.1 Function Documentation
+
+    - All functions MUST include comprehensive documentation:
+
+        function Initialize-ScriptEnvironment {
+            <#
+            .SYNOPSIS
+                Initializes PowerShell session preferences.
+
+            .DESCRIPTION
+                Sets script-level preferences for Verbose, Debug, ErrorAction,
+                and Progress to ensure consistent and informative output
+                throughout script execution. These settings apply only to the
+                current script scope.
+
+            .NOTES
+                This function MUST be called early in script execution, before
+                any other operations that depend on these preferences.
+
+            .EXAMPLE
+                Initialize-ScriptEnvironment
+                Configures all session preferences to their standard values.
+            #>
+            [CmdletBinding()]
+            param()
+
+            $script:VerbosePreference = 'Continue'
+            $script:DebugPreference = 'Continue'
+            $script:ErrorActionPreference = 'Stop'
+            $script:ProgressPreference = 'SilentlyContinue'
+        }
+
+8.7.2 Function Parameters
+
+    - All parameters MUST be fully named and documented:
+
+        function Copy-TemplateFile {
+            [CmdletBinding()]
+            param(
+                [Parameter(Mandatory = $true, `
+                    HelpMessage = "Source file")]
+                [ValidateNotNullOrEmpty()]
+                [string]$SourceFilePath,
+
+                [Parameter(Mandatory = $true, `
+                    HelpMessage = "Destination")]
+                [ValidateNotNullOrEmpty()]
+                [string]$DestinationFilePath
+            )
+
+            # Implementation
+        }
+
+8.7.3 Function Return Values
+
+    - Functions SHOULD return values explicitly:
+
+        function Get-RepositoryRoot {
+            [CmdletBinding()]
+            param()
+
+            [string]$repositoryRoot = $PWD.Path
+
+            $gitCommand = Get-Command -Name 'git' `
+                -ErrorAction SilentlyContinue
+            if ($gitCommand) {
+                try {
+                    $detectedRoot = (& git rev-parse --show-toplevel `
+                        2>$null)
+                    if ($detectedRoot -and (Test-Path -LiteralPath `
+                            $detectedRoot)) {
+                        $message = "Detected Git repository root: " + `
+                            "$detectedRoot"
+                        Write-DebugLog -Scope "REPO-ORIGIN" `
+                            -Message $message
+                        $repositoryRoot = $detectedRoot
+                    }
+                } catch {
+                    $message = "Git root detection failed, using current " + `
+                        "directory"
+                    Write-DebugLog -Scope "REPO-ORIGIN" -Message $message
+                }
+            }
+
+            return $repositoryRoot
+        }
+
+8.8 Variable Naming Conventions
+
+    - No single-character variables: Use $index not $i, $temporaryValue not $x
+    - No abbreviations: Use $repositoryRoot not $repo, $configuration not $config
+    - Descriptive names: $isAdministrator not $admin, $windowsCapability not $cap
+    - Boolean prefixes: Use $is, $has, $should, $can
+    - Scope prefix for script-level: $script:VerbosePreference not
+      $VerbosePreference
+
+8.9 Main Execution Flow
+
+    - The main execution section MUST follow this pattern:
+
+        # --- Main Script Execution ---
+
+        Initialize-ScriptEnvironment
+        Test-IsInteractivePowerShell
+
+        # Check for elevation (REQUIRED for elevated scripts)
+        if (-not (Test-IsAdministrator)) {
+            Invoke-ElevationRequest
+        }
+
+        Invoke-PowerShellCoreTransition
+
+        try {
+            Assert-WindowsPlatform
+
+            # Main script logic here
+            Invoke-PrimaryWorkflow
+
+            Write-FormattedStep "Success: Operation completed successfully"
+            exit 0
+        } catch {
+            Write-ErrorLog -Scope "SCRIPT-MAIN" `
+                -Message "Operation failed: $($_.Exception.Message)"
+            Write-DebugLog -Scope "SCRIPT-MAIN" `
+                -Message "Stack Trace: $($_.ScriptStackTrace)"
+            exit 1
+        }
+
+8.10 Error Handling
+
+    - All operations that can fail MUST use try-catch blocks
+    - Error messages MUST be meaningful and actionable
+    - Debug stack traces MUST be included for troubleshooting
+    - Exit with code 1 on failure, 0 on success
+
+        try {
+            $result = Invoke-Operation
+            Write-InfoLog -Scope "OPERATION-NAME" `
+                -Message "Operation completed: $result"
+        } catch {
+            Write-ErrorLog -Scope "OPERATION-NAME" `
+                -Message "Operation failed: $($_.Exception.Message)"
+            Write-DebugLog -Scope "OPERATION-NAME" `
+                -Message "Stack Trace: $($_.ScriptStackTrace)"
+            exit 1
+        }
+
+8.11 Output and Logging
+
+    - Use concise-log.ps1 module for standardized logging.
+    - The concise-log.ps1 module provides standardized logging functions that
+      follow the CLOGF (Concise Log Format) specification:
+
+        - Write-InfoLog: Information level logs (I)
+        - Write-WarningLog: Warning level logs (W)
+        - Write-ErrorLog: Error level logs (E)
+        - Write-DebugLog: Debug level logs (D)
+        - Write-ExceptionLog: Exception level logs (X)
+
+8.12 Path Handling
+
+    - All path operations MUST use -LiteralPath parameter to avoid
+      interpretation of special characters:
+
+        if (Test-Path -LiteralPath $filePath) {
+            $content = Get-Content -LiteralPath $filePath
+            Set-Content -LiteralPath $destinationPath -Value $content
+        }
+
+8.13 Command Execution
+
+    - Dynamic command execution MUST use the call operator &:
+
+        $nodeVersion = & node --version
+        $gitRoot = & git rev-parse --show-toplevel
+
+8.14 Validation and Assertions
+
+    - Use validation attributes and assertion functions:
+
+        # Parameter validation
+        [ValidateNotNullOrEmpty()]
+        [ValidateScript({ Test-Path -LiteralPath $_ })]
+        [string]$FilePath
+
+        # Assertion functions
+        function Assert-CommandExists {
+            [CmdletBinding()]
+            param(
+                [Parameter(Mandatory = $true)]
+                [ValidateNotNullOrEmpty()]
+                [string]$CommandName
+            )
+
+            $command = Get-Command -Name $CommandName `
+                -ErrorAction SilentlyContinue
+            if (-not $command) {
+                throw "Required command not found: $CommandName"
+            }
+        }
+
+8.15 No Side Effects
+
+    - Functions MUST NOT modify global state unless explicitly documented:
+
+        # BAD: Modifies global environment
+        function Set-GlobalPath {
+            $env:PATH = "C:\NewPath;$env:PATH"  # Side effect!
+        }
+
+        # GOOD: Returns value, caller decides to apply
+        function Get-UpdatedPath {
+            [CmdletBinding()]
+            param(
+                [Parameter(Mandatory = $true)]
+                [string]$NewPathEntry
+            )
+
+            return "$NewPathEntry;$env:PATH"
+        }
+
+        # Caller applies the change
+        $updatedPath = Get-UpdatedPath -NewPathEntry "C:\NewPath"
+        $env:PATH = $updatedPath
+
+8.16 SOLID Principles Application
+
+8.16.1 Single Responsibility
+
+    - Each function MUST have one clear purpose:
+
+        # Good: Single responsibility
+        function Test-IsAdministrator { }
+        function Invoke-ElevationRequest { }
+
+        # Bad: Multiple responsibilities
+        function CheckAndElevate { }  # Does two things
+
+8.16.2 Open-Closed
+
+    - Functions MUST be open for extension via parameters, closed for
+      modification:
+
+        function Write-FormattedStep {
+            [CmdletBinding()]
+            param(
+                [Parameter(Mandatory = $true)]
+                [string]$Message,
+
+                [Parameter(Mandatory = $false)]
+                [ConsoleColor]$ForegroundColor = [ConsoleColor]::Cyan
+            )
+            # Implementation
+        }
+
+8.16.3 Liskov Substitution
+
+    - Functions MUST follow consistent contracts:
+
+        # All Get-* functions return the same type
+        function Get-RepositoryRoot { [string] }
+        function Get-ConfigurationPath { [string] }
+
+8.16.4 Interface Segregation
+
+    - Functions MUST accept only necessary parameters:
+
+        # Good: Only required parameters
+        function Initialize-Environment {
+            param([string]$RepositoryRoot)
+        }
+
+        # Bad: Accepts unnecessary parameters
+        function Initialize-Environment {
+            param([string]$RepositoryRoot, [string]$Unused1)
+        }
+
+8.16.5 Dependency Inversion
+
+    - Functions MUST depend on abstractions, not concrete implementations:
+
+        # Good: Accepts command name as parameter
+        function Invoke-Command {
+            param([string]$CommandName)
+            & $CommandName
+        }
+
+        # Bad: Hardcoded dependency
+        function Invoke-Git {
+            & git rev-parse --show-toplevel
+        }
+
+8.17 Code Region Folding
+
+    - All scripts SHOULD use #region and #endregion comments to organize code
+      into collapsible sections in VS Code.
+    - Regions improve readability and navigation in longer scripts.
+    - Region names MUST be descriptive and match the section purpose.
+
+8.17.1 Region Organization Pattern
+
+    #region Core Functions
+
+    function Initialize-ScriptEnvironment {
+        # Implementation
+    }
+
+    function Assert-WindowsPlatform {
+        # Implementation
+    }
+
+    #endregion
+
+    #region Elevation Functions
+
+    function Test-IsAdministrator {
+        # Implementation
+    }
+
+    function Invoke-ElevationRequest {
+        # Implementation
+    }
+
+    #endregion
+
+    #region Primary Functions
+
+    function Invoke-PrimaryWorkflow {
+        # Implementation
+    }
+
+    #endregion
+
+    #region Main Script Execution
+
+    Initialize-ScriptEnvironment
+    Test-IsInteractivePowerShell
+
+    if (-not (Test-IsAdministrator)) {
+        Invoke-ElevationRequest
+    }
+
+    #endregion
+
+8.17.2 Region Naming Conventions
+
+    - Region names SHOULD be PascalCase
+    - Region names SHOULD be concise but descriptive
+    - Common region names:
+
+        #region Core Functions
+        #region Elevation Functions
+        #region Primary Functions
+        #region Main Script Execution
+
+8.18 Concise Log Format Integration
+
+    - All elevated scripts MUST use the concise-log.ps1 module for ALL
+      logging operations.
+    - The concise-log.ps1 module implements the CLOGF specification.
+    - Scripts MUST NOT define their own logging functions.
+    - Scripts MUST NOT redefine core functions from concise-log.ps1.
+
+8.18.1 Import Pattern (CRITICAL)
+
+    - Import concise-log.ps1 IMMEDIATELY after Set-StrictMode.
+    - Import BEFORE defining any functions.
+    - Import BEFORE calling Initialize-ScriptEnvironment.
+    - Use this exact pattern:
+
+        [CmdletBinding()]
+        param()
+
+        Set-StrictMode -Version Latest
+
+        # Import concise-log module
+        $scriptDir = Split-Path -Parent $MyInvocation.MyCommandPath
+        . "$scriptDir\concise-log.ps1"
+
+        # Now call Initialize-ScriptEnvironment from concise-log
+        Initialize-ScriptEnvironment
+
+8.18.2 Available Functions from concise-log.ps1
+
+    - DO NOT redefine these functions. They are provided by concise-log.ps1:
+
+        - Initialize-ScriptEnvironment: Sets PowerShell preferences
+        - Assert-WindowsPlatform: Validates Windows platform
+        - Test-IsInteractivePowerShell: Ensures interactive terminal
+        - Invoke-PowerShellCoreTransition: Transitions to pwsh if needed
+        - Write-FormattedStep: Outputs formatted step messages
+        - Write-DebugLog: Writes debug level logs
+        - Write-InfoLog: Writes information level logs
+        - Write-WarningLog: Writes warning level logs
+        - Write-ErrorLog: Writes error level logs
+        - Write-ExceptionLog: Writes exception level logs
+
+8.18.3 Log Scope Naming (PARENT-CHILD Format)
+
+    - Log scope MUST be in PARENT-CHILD format (e.g., REPO-ORIGIN).
+    - PARENT: Describes the primary component or module
+    - CHILD: Describes the specific operation or sub-component
+    - Examples:
+
+        - REPO-ORIGIN: Repository origin validation
+        - INIT-SCRIPT: Script initialization
+        - DATA-ACCOUNTS: Account data processing
+        - FILE-WRITE: File write operations
+        - GIT-COMMIT: Git commit operations
+
+    - Scope names MUST be uppercase with hyphen separator.
+    - Scope names MUST be descriptive and meaningful.
+
+8.18.4 Log Message Guidelines
+
+    - Log messages MUST be concise and descriptive.
+    - Log messages MUST NOT exceed 83 characters per line (auto-wrapped).
+    - Each log entry automatically includes timestamp, level, scope, hash.
+    - Log levels:
+
+        - D (Debug): Verbose diagnostic information
+        - I (Information): Normal operation messages
+        - W (Warning): Allowable behaviors with unexpected outcomes
+        - E (Error): Actor and code level errors
+        - X (Exception): Out of scope issues (not errors)
+
+9.1 Review Checklist
+
+    - [ ] Shebang and batch fallback header present
+    - [ ] Script metadata with SYNOPSIS, DESCRIPTION, NOTES
+    - [ ] CmdletBinding and parameters defined
+    - [ ] All functions have full documentation
+    - [ ] No abbreviations or single-character variables
+    - [ ] No side effects outside function scope
+    - [ ] Proper error handling with try-catch
+    - [ ] Path handling uses -LiteralPath
+    - [ ] Command execution uses & operator
+    - [ ] SOLID principles applied
+    - [ ] Main execution flow follows standard pattern
+    - [ ] Exit codes: 0 for success, 1 for failure
+    - [ ] Code organized with #region and #endregion for folding
+    - [ ] concise-log.ps1 module imported
+    - [ ] Log scope in PARENT-CHILD format
+    - [ ] Log entries do not exceed 83 characters per line
+    - [ ] Appropriate log level used (D, I, W, E, X)
+    - [ ] Test-IsAdministrator called at startup
+    - [ ] Invoke-ElevationRequest called if not elevated
+    - [ ] Script metadata documents elevation requirement
+
+9.2 References
+
+    - PowerShell Scripting Best Practices
+      https://learn.microsoft.com/en-us/powershell/scripting/learn/
+      ps101/09-functions
+
+    - Approved PowerShell Verbs
+      https://learn.microsoft.com/en-us/powershell/scripting/developer/
+      cmdlet/approved-verbs-for-powershell-commands
+
+    - SOLID Principles
+      https://en.wikipedia.org/wiki/SOLID
+
+    - PowerShell Style Guide
+      https://poshcode.gitbook.io/powershell-practice-and-style/
+
+    - RFC 2119 - Key words for use in RFCs
+      https://tools.ietf.org/html/rfc2119
+
+    - RFC 8174 - Ambiguity of Uppercase vs Lowercase in RFC 2119
+      https://tools.ietf.org/html/rfc8174
+
+|<------------------------------->[ ENDED-CRFCF ]<------------------------------->|
