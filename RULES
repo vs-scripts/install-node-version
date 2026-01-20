@@ -23,4 +23,9 @@
 # RULE 19: MUST NOT use --no-verify flag with any git operations.
 # RULE 20: MUST NOT use --hard or --mixed flags with any git operations.
 
+# RULE 21: MUST NOT modify ./VERSION file.
+# RULE 22: MUST NOT modify ./ORIGIN file.
+# RULE 23: MUST NOT modify ./EMAIL file.
+# RULE 24: MUST NOT modify ./AUTHOR file.
+
 # RULE 99: MUST create a check list and review rule compliance.
