@@ -16,11 +16,11 @@
 
 !.editorconfig
 !.gitattributes
-!.gitignore
-!.prettierignore
-!.npmrc
 !.gitconfig
+!.gitignore
 !.gitmessage
+!.npmrc
+!.prettierignore
 
 !5LAWS
 !AUTHOR
@@ -44,11 +44,11 @@
 
 !package.json
 
+!*.bash
 !*.js
 !*.mjs
 !*.ps1
 !*.sh
-!*.bash
 !*.zig
 
 !.githooks/
