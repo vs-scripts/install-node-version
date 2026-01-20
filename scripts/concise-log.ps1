@@ -24,27 +24,19 @@ exit /b 1
     Requirements: pwsh 7.5.4+
 
 .EXAMPLE
-    Import-Module .\concise-log.ps1
-    Write-Log -Level "Information" -Scope "DATA-ACCOUNTS" -Message "Cannot add account data"
+    . .\concise-log.ps1
+    Write-Log -Level "I" -Scope "DATA-ACCOUNTS" -Message "Cannot add account data"
 
 .EXIT CODES
     0 - Success
     1 - Failure (with error message)
 #>
 
-[CmdletBinding()]
-param(
-    [Parameter(Mandatory = $false)]
-    [switch]$DisableLogColors,
-
-    [Parameter(Mandatory = $false)]
-    [switch]$EnableVerboseMode
-)
-
-$script:DisableLogColors = $DisableLogColors
-$script:EnableVerboseMode = $EnableVerboseMode
-
 Set-StrictMode -Version Latest
+
+# Module-level configuration variables
+$script:DisableLogColors = $false
+$script:EnableVerboseMode = $false
 
 # --- Core Functions ---
 
@@ -271,6 +263,7 @@ function Write-Log {
         $availableSpace = 83 - $headerLength
 
         # Split the remaining message into chunks that fit within the available space
+        # Break at word boundaries (spaces) instead of cutting words
         $messageChunks = @()
         $remainingText = $remainingMessage.TrimStart()
 
@@ -279,9 +272,20 @@ function Write-Log {
                 $messageChunks += $remainingText
                 $remainingText = ""
             } else {
+                # Find the last space within the available space
                 $chunk = $remainingText.Substring(0, $availableSpace)
-                $messageChunks += $chunk
-                $remainingText = $remainingText.Substring($availableSpace)
+                $lastSpaceIndex = $chunk.LastIndexOf(' ')
+
+                if ($lastSpaceIndex -gt 0) {
+                    # Break at the last space
+                    $chunk = $chunk.Substring(0, $lastSpaceIndex)
+                    $messageChunks += $chunk
+                    $remainingText = $remainingText.Substring($lastSpaceIndex + 1)
+                } else {
+                    # No space found, break at available space (word is too long)
+                    $messageChunks += $chunk
+                    $remainingText = $remainingText.Substring($availableSpace)
+                }
             }
         }
 
@@ -296,12 +300,12 @@ function Write-Log {
     switch ($Level) {
         'D' {
             # Debug level always uses built-in Write-Debug
-            [System.Management.Automation.Cmdlet]::Write-Debug($formattedLog)
+            Write-Debug $formattedLog
         }
         'I' {
             # Information level uses Write-Verbose if verbose mode enabled
             if ($script:EnableVerboseMode) {
-                [System.Management.Automation.Cmdlet]::Write-Verbose($formattedLog)
+                Write-Verbose $formattedLog
             } else {
                 Write-LogToHost -Message $formattedLog -Level $Level
             }
@@ -309,18 +313,26 @@ function Write-Log {
         'W' {
             # Warning level uses Write-Verbose if verbose mode enabled
             if ($script:EnableVerboseMode) {
-                [System.Management.Automation.Cmdlet]::Write-Verbose($formattedLog)
+                Write-Verbose $formattedLog
             } else {
                 Write-LogToHost -Message $formattedLog -Level $Level
             }
         }
         'E' {
-            # Error level always uses built-in Write-Error
-            [System.Management.Automation.Cmdlet]::Write-Error($formattedLog)
+            # Error level uses Write-Verbose if verbose mode enabled
+            if ($script:EnableVerboseMode) {
+                Write-Verbose $formattedLog
+            } else {
+                Write-Host $formattedLog -ForegroundColor Red
+            }
         }
         'X' {
-            # Exception level always uses built-in Write-Error
-            [System.Management.Automation.Cmdlet]::Write-Error($formattedLog)
+            # Exception level uses Write-Verbose if verbose mode enabled
+            if ($script:EnableVerboseMode) {
+                Write-Verbose $formattedLog
+            } else {
+                Write-Host $formattedLog -ForegroundColor DarkRed
+            }
         }
     }
 
@@ -517,15 +529,6 @@ function Write-ExceptionLog {
 
 # --- Main Script Execution ---
 
-Initialize-ScriptEnvironment
-Test-IsInteractivePowerShell
-Invoke-PowerShellCoreTransition
-
-try {
-    Assert-WindowsPlatform
-    Write-Verbose "Concise log module loaded successfully"
-} catch {
-    Write-ErrorLog -Scope "INIT-MODULE" -Message "Module initialization failed: $($_.Exception.Message)"
-    Write-DebugLog -Scope "INIT-MODULE" -Message "Stack Trace: $($_.ScriptStackTrace)"
-    exit 1
-}
+# Note: Export-ModuleMember is not needed for dot-sourcing.
+# All functions defined in this script are automatically available
+# to the calling script after dot-sourcing.
