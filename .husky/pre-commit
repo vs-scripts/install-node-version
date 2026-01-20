@@ -9,3 +9,5 @@
 
 pwsh -Command "& '$(dirname "$0")/../scripts/disable-no-verify.ps1' '$1'"
 pwsh -Command "& '$(dirname "$0")/../scripts/restrict-pre-commit-atomic.ps1'"
+
+npx --yes lint-staged
