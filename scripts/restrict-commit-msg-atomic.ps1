@@ -63,7 +63,8 @@ function Test-AtomicCommitMessage {
 
     try {
         # Get the staged file (should be exactly one)
-        $stagedFileList = @(git diff --cached --name-only 2>&1 | Where-Object { $_ -and $_ -notmatch '^\s*$' })
+        $stagedFileOutput = git diff --cached --name-only 2>&1
+        $stagedFileList = @($stagedFileOutput | Where-Object { $_ -and $_ -notmatch '^\s*$' })
         $stagedFileCount = $stagedFileList.Count
 
         if ($stagedFileCount -ne 1) {
@@ -75,17 +76,23 @@ function Test-AtomicCommitMessage {
 
         Write-Host "Staged file: '$stagedFile'"
 
-        # Read the commit message
-        $commitMessage = Get-Content $CommitMsgFile -Raw
+        # Read the commit message and filter out comment lines
+        $rawMessage = Get-Content $CommitMsgFile -Raw
+        $commitMessage = $rawMessage -split "`n" | Where-Object { $_ -notmatch '^\s*#' } | Join-String -Separator "`n"
 
         Write-Host "Commit message: '$commitMessage'"
 
-        # Check if the message contains the file name (case-insensitive)
-        $pattern = [regex]::Escape($stagedFile)
+        # Escape special regex characters and create pattern for exact file match
+        $escapedFile = [regex]::Escape($stagedFile)
+        # Match the file path with word boundaries or path separators
+        # Allow start of string, whitespace, or path separator before file
+        # Allow end of string, whitespace, or path separator after file
+        $pattern = "(?:^|[\s/\\])$escapedFile(?:[\s/\\]|$)"
 
         Write-Host "Pattern: '$pattern'"
 
-        $isMatch = $commitMessage -match $pattern
+        # Use multiline mode to match across lines
+        $isMatch = [regex]::IsMatch($commitMessage, $pattern, [System.Text.RegularExpressions.RegexOptions]::Multiline -bor [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
 
         Write-Host "Is match: $isMatch"
 
