@@ -49,7 +49,7 @@ PREVENT UNAUTHORIZED ALTERATIONS.
 
     - This document is a DRAFT specification guide.
     - It explains the commit protocol flow and decision logic.
-    - It supplements template/commit-prompt.template (the executable protocol).
+    - It supplements templates/commit-prompt.template (the executable protocol).
     - It references helps/concise-commit-format.help (the format specification).
     - Developers copy the template and provide it to AI agents.
     - AI agents read this guide to understand the protocol flow.
@@ -288,7 +288,7 @@ PREVENT UNAUTHORIZED ALTERATIONS.
 
     Before executing the protocol, verify:
 
-    - [ ] Developer has provided the commit-prompt.template
+    - [ ] Developer has provided the templates/commit-prompt.template
     - [ ] All files to be committed are identified
     - [ ] Each file will be committed separately (atomic)
     - [ ] Commit type is one of: specs, issue, tests, helps, break
