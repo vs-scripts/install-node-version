@@ -17,6 +17,9 @@
 # Import the module
 . "$PSScriptRoot\..\scripts\concise-log.ps1"
 
+# Set error action to continue for testing
+$ErrorActionPreference = 'Continue'
+
 # Initialize the script environment
 Initialize-ScriptEnvironment
 
@@ -43,11 +46,11 @@ function Test-LoggingFunctions {
 
     # Test Write-ErrorLog
     Write-Host "Testing Write-ErrorLog..." -ForegroundColor Yellow
-    Write-ErrorLog -Scope "TEST-ERROR" -Message "This is an error message"
+    Write-ErrorLog -Scope "TEST-ERROR" -Message "This is an error message" -ErrorAction Continue
 
     # Test Write-ExceptionLog
     Write-Host "Testing Write-ExceptionLog..." -ForegroundColor Yellow
-    Write-ExceptionLog -Scope "TEST-EXCEPTION" -Message "This is an exception message"
+    Write-ExceptionLog -Scope "TEST-EXCEPTION" -Message "This is an exception message" -ErrorAction Continue
 
     Write-Host "Logging functions test completed." -ForegroundColor Green
 }
@@ -100,12 +103,12 @@ function Test-WriteLogFunction {
 
     # Test Error level
     Write-Host "Testing Error level..." -ForegroundColor Yellow
-    $errorLog = Write-Log -Level "E" -Scope "TEST-LOG" -Message "Error log entry"
+    $errorLog = Write-Log -Level "E" -Scope "TEST-LOG" -Message "Error log entry" -ErrorAction Continue
     Write-Host "Error log: $errorLog" -ForegroundColor Red
 
     # Test Exception level
     Write-Host "Testing Exception level..." -ForegroundColor Yellow
-    $exceptionLog = Write-Log -Level "X" -Scope "TEST-LOG" -Message "Exception log entry"
+    $exceptionLog = Write-Log -Level "X" -Scope "TEST-LOG" -Message "Exception log entry" -ErrorAction Continue
     Write-Host "Exception log: $exceptionLog" -ForegroundColor Red
 
     Write-Host "Write-Log function test completed." -ForegroundColor Green
