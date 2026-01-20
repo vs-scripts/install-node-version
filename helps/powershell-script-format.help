@@ -133,10 +133,20 @@ PREVENT UNAUTHORIZED ALTERATIONS.
 
 8.3 CmdletBinding and Parameters
 
-    - All scripts MUST declare CmdletBinding:
+    - All executable scripts MUST declare CmdletBinding:
 
         [CmdletBinding()]
         param()
+
+    - Reusable modules (non-executable) MUST NOT declare CmdletBinding or
+      parameters at the script level. Instead, use module-level configuration
+      variables with default values:
+
+        Set-StrictMode -Version Latest
+
+        # Module-level configuration variables
+        $script:DisableLogColors = $false
+        $script:EnableVerboseMode = $false
 
     - Scripts accepting arguments MUST use explicit parameters with full names:
 
@@ -798,11 +808,235 @@ PREVENT UNAUTHORIZED ALTERATIONS.
     - All scripts using concise-log.ps1 MUST use PARENT-CHILD scope format.
     - All log entries MUST NOT exceed 83 characters per line.
 
+8.20 Reusable Module Design
+
+    - Reusable modules are non-executable PowerShell files designed to be
+      imported by other scripts via dot-sourcing.
+    - Reusable modules MUST NOT include script-level parameters or CmdletBinding.
+    - Reusable modules MUST NOT execute initialization code at import time.
+    - Reusable modules MUST use module-level configuration variables with
+      defaults instead of parameters.
+    - Reusable modules MUST export public functions using Export-ModuleMember.
+
+    8.20.1 Reusable Module Structure
+
+        <# :
+        @echo off
+        echo.
+        echo Error: This script must be run from a PowerShell terminal.
+        echo.
+        exit /b 1
+        #>
+
+        <#
+        .SYNOPSIS
+            Provides reusable functions for [purpose].
+
+        .DESCRIPTION
+            This module implements [functionality] and provides functions for
+            [specific operations]. It is designed to be imported by other scripts
+            via dot-sourcing.
+
+        .NOTES
+            Author: [Author]
+            Version: 0.0.0
+            Last Modified: [Date]
+            Platform: Windows only
+            Requirements: pwsh 7.5.4+
+
+        .EXAMPLE
+            . .\module-name.ps1
+            Invoke-ModuleFunction -Parameter "value"
+
+        .EXIT CODES
+            0 - Success
+            1 - Failure (with error message)
+        #>
+
+        Set-StrictMode -Version Latest
+
+        # Module-level configuration variables
+        $script:ConfigurationOption1 = $false
+        $script:ConfigurationOption2 = $false
+
+        #region Core Functions
+
+        function Function-One {
+            # Implementation
+        }
+
+        function Function-Two {
+            # Implementation
+        }
+
+        #endregion
+
+        #region Helper Functions
+
+        function Helper-Function {
+            # Implementation
+        }
+
+        #endregion
+
+        # Export all public functions
+        Export-ModuleMember -Function @(
+            'Function-One',
+            'Function-Two',
+            'Helper-Function'
+        )
+
+    8.20.2 Module Import Pattern
+
+        - Calling scripts MUST import reusable modules using dot-sourcing:
+
+            [CmdletBinding()]
+            param()
+
+            Set-StrictMode -Version Latest
+            $ErrorActionPreference = 'Stop'
+
+            # Import the reusable module
+            $scriptDir = Split-Path -Parent $MyInvocation.MyCommandPath
+            . "$scriptDir\module-name.ps1"
+
+            # Now functions from the module are available
+            Function-One -Parameter "value"
+
+    8.20.3 Module Configuration
+
+        - Reusable modules MAY provide configuration variables that calling
+          scripts can modify before using module functions:
+
+            # Module defines defaults
+            $script:DisableLogColors = $false
+            $script:EnableVerboseMode = $false
+
+            # Calling script can modify before using functions
+            . .\concise-log.ps1
+            $script:DisableLogColors = $true
+            Write-InfoLog -Scope "INIT-SCRIPT" -Message "Colors disabled"
+
+    8.20.4 Module Function Documentation
+
+        - All module functions MUST include comprehensive documentation:
+
+            function Write-Log {
+                <#
+                .SYNOPSIS
+                    Writes a log entry in the concise log format.
+
+                .DESCRIPTION
+                    Generates a log entry following the concise log format
+                    specification. The log entry includes a timestamp, log level,
+                    scope, message, and reference.
+
+                .PARAMETER Level
+                    The log level (D, I, W, E, X).
+
+                .PARAMETER Scope
+                    The log scope in PARENT-CHILD format.
+
+                .PARAMETER Message
+                    The log message.
+
+                .EXAMPLE
+                    Write-Log -Level "I" -Scope "DATA-ACCOUNTS" `
+                        -Message "Cannot add account data"
+                    Writes an information log entry.
+                #>
+                [CmdletBinding()]
+                param(
+                    [Parameter(Mandatory = $true)]
+                    [ValidateSet('D', 'I', 'W', 'E', 'X')]
+                    [string]$Level,
+
+                    [Parameter(Mandatory = $true)]
+                    [ValidateNotNullOrEmpty()]
+                    [string]$Scope,
+
+                    [Parameter(Mandatory = $true)]
+                    [ValidateNotNullOrEmpty()]
+                    [string]$Message
+                )
+
+                # Implementation
+            }
+
+    8.20.5 No Auto-Execution in Modules
+
+        - Reusable modules MUST NOT execute any code at import time.
+        - Reusable modules MUST NOT call functions during import.
+        - Reusable modules MUST NOT perform initialization or validation.
+        - All execution logic MUST be contained within functions.
+        - Calling scripts are responsible for calling module functions as needed.
+
+        Example of INCORRECT module design (auto-executes):
+
+            # BAD: This executes when module is imported
+            Initialize-ScriptEnvironment
+            Test-IsInteractivePowerShell
+            Assert-WindowsPlatform
+
+        Example of CORRECT module design (no auto-execution):
+
+            # GOOD: Only function definitions, no execution
+            function Initialize-ScriptEnvironment {
+                # Implementation
+            }
+
+            # Calling script decides when to call
+            . .\module.ps1
+            Initialize-ScriptEnvironment  # Caller invokes
+
+    8.20.6 Module vs Executable Script Differences
+
+        - Executable scripts:
+            - Include [CmdletBinding()] and parameters at script level
+            - Execute initialization and main logic at script level
+            - May call exit with status codes
+            - Designed to be run directly
+
+        - Reusable modules:
+            - NO [CmdletBinding()] or parameters at script level
+            - NO auto-execution of code at import time
+            - Use Export-ModuleMember to expose functions
+            - Designed to be imported and used by other scripts
+            - Return values from functions instead of exiting
+
+    8.20.7 Module Scope Considerations
+
+        - Functions defined in modules are available in the calling script's
+          scope after dot-sourcing.
+        - Module-level variables (prefixed with $script:) are accessible to
+          module functions but not to calling scripts unless explicitly exposed.
+        - Use Export-ModuleMember to control which functions are public.
+        - Private helper functions MAY be defined but not exported.
+
+            #region Public Functions
+
+            function Public-Function {
+                # Available to calling scripts
+            }
+
+            #endregion
+
+            #region Private Functions
+
+            function Private-Helper {
+                # Only available within module
+            }
+
+            #endregion
+
+            # Only export public functions
+            Export-ModuleMember -Function 'Public-Function'
+
 9.1 Review Checklist
 
     - [ ] Shebang and batch fallback header present
     - [ ] Script metadata with SYNOPSIS, DESCRIPTION, NOTES
-    - [ ] CmdletBinding and parameters defined
+    - [ ] CmdletBinding and parameters defined (executable scripts only)
     - [ ] All functions have full documentation
     - [ ] No abbreviations or single-character variables
     - [ ] No side effects outside function scope
@@ -811,13 +1045,26 @@ PREVENT UNAUTHORIZED ALTERATIONS.
     - [ ] Path handling uses -LiteralPath
     - [ ] Command execution uses & operator
     - [ ] SOLID principles applied
-    - [ ] Main execution flow follows standard pattern
-    - [ ] Exit codes: 0 for success, 1 for failure
+    - [ ] Main execution flow follows standard pattern (executable scripts only)
+    - [ ] Exit codes: 0 for success, 1 for failure (executable scripts only)
     - [ ] Code organized with #region and #endregion for folding
     - [ ] concise-log.ps1 module imported if logging is used
     - [ ] Log scope in PARENT-CHILD format (e.g., DATA-ACCOUNTS)
     - [ ] Log entries do not exceed 83 characters per line
     - [ ] Appropriate log level used (D, I, W, E, X)
+
+    9.1.1 Additional Checklist for Reusable Modules
+
+        - [ ] NO [CmdletBinding()] or parameters at script level
+        - [ ] NO auto-execution of code at import time
+        - [ ] Module-level configuration variables have defaults
+        - [ ] All public functions are exported via Export-ModuleMember
+        - [ ] Private helper functions are NOT exported
+        - [ ] Functions return values instead of calling exit
+        - [ ] Module can be safely dot-sourced without side effects
+        - [ ] Module documentation includes import example
+        - [ ] All functions use [CmdletBinding()] in their definition
+        - [ ] Module scope variables use $script: prefix
 
 9.2 References
 
