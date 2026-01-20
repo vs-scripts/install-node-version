@@ -41,7 +41,7 @@ Set-StrictMode -Version Latest
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommandPath
 . "$scriptDir\concise-log.ps1"
 
-#region Helper Functions
+#region Core Functions
 
 function Get-RepositoryRoot {
     <#
@@ -65,11 +65,11 @@ function Get-RepositoryRoot {
     if ($gitCommand) {
         try {
             $detectedRoot = (& git rev-parse --show-toplevel 2>$null)
-            if ($detectedRoot -and (Test-Path -LiteralPath $detectedRoot)) {
+            if ($detectedRoot -and (Test-Path -LiteralPath `
+                    $detectedRoot)) {
                 $message = "Detected Git repository root: $detectedRoot"
                 Write-DebugLog -Scope "REPO-ORIGIN" -Message $message
-                $repositoryRoot = $detectedRoot
-            }
+
         } catch {
             $message = "Git root detection failed, using current directory"
             Write-DebugLog -Scope "REPO-ORIGIN" -Message $message
@@ -87,24 +87,28 @@ function Get-AllowedRemoteUrl {
     .DESCRIPTION
         Reads the ORIGIN file from the repository root and returns the
         expected git remote URL. Throws an error if the file cannot be
+        read or is empty. file cannot be
         read or is empty.
 
     .PARAMETER RepositoryRoot
         The root directory of the repository.
 
     .EXAMPLE
-        $allowedUrl = Get-AllowedRemoteUrl -RepositoryRoot "C:\Projects\MyRepo"
+        $allowedUrl = Get-AllowedRemoteUrl `
+            -RepositoryRoot "C:\Projects\MyRepo"
         Returns the allowed remote URL from the ORIGIN file.
     #>
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory = $true, HelpMessage = "Repository root path")]
+        [Parameter(Mandatory = $true, `
+            HelpMessage = "Repository root path")]
         [ValidateNotNullOrEmpty()]
         [string]$RepositoryRoot
     )
 
     try {
-        $originFilePath = Join-Path -Path $RepositoryRoot -ChildPath 'ORIGIN'
+        $originFilePath = Join-Path -Path $RepositoryRoot `
+            -ChildPath 'ORIGIN'
         $allowedRemoteUrl = Get-Content -LiteralPath $originFilePath `
             -ErrorAction Stop | ForEach-Object { $_.Trim() } | `
             Where-Object { $_ -ne '' } | Select-Object -First 1
@@ -117,7 +121,9 @@ function Get-AllowedRemoteUrl {
         Write-DebugLog -Scope "REPO-ORIGIN" -Message $message
         return $allowedRemoteUrl
     } catch {
-        throw "Error reading ORIGIN file: $($_.Exception.Message)"
+        $errorMsg = "Error reading ORIGIN file: " + `
+            "$($_.Exception.Message)"
+        throw $errorMsg
     }
 }
 
@@ -147,7 +153,9 @@ function Get-CurrentRemoteUrl {
         Write-DebugLog -Scope "REPO-ORIGIN" -Message $message
         return $currentRemoteUrl.Trim()
     } catch {
-        throw "Error retrieving git remote URL: $($_.Exception.Message)"
+        $errorMsg = "Error retrieving git remote URL: " + `
+            "$($_.Exception.Message)"
+        throw $errorMsg
     }
 }
 
@@ -168,16 +176,19 @@ function Test-RemoteUrlMatch {
         The expected remote URL from the ORIGIN file.
 
     .EXAMPLE
-        $isMatch = Test-RemoteUrlMatch -CurrentUrl $current -AllowedUrl $allowed
+        $isMatch = Test-RemoteUrlMatch -CurrentUrl $current `
+            -AllowedUrl $allowed
         Returns true if URLs match.
     #>
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory = $true, HelpMessage = "Current remote URL")]
+        [Parameter(Mandatory = $true, `
+            HelpMessage = "Current remote URL")]
         [ValidateNotNullOrEmpty()]
         [string]$CurrentUrl,
 
-        [Parameter(Mandatory = $true, HelpMessage = "Allowed remote URL")]
+        [Parameter(Mandatory = $true, `
+            HelpMessage = "Allowed remote URL")]
         [ValidateNotNullOrEmpty()]
         [string]$AllowedUrl
     )
@@ -196,17 +207,21 @@ Invoke-PowerShellCoreTransition
 try {
     Assert-WindowsPlatform
 
-    Write-InfoLog -Scope "REPO-ORIGIN" -Message "Validating remote URL"
+    Write-InfoLog -Scope "REPO-ORIGIN" `
+        -Message "Validating remote URL"
 
     $repositoryRoot = Get-RepositoryRoot
-    Write-DebugLog -Scope "REPO-ORIGIN" -Message "Root: $repositoryRoot"
+    Write-DebugLog -Scope "REPO-ORIGIN" `
+        -Message "Root: $repositoryRoot"
 
-    $allowedRemoteUrl = Get-AllowedRemoteUrl -RepositoryRoot $repositoryRoot
+    $allowedRemoteUrl = Get-AllowedRemoteUrl `
+        -RepositoryRoot $repositoryRoot
     $currentRemoteUrl = Get-CurrentRemoteUrl
 
     if (Test-RemoteUrlMatch -CurrentUrl $currentRemoteUrl `
             -AllowedUrl $allowedRemoteUrl) {
-        Write-InfoLog -Scope "REPO-ORIGIN" -Message "Remote URL valid"
+        Write-InfoLog -Scope "REPO-ORIGIN" `
+            -Message "Remote URL valid"
         exit 0
     } else {
         Write-ErrorLog -Scope "REPO-ORIGIN" `
