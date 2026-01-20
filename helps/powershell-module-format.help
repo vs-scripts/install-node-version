@@ -1,0 +1,520 @@
+|<------------------------------->[ BEGIN-CRFCF ]<------------------------------->|
+
+NOTICE: UNAUTHORIZED MODIFICATION OF THIS DOCUMENT IS EXPRESSLY PROHIBITED. EDITING
+PRIVILEGES ARE EXCLUSIVELY RESERVED FOR THE AUTHOR, DESIGNATED CONTRIBUTORS, AND
+AUTHORIZED ARTIFICIAL INTELLIGENCE AGENTS. DOCUMENT INTEGRITY IS SECURED BY A
+CRYPTOGRAPHIC CHECKSUM; AUTOMATED VERIFICATION SCRIPTS ARE EMPLOYED TO DETECT AND
+PREVENT UNAUTHORIZED ALTERATIONS.
+
+0.  METADATA:
+
+    - RFC:      CONCISE-RFC-000000
+    - GROUP:    VS-SCRIPTS
+    - TITLE:    POWERSHELL MODULE FORMAT
+    - ACRONYM:  PWMF
+    - AUTHOR:   Richeve Bebedor <richeve.bebedor+vs-scripts@gmail.com>
+    - CATEGORY: SPECIFICATION
+    - STATUS:   DRAFT
+    - VERSION:  000001 (0.0.1)
+    - CREATED:  2026-01-21
+    - CHECKSUM: <SHA-256>
+
+1.  Summary:
+
+    This document defines the standardized format, conventions, and structure
+    for reusable PowerShell modules (non-executable, non-elevated .ps1 files)
+    designed to be imported by other scripts via dot-sourcing. All modules
+    MUST follow these patterns to ensure consistency, maintainability, and
+    adherence to SOLID principles while remaining concise, helpful, and humane.
+
+2.  Permission:
+
+    NOTICE: PERMISSION TO USE, MODIFY, COPY, AND/OR DISTRIBUTE THIS DOCUMENT
+    AND/OR REPOSITORY IS GRANTED UNDER THE TERMS OF THE LICENSE AGREEMENT
+    SPECIFIED IN THE LICENSE FILE. PLEASE REFER TO THE LICENSE FILE FOR DETAILS.
+
+3.  Contents:
+
+    0.  METADATA ........................................................... 001
+    1.  Summary ............................................................ 015
+    2.  Permission ......................................................... 021
+    3.  Contents ........................................................... 027
+    4.  Document Status .................................................... 035
+    5.  Normative Language ................................................. 041
+    6.  Naming Conventions ................................................. 049
+    7.  Goals and Principles ............................................... 055
+    8.  Structure .......................................................... 065
+    9.  Compliance ......................................................... 450
+
+4.  Document Status:
+
+    - This document is a DRAFT specification for PowerShell module standards.
+    - It defines mandatory conventions for all reusable modules in this
+      repository.
+    - It is intended to enforce consistency, clarity, and SOLID principles.
+
+5.  Normative Language:
+
+    - The key words,
+
+        - MUST,
+        - MUST NOT,
+        - SHOULD,
+        - and SHOULD NOT
+
+      in this document SHOULD follow RFC-2119 and RFC-8174.
+    - This document MUST NOT use MAY.
+
+6.  Naming Conventions:
+
+    - PowerShell module file names SHOULD use lowercase with hyphens.
+    - PowerShell module file names SHOULD be descriptive and concise.
+    - Function names MUST use PascalCase with approved PowerShell verbs.
+    - Variable names MUST use camelCase with descriptive full names.
+    - Boolean variables MUST use prefixes: is, has, should, can.
+
+7.  Goals and Principles:
+
+    - Strictly preserve overall logic and purpose.
+    - Follow latest PowerShell standards and conventions.
+    - Produce self-documenting code.
+    - Eliminate abbreviations, shortened names, and single-character variables.
+    - Prevent side effects and scope creep.
+    - Respect SOLID principles.
+    - Strict adherence to Single Responsibility principle.
+    - Avoid unnecessary complexity.
+    - Remain concise, helpful, and humane.
+
+8.  Structure:
+
+8.1 Shebang and Batch Fallback Header
+
+    - All modules MUST include a dual-mode header that allows execution from
+      both PowerShell and batch environments:
+
+        <# :
+        @echo off
+        echo.
+        echo Error: This script must be run from a PowerShell terminal.
+        echo.
+        exit /b 1
+        #>
+
+    - Purpose: Prevents accidental execution from cmd.exe with clear error
+      messaging.
+
+8.2 Module Metadata
+
+    - Immediately after the header, modules MUST include comprehensive
+      documentation:
+
+        <#
+        .SYNOPSIS
+            Brief one-line description of what the module provides.
+
+        .DESCRIPTION
+            Detailed explanation of the module's purpose, what functions it
+            provides, and any important context about its operation.
+
+        .NOTES
+            Author: [Author Name]
+            Version: 0.0.0
+            Last Modified: [Date]
+            Platform: Windows only
+            Requirements: pwsh 7.5.4+
+
+        .EXAMPLE
+            . .\module-name.ps1
+            Invoke-ModuleFunction -Parameter "value"
+
+        .EXIT CODES
+            0 - Success
+            1 - Failure (with error message)
+        #>
+
+8.3 Module Structure Requirements
+
+    - Reusable modules MUST NOT declare CmdletBinding at script level.
+    - Reusable modules MUST NOT declare parameters at script level.
+    - Reusable modules MUST NOT execute any code at import time.
+    - Reusable modules MUST NOT call functions during import.
+    - Reusable modules MUST NOT perform initialization or validation.
+    - All execution log
+n1 = $false
+        $script:ConfigurationOption2 = $false
+
+    - Configuration variables MUST use $script: prefix.
+    - Configuration variables MUST have descriptive names (no abbreviations).
+    - Configuration variables MUST have sensible defaults.
+    - Calling scripts MAY modify these variables before using module functions.
+
+8.6 Function Organization
+
+8.6.1 Function Documentation
+
+    - All functions MUST include comprehensive documentation:
+
+        function Get-RepositoryRoot {
+            <#
+              [ValidateNotNullOrEmpty()]
+                [string]$DestinationFilePath
+            )
+
+            # Implementation
+        }
+
+8.6.3 Function Return Values
+
+    - Functions SHOULD return values explicitly:
+
+        function Get-Configuration {
+            [CmdletBinding()]
+            param()
+
+            [string]$configValue = "default"
+
+            if (Test-Path -LiteralPath $configPath) {
+                $configValue = Get-Content -LiteralPath $configPath
+            }
+
+            return $configValue
+        }
+
+8.7 Variable Naming Conventions
+
+    - No single-character variables: Use $index not $i, $temporaryValue not $x
+    - No abbreviations: Use $repositoryRoot not $repo, $configuration not $config
+    - Descriptive names: $isAdministrator not $admin, $windowsCapability not $cap
+    - Boolean prefixes: Use $is, $has, $should, $can
+    - Scope prefix for script-level: $script:VerbosePreference not
+      $VerbosePreference
+
+8.8 Path Handling
+
+    - All path operations MUST use -LiteralPath parameter to avoid
+      interpretation of special characters:
+
+        if (Test-Path -LiteralPath $filePath) {
+            $content = Get-Content -LiteralPath $filePath
+            Set-Content -LiteralPath $destinationPath -Value $content
+        }
+
+8.9 Command Execution
+
+    - Dynamic command execution MUST use the call operator &:
+
+        $nodeVersion = & node --version
+        $gitRoot = & git rev-parse --show-toplevel
+
+8.10 Validation and Assertions
+
+    - Use validation attributes and assertion functions:
+
+        # Parameter validation
+        [ValidateNotNullOrEmpty()]
+        [ValidateScript({ Test-Path -LiteralPath $_ })]
+        [string]$FilePath
+
+        # Assertion functions
+        function Assert-CommandExists {
+            [CmdletBinding()]
+            param(
+                [Parameter(Mandatory = $true)]
+                [ValidateNotNullOrEmpty()]
+                [string]$CommandName
+            )
+
+            $command = Get-Command -Name $CommandName `
+                -ErrorAction SilentlyContinue
+            if (-not $command) {
+                throw "Required command not found: $CommandName"
+            }
+        }
+
+8.11 No Side Effects
+
+    - Functions MUST NOT modify global state unless explicitly documented:
+
+        # BAD: Modifies global environment
+        function Set-GlobalPath {
+            $env:PATH = "C:\NewPath;$env:PATH"  # Side effect!
+        }
+
+        # GOOD: Returns value, caller decides to apply
+        function Get-UpdatedPath {
+            [CmdletBinding()]
+            param(
+                [Parameter(Mandatory = $true)]
+                [string]$NewPathEntry
+            )
+
+            return "$NewPathEntry;$env:PATH"
+        }
+
+        # Caller applies the change
+        $updatedPath = Get-UpdatedPath -NewPathEntry "C:\NewPath"
+        $env:PATH = $updatedPath
+
+8.12 SOLID Principles Application
+
+8.12.1 Single Responsibility
+
+    - Each function MUST have one clear purpose:
+
+        # Good: Single responsibility
+        function Test-IsAdministrator { }
+        function Get-RepositoryRoot { }
+
+        # Bad: Multiple responsibilities
+        function CheckAndElevate { }  # Does two things
+
+8.12.2 Open-Closed
+
+    - Functions MUST be open for extension via parameters, closed for
+      modification:
+
+        function Write-FormattedMessage {
+            [CmdletBinding()]
+            param(
+                [Parameter(Mandatory = $true)]
+                [string]$Message,
+
+                [Parameter(Mandatory = $false)]
+                [ConsoleColor]$ForegroundColor = [ConsoleColor]::Cyan
+            )
+            # Implementation
+        }
+
+8.12.3 Liskov Substitution
+
+    - Functions MUST follow consistent contracts:
+
+        # All Get-* functions return the same type
+        function Get-RepositoryRoot { [string] }
+        function Get-ConfigurationPath { [string] }
+
+8.12.4 Interface Segregation
+
+    - Functions MUST accept only necessary parameters:
+
+        # Good: Only required parameters
+        function Initialize-Environment {
+            param([string]$RepositoryRoot)
+        }
+
+        # Bad: Accepts unnecessary parameters
+        function Initialize-Environment {
+            param([string]$RepositoryRoot, [string]$Unused1)
+        }
+
+8.12.5 Dependency Inversion
+
+    - Functions MUST depend on abstractions, not concrete implementations:
+
+        # Good: Accepts command name as parameter
+        function Invoke-Command {
+            param([string]$CommandName)
+            & $CommandName
+        }
+
+        # Bad: Hardcoded dependency
+        function Invoke-Git {
+            & git rev-parse --show-toplevel
+        }
+
+8.13 Code Region Folding
+
+    - All modules SHOULD use #region and #endregion comments to organize code
+      into collapsible sections in VS Code.
+    - Regions improve readability and navigation in longer modules.
+    - Region names MUST be descriptive and match the section purpose.
+
+8.13.1 Region Organization Pattern
+
+    #region Public Functions
+
+    function Public-Function-One {
+        # Implementation
+    }
+
+    function Public-Function-Two {
+        # Implementation
+    }
+
+    #endregion
+
+    #region Private Functions
+
+    function Private-Helper {
+        # Implementation
+    }
+
+    #endregion
+
+8.13.2 Region Naming Conventions
+
+    - Region names SHOULD be PascalCase
+    - Region names SHOULD be concise but descriptive
+    - Common region names:
+
+        #region Public Functions
+        #region Private Functions
+        #region Helper Functions
+        #region Configuration
+
+8.14 Module Export Pattern
+
+    - All modules MUST export public functions using Export-ModuleMember:
+
+        #region Public Functions
+
+        function Public-Function {
+            [CmdletBinding()]
+            param()
+            # Implementation
+        }
+
+        #endregion
+
+        #region Private Functions
+
+        function Private-Helper {
+            [CmdletBinding()]
+            param()
+            # Implementation
+        }
+
+        #endregion
+
+        # Export all public functions
+        Export-ModuleMember -Function @(
+            'Public-Function'
+        )
+
+    - Private helper functions MUST NOT be exported.
+    - Only public functions MUST be listed in Export-ModuleMember.
+
+8.15 Module Import Pattern
+
+    - Calling scripts MUST import reusable modules using dot-sourcing:
+
+        [CmdletBinding()]
+        param()
+
+        Set-StrictMode -Version Latest
+
+        # Import the reusable module
+        $scriptDir = Split-Path -Parent $MyInvocation.MyCommandPath
+        . "$scriptDir\module-name.ps1"
+
+        # Now functions from the module are available
+        Public-Function -Parameter "value"
+
+8.16 Module Configuration Usage
+
+    - Reusable modules MAY provide configuration variables that calling
+      scripts can modify before using module functions:
+
+        # Module defines defaults
+        $script:DisableLogColors = $false
+        $script:EnableVerboseMode = $false
+
+        # Calling script can modify before using functions
+        . .\concise-log.ps1
+        $script:DisableLogColors = $true
+        Write-InfoLog -Scope "INIT-SCRIPT" -Message "Colors disabled"
+
+8.17 Module Scope Considerations
+
+    - Functions defined in modules are available in the calling script's
+      scope after dot-sourcing.
+    - Module-level variables (prefixed with $script:) are accessible to
+      module functions but not to calling scripts unless explicitly exposed.
+    - Use Export-ModuleMember to control which functions are public.
+    - Private helper functions MAY be defined but not exported.
+
+        #region Public Functions
+
+        function Public-Function {
+            # Available to calling scripts
+        }
+
+        #endregion
+
+        #region Private Functions
+
+        function Private-Helper {
+            # Only available within module
+        }
+
+        #endregion
+
+        # Only export public functions
+        Export-ModuleMember -Function 'Public-Function'
+
+8.18 Common Module Patterns
+
+8.18.1 Logging Module Pattern
+
+    - Modules providing logging functionality MUST follow the concise log
+      format specification.
+    - Logging modules MUST export logging functions for use by calling scripts.
+    - Logging modules MUST provide configuration variables for customization.
+
+8.18.2 Utility Module Pattern
+
+    - Utility modules MUST provide focused, single-purpose functions.
+    - Utility modules MUST NOT depend on other modules unless documented.
+    - Utility modules MUST return values instead of modifying global state.
+
+8.18.3 Configuration Module Pattern
+
+    - Configuration modules MUST provide functions to read and validate
+      configuration.
+    - Configuration modules MUST return configuration objects or values.
+    - Configuration modules MUST NOT modify configuration files.
+
+9.1 Review Checklist
+
+    - [ ] Shebang and batch fallback header present
+    - [ ] Module metadata with SYNOPSIS, DESCRIPTION, NOTES
+    - [ ] NO CmdletBinding or parameters at script level
+    - [ ] NO auto-execution of code at import time
+    - [ ] Set-StrictMode -Version Latest present
+    - [ ] Module-level configuration variables have defaults
+    - [ ] All functions have full documentation
+    - [ ] All functions declare [CmdletBinding()]
+    - [ ] No abbreviations or single-character variables
+    - [ ] No side effects outside function scope
+    - [ ] Path handling uses -LiteralPath
+    - [ ] Command execution uses & operator
+    - [ ] SOLID principles applied
+    - [ ] Code organized with #region and #endregion for folding
+    - [ ] All public functions exported via Export-ModuleMember
+    - [ ] Private helper functions NOT exported
+    - [ ] Functions return values instead of calling exit
+    - [ ] Module can be safely dot-sourced without side effects
+
+9.2 References
+
+    - PowerShell Scripting Best Practices
+      https://learn.microsoft.com/en-us/powershell/scripting/learn/
+      ps101/09-functions
+
+    - Approved PowerShell Verbs
+      https://learn.microsoft.com/en-us/powershell/scripting/developer/
+      cmdlet/approved-verbs-for-powershell-commands
+
+    - SOLID Principles
+      https://en.wikipedia.org/wiki/SOLID
+
+    - PowerShell Style Guide
+      https://poshcode.gitbook.io/powershell-practice-and-style/
+
+    - RFC 2119 - Key words for use in RFCs
+      https://tools.ietf.org/html/rfc2119
+
+    - RFC 8174 - Ambiguity of Uppercase vs Lowercase in RFC 2119
+      https://tools.ietf.org/html/rfc8174
+
+|<------------------------------->[ ENDED-CRFCF ]<------------------------------->|
