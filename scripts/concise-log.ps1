@@ -409,8 +409,12 @@ function Get-LogHash {
 
     $bytes = [System.Text.Encoding]::UTF8.GetBytes($LogEntry)
 
-    $hashBytes = [System.Security.Cryptography.SHA256]::Create()
-        .ComputeHash($bytes)
+    $sha256 = [System.Security.Cryptography.SHA256]::Create()
+    try {
+        $hashBytes = $sha256.ComputeHash($bytes)
+    } finally {
+        $sha256.Dispose()
+    }
 
     $hash = [System.BitConverter]::ToString($hashBytes).Replace("-", "").ToLower()
 
