@@ -246,7 +246,7 @@ function Install-OpenSSHClientCapability {
     }
 }
 
-function Ensure-SSHAgentServiceExists {
+function Install-SSHAgentServiceIfNotPresent {
     <#
     .SYNOPSIS
         Ensures SSH-Agent service is installed and available.
@@ -282,7 +282,7 @@ function Ensure-SSHAgentServiceExists {
     return $sshAgentService
 }
 
-function Configure-SSHAgentForGlobalAccess {
+function Set-SSHAgentForGlobalAccess {
     <#
     .SYNOPSIS
         Configures SSH-Agent service for global access.
@@ -389,7 +389,7 @@ function Invoke-SSHAgentConfigurationWorkflow {
     Configure-SSHAgentForGlobalAccess
 
     # 3. Start and verify the service
-    $finalServiceStatus = Start-SSHAgentServiceAndVerify
+    Start-SSHAgentServiceAndVerify
 
     Write-FormattedStep "Success: SSH-Agent is now configured for global access."
     Write-Verbose "The SSH-Agent will start automatically for all users on system boot."
