@@ -48,21 +48,27 @@ PREVENT UNAUTHORIZED ALTERATIONS.
     - This document is a DRAFT repository-level RFC.
     - It is not an Internet Standards Track specification.
     - It is intended to enforce,
+
         - uniformity,
         - clarity,
         - conciseness,
         - and machine-parsable
+
       structure across all CONCISE-RFC-XXXXXX documents.
 
 5.  Normative Language:
 
     - The key words,
+
         - MUST,
         - MUST NOT,
         - SHOULD,
         - and SHOULD NOT
+
       in this document SHOULD follow RFC-2119 and RFC-8174.
     - This document MUST NOT use MAY.
+    - The key word "MUST" denotes "required".
+    - The key word "SHOULD" denotes "optional".
 
 6.  Naming Conventions:
 
