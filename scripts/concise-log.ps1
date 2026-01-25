@@ -32,7 +32,7 @@ exit /b 1
     1 - Failure (with error message)
 #>
 
-Set-StrictMode -Version Latest
+
 
 # Module-level configuration variables
 $script:DisableLogColors = $false
@@ -62,6 +62,7 @@ function Initialize-ScriptEnvironment {
     [CmdletBinding()]
     param()
 
+    Set-StrictMode -Version Latest
     $script:VerbosePreference = 'Continue'
     $script:DebugPreference = 'Continue'
     $script:ErrorActionPreference = 'Stop'
@@ -84,8 +85,32 @@ function Assert-WindowsPlatform {
     [CmdletBinding()]
     param()
 
-    if (-not ([System.Environment]::OSVersion.Platform -eq [System.PlatformID]::Win32NT)) {
+    if (-not ([System.Environment]::OSVersion.Platform `
+        -eq [System.PlatformID]::Win32NT)) {
         throw "This script requires Windows platform"
+    }
+}
+
+function Assert-PowerShellVersionStrict {
+    <#
+    .SYNOPSIS
+        Validates the PowerShell version matches the required version.
+
+    .DESCRIPTION
+        Ensures the PowerShell version running the script matches the
+        required version specified in the script. Throws an exception if
+        the version does not match.
+
+    .EXAMPLE
+        Assert-PowerShellVersionStrict
+        Validates the PowerShell version is 7.5.4.
+    #>
+    [CmdletBinding()]
+    param()
+
+    $requiredVersion = [version]'7.5.4'
+    if (-not ($PSVersionTable.PSVersion -eq $requiredVersion)) {
+        throw "PowerShell version mismatch: required $requiredVersion, current $($PSVersionTable.PSVersion)"
     }
 }
 
@@ -126,11 +151,27 @@ function Invoke-PowerShellCoreTransition {
     [CmdletBinding()]
     param()
 
+    $requiredVersion = [version]'7.5.4'
     $pwshPath = Get-Command -Name 'pwsh' -ErrorAction SilentlyContinue
-    if ($pwshPath -and $PSVersionTable.PSVersion.Major -lt 7) {
-        Write-Verbose "Transitioning to PowerShell Core (pwsh)"
-        & $pwshPath -File $PSCommandPath
-        exit 0
+    if (-not ($PSVersionTable.PSVersion -eq $requiredVersion)) {
+        if ($pwshPath) {
+            $pwshVersionString = & $pwshPath -NoProfile `
+                -Command '$PSVersionTable.PSVersion.ToString()'
+
+            [version]$pwshVersion = $pwshVersionString
+
+            if ($pwshVersion -eq $requiredVersion) {
+                Write-Verbose "Transitioning to pwsh $pwshVersion"
+
+                & $pwshPath -File $PSCommandPath
+
+                exit 0
+            } else {
+                throw "Need pwsh $requiredVersion, have $($PSVersionTable.PSVersion)"
+            }
+        } else {
+            throw "PowerShell Core (pwsh) not found; required version $requiredVersion"
+        }
     }
 }
 
@@ -211,7 +252,8 @@ function Write-Log {
 
     .DESCRIPTION
         Generates a log entry following the concise log format specification.
-        The log entry includes a timestamp, log level, scope, message, and reference.
+        The log entry includes a timestamp, log level, scope, message,
+            and reference.
         Output method depends on log level and verbose mode setting.
 
     .PARAMETER Level
@@ -224,8 +266,9 @@ function Write-Log {
         The log message.
 
     .EXAMPLE
-        Write-Log -Level "I" -Scope "DATA-ACCOUNTS" -Message "Cannot add account data"
-        Writes an information log entry.
+        # Writes an information log entry.
+        Write-Log -Level "I" -Scope "DATA-ACCOUNTS" `
+            -Message "Cannot add account data"
     #>
     [CmdletBinding()]
     param(
@@ -258,12 +301,13 @@ function Write-Log {
         $header = "# $timestamp $Level $Scope"
         $remainingMessage = " $Message $reference"
 
-        # Calculate available space for the message after the header
+        # Calculate available space for the message after the header.
         $headerLength = $header.Length + 1 # +1 for the space
         $availableSpace = 83 - $headerLength
 
-        # Split the remaining message into chunks that fit within the available space
-        # Break at word boundaries (spaces) instead of cutting words
+        # Split the remaining message into chunks that fit
+        #   within the available space.
+        # Break at word boundaries (spaces) instead of cutting words.
         $messageChunks = @()
         $remainingText = $remainingMessage.TrimStart()
 
@@ -345,14 +389,16 @@ function Get-LogHash {
         Generates a hash for the log entry.
 
     .DESCRIPTION
-        Computes a 5-character alphanumeric hash of the log entry for use as a reference.
+        Computes a 5-character alphanumeric hash of the log entry
+        for use as a reference.
 
     .PARAMETER LogEntry
         The log entry to hash.
 
     .EXAMPLE
-        $hash = Get-LogHash -LogEntry "# 2024-01-15T05:55:00.00Z I DATA-ACCOUNTS Cannot add account data"
-        Returns a 5-character hash.
+        # Returns a 5-character hash.
+        $hash = Get-LogHash -LogEntry `
+        "# 2024-01-15T05:55:00.00Z I DATA-ACCOUNTS Cannot add account data"
     #>
     [CmdletBinding()]
     param(
@@ -362,8 +408,12 @@ function Get-LogHash {
     )
 
     $bytes = [System.Text.Encoding]::UTF8.GetBytes($LogEntry)
-    $hashBytes = [System.Security.Cryptography.SHA256]::Create().ComputeHash($bytes)
+
+    $hashBytes = [System.Security.Cryptography.SHA256]::Create()
+        .ComputeHash($bytes)
+
     $hash = [System.BitConverter]::ToString($hashBytes).Replace("-", "").ToLower()
+
     return $hash.Substring(0, 5)
 }
 
@@ -382,8 +432,8 @@ function Write-DebugLog {
         The log message.
 
     .EXAMPLE
+        # Writes a debug log entry.
         Write-DebugLog -Scope "DATA-ACCOUNTS" -Message "Debugging account data"
-        Writes a debug log entry.
     #>
     [CmdletBinding()]
     param(
@@ -414,8 +464,8 @@ function Write-InfoLog {
         The log message.
 
     .EXAMPLE
+        # Writes an information log entry.
         Write-InfoLog -Scope "DATA-ACCOUNTS" -Message "Processing account data"
-        Writes an information log entry.
     #>
     [CmdletBinding()]
     param(
@@ -446,8 +496,9 @@ function Write-WarningLog {
         The log message.
 
     .EXAMPLE
-        Write-WarningLog -Scope "DATA-ACCOUNTS" -Message "Account data may be incomplete"
-        Writes a warning log entry.
+        # Writes a warning log entry.
+        Write-WarningLog -Scope "DATA-ACCOUNTS" `
+            -Message "Account data may be incomplete"
     #>
     [CmdletBinding()]
     param(
@@ -478,8 +529,9 @@ function Write-ErrorLog {
         The log message.
 
     .EXAMPLE
-        Write-ErrorLog -Scope "DATA-ACCOUNTS" -Message "Failed to add account data"
-        Writes an error log entry.
+        # Writes an error log entry.
+        Write-ErrorLog -Scope "DATA-ACCOUNTS" `
+            -Message "Failed to add account data"
     #>
     [CmdletBinding()]
     param(
@@ -510,8 +562,9 @@ function Write-ExceptionLog {
         The log message.
 
     .EXAMPLE
-        Write-ExceptionLog -Scope "DATA-ACCOUNTS" -Message "Unexpected error in account data"
-        Writes an exception log entry.
+        # Writes an exception log entry.
+        Write-ExceptionLog -Scope "DATA-ACCOUNTS" `
+            -Message "Unexpected error in account data"
     #>
     [CmdletBinding()]
     param(
