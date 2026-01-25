@@ -70,7 +70,7 @@ function Test-IsAdministrator {
         [Security.Principal.WindowsBuiltInRole]::Administrator
     )
 
-    Write-DebugLog -Scope "ELEVATION-ADMIN" `
+    $null = Write-DebugLog -Scope "ELEVATION-ADMIN" `
         -Message "Administrator check: $isAdministrator"
 
     return $isAdministrator
@@ -102,14 +102,17 @@ function Invoke-ElevationRequest {
     Write-InfoLog -Scope "ELEVATION-REQUEST" `
         -Message "Requesting administrative privileges"
 
-    $powerShellCoreCommand = Get-Command -Name 'pwsh' `
+    $pwshCommand = Get-Command -Name 'pwsh' `
         -ErrorAction SilentlyContinue
 
-    $executablePath = if ($powerShellCoreCommand) {
-        $powerShellCoreCommand.Source
-    } else {
-        (Get-Process -Id $PID).Path
+    if (-not $pwshCommand) {
+        Write-ErrorLog -Scope "ELEVATION-REQUEST" `
+            -Message "Elevation failed: 'pwsh' command not found in PATH"
+
+        exit 1
     }
+
+    $executablePath = 'pwsh'
 
     $argumentList = "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`""
 
@@ -159,13 +162,13 @@ function Get-RepositoryRoot {
             $detectedRoot = (& git rev-parse --show-toplevel 2>$null).Trim()
 
             if ($detectedRoot -and (Test-Path -LiteralPath $detectedRoot)) {
-                Write-DebugLog -Scope "REPO-ROOT" `
+                $null = Write-DebugLog -Scope "REPO-ROOT" `
                     -Message "Detected Git repository root: $detectedRoot"
 
                 $repositoryRoot = $detectedRoot
             }
         } catch {
-            Write-DebugLog -Scope "REPO-ROOT" `
+            $null = Write-DebugLog -Scope "REPO-ROOT" `
                 -Message "Git root detection failed, using current directory"
         }
     }
@@ -218,7 +221,8 @@ function Install-PackageWithWinget {
         --accept-package-agreements `
         --accept-source-agreements
 
-    if ($LASTEXITCODE -ne 0) {
+    $allowedExitCodes = @(0, -1978335189)
+    if ($LASTEXITCODE -notin $allowedExitCodes) {
         $warningMessage = "winget install failed for $PackageIdentifier " +
             "(exit $LASTEXITCODE)"
 
@@ -229,6 +233,11 @@ function Install-PackageWithWinget {
             -Message "winget install failed; aborting"
 
         throw $warningMessage
+    } elseif ($LASTEXITCODE -ne 0) {
+        $warningMessage = "winget reported no applicable upgrade for " +
+            "$PackageIdentifier (exit $LASTEXITCODE)"
+        Write-WarningLog -Scope "WINGET-INSTALL" `
+            -Message $warningMessage
     }
 }
 
@@ -248,6 +257,8 @@ function Install-VoltaIfMissing {
     [CmdletBinding()]
     param()
 
+    Add-VoltaToSessionPath
+
     $voltaCommand = Get-Command -Name 'volta' -ErrorAction SilentlyContinue
     if ($voltaCommand) {
         Write-InfoLog -Scope "VOLTA-INSTALL" `
@@ -260,6 +271,8 @@ function Install-VoltaIfMissing {
         -Message "Volta not found. Installing via winget."
 
     Install-PackageWithWinget -PackageIdentifier "Volta.Volta"
+
+    Add-VoltaToSessionPath
 
     $voltaCommand = Get-Command -Name 'volta' -ErrorAction SilentlyContinue
     if (-not $voltaCommand) {
@@ -296,31 +309,47 @@ function Add-VoltaToSessionPath {
         New-Item -ItemType Directory -Path $voltaBinaryDirectory -Force | Out-Null
     }
 
-    $pathSeparator = [System.IO.Path]::PathSeparator
-    $pathEntries = ($env:PATH -split $pathSeparator) | Where-Object { $_ -ne '' }
-
-    $isVoltaInPath = $false
-    foreach ($pathEntry in $pathEntries) {
-        try {
-            $normalizedPathEntry = [System.IO.Path]::GetFullPath($pathEntry).TrimEnd('\')
-
-            $normalizedVoltaPath = [System.IO.Path]::GetFullPath($voltaBinaryDirectory).TrimEnd('\')
-
-            if ($normalizedPathEntry -ieq $normalizedVoltaPath) {
-                $isVoltaInPath = $true
-                break
-            }
-        } catch {
-        Write-DebugLog -Scope "VOLTA-PATH" `
-            -Message "Path normalize error: $_"
+    $voltaDirectories = @($voltaBinaryDirectory)
+    if ($env:ProgramFiles) {
+        $voltaProgramFiles = Join-Path -Path $env:ProgramFiles -ChildPath 'Volta'
+        if (Test-Path -LiteralPath $voltaProgramFiles) {
+            $voltaDirectories += $voltaProgramFiles
+        }
+    }
+    if (${env:ProgramFiles(x86)}) {
+        $voltaProgramFilesX86 = Join-Path -Path ${env:ProgramFiles(x86)} -ChildPath 'Volta'
+        if (Test-Path -LiteralPath $voltaProgramFilesX86) {
+            $voltaDirectories += $voltaProgramFilesX86
         }
     }
 
-    if (-not $isVoltaInPath) {
-        Write-InfoLog -Scope "VOLTA-PATH" `
-            -Message "Adding Volta bin to PATH: $voltaBinaryDirectory"
+    $pathSeparator = [System.IO.Path]::PathSeparator
+    $pathEntries = ($env:PATH -split $pathSeparator) | Where-Object { $_ -ne '' }
 
-        $env:PATH = "$voltaBinaryDirectory$pathSeparator$env:PATH"
+    foreach ($voltaDirectory in $voltaDirectories) {
+        $isVoltaInPath = $false
+        foreach ($pathEntry in $pathEntries) {
+            try {
+                $normalizedPathEntry = [System.IO.Path]::GetFullPath($pathEntry).TrimEnd('\')
+                $normalizedVoltaPath = [System.IO.Path]::GetFullPath($voltaDirectory).TrimEnd('\')
+
+                if ($normalizedPathEntry -ieq $normalizedVoltaPath) {
+                    $isVoltaInPath = $true
+                    break
+                }
+            } catch {
+                Write-DebugLog -Scope "VOLTA-PATH" `
+                    -Message "Path normalize error: $_"
+            }
+        }
+
+        if (-not $isVoltaInPath) {
+            Write-InfoLog -Scope "VOLTA-PATH" `
+                -Message "Adding Volta directory to PATH: $voltaDirectory"
+
+            $env:PATH = "$voltaDirectory$pathSeparator$env:PATH"
+            $pathEntries = ($env:PATH -split $pathSeparator) | Where-Object { $_ -ne '' }
+        }
     }
 }
 
@@ -444,13 +473,12 @@ function Invoke-NodeVersionPinningWorkflow {
             throw "Volta failed to install Node.js LTS"
         }
 
-        $ltsNodeOutput = & volta run node@lts -- node --version
+        $ltsNodeOutput = & volta run --node lts node --version
         $ltsNodeVersion = & $normalizeVersion `
             $ltsNodeOutput `
             "Node.js"
 
-        $ltsNpmOutput = & volta run node@lts -- node `
-            -p "process.versions.npm"
+        $ltsNpmOutput = & volta run --node lts --bundled-npm npm --version
         $ltsNpmVersion = & $normalizeVersion `
             $ltsNpmOutput `
             "npm"
@@ -720,7 +748,7 @@ try {
     exit 0
 } catch {
     Write-ErrorLog -Scope "SCRIPT-MAIN" `
-        -Message "Failed to install or pin Node.js"
+        -Message "Failed to install or pin Node.js: $($_.Exception.Message)"
 
     Write-DebugLog -Scope "SCRIPT-MAIN" `
         -Message "Stack Trace: $($_.ScriptStackTrace)"
