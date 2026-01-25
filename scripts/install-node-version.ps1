@@ -33,13 +33,13 @@ exit /b 1
 [CmdletBinding()]
 param()
 
-$logPath = Join-Path -Path $PSScriptRoot -ChildPath 'concise-log.ps1'
+$logPath = Join-Path -Path $PSScriptRoot -ChildPath 'concise-log.psm1'
 if (-not (Test-Path -LiteralPath $logPath)) {
-    Write-Error 'Required module not found: concise-log.ps1'
+    Write-Error 'Required module not found: concise-log.psm1'
 
     exit 1
 }
-. $logPath
+Import-Module -Name $logPath
 
 # --- Core Functions ---
 
