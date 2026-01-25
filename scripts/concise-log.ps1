@@ -282,7 +282,10 @@ function Write-Log {
 
         [Parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
-        [string]$Message
+        [string]$Message,
+
+        [Parameter(Mandatory = $false)]
+        [switch]$PassThru
     )
 
     $timestamp = Get-Date -Format "yyyy-MM-ddTHH:mm:ss.ffZ"
@@ -380,7 +383,9 @@ function Write-Log {
         }
     }
 
-    return $formattedLog
+    if ($PassThru) {
+        $formattedLog
+    }
 }
 
 function Get-LogHash {
@@ -447,10 +452,13 @@ function Write-DebugLog {
 
         [Parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
-        [string]$Message
+        [string]$Message,
+
+        [Parameter(Mandatory = $false)]
+        [switch]$PassThru
     )
 
-    Write-Log -Level "D" -Scope $Scope -Message $Message
+    Write-Log -Level "D" -Scope $Scope -Message $Message -PassThru:$PassThru
 }
 
 function Write-InfoLog {
@@ -479,10 +487,13 @@ function Write-InfoLog {
 
         [Parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
-        [string]$Message
+        [string]$Message,
+
+        [Parameter(Mandatory = $false)]
+        [switch]$PassThru
     )
 
-    Write-Log -Level "I" -Scope $Scope -Message $Message
+    Write-Log -Level "I" -Scope $Scope -Message $Message -PassThru:$PassThru
 }
 
 function Write-WarningLog {
@@ -512,10 +523,13 @@ function Write-WarningLog {
 
         [Parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
-        [string]$Message
+        [string]$Message,
+
+        [Parameter(Mandatory = $false)]
+        [switch]$PassThru
     )
 
-    Write-Log -Level "W" -Scope $Scope -Message $Message
+    Write-Log -Level "W" -Scope $Scope -Message $Message -PassThru:$PassThru
 }
 
 function Write-ErrorLog {
@@ -545,10 +559,13 @@ function Write-ErrorLog {
 
         [Parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
-        [string]$Message
+        [string]$Message,
+
+        [Parameter(Mandatory = $false)]
+        [switch]$PassThru
     )
 
-    Write-Log -Level "E" -Scope $Scope -Message $Message
+    Write-Log -Level "E" -Scope $Scope -Message $Message -PassThru:$PassThru
 }
 
 function Write-ExceptionLog {
@@ -578,10 +595,13 @@ function Write-ExceptionLog {
 
         [Parameter(Mandatory = $true)]
         [ValidateNotNullOrEmpty()]
-        [string]$Message
+        [string]$Message,
+
+        [Parameter(Mandatory = $false)]
+        [switch]$PassThru
     )
 
-    Write-Log -Level "X" -Scope $Scope -Message $Message
+    Write-Log -Level "X" -Scope $Scope -Message $Message -PassThru:$PassThru
 }
 
 # --- Main Script Execution ---
