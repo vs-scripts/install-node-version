@@ -15,13 +15,11 @@
 #>
 
 # Import the module
-. "$PSScriptRoot\..\scripts\concise-log.ps1"
+Import-Module -Name (Join-Path -Path $PSScriptRoot `
+    -ChildPath '..\scripts\concise-log.psm1')
 
 # Set error action to continue for testing
 $ErrorActionPreference = 'Continue'
-
-# Initialize the script environment
-Initialize-ScriptEnvironment
 
 # Test the logging functions
 function Test-LoggingFunctions {
