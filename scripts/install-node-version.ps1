@@ -19,7 +19,7 @@ exit /b 1
     Author: Richeve Bebedor <richeve.bebedor+vs-scripts@gmail.com>
     Version: 0.0.0
     Platform: Windows only
-    Requirements: pwsh 7.5.4+, Administrator privileges
+    Requirements: pwsh 7.5.4, Administrator privileges
 
 .EXAMPLE
     .\install-node-version.ps1
@@ -33,36 +33,15 @@ exit /b 1
 [CmdletBinding()]
 param()
 
-Set-StrictMode -Version Latest
+$logPath = Join-Path -Path $PSScriptRoot -ChildPath 'concise-log.ps1'
+if (-not (Test-Path -LiteralPath $logPath)) {
+    Write-Error 'Required module not found: concise-log.ps1'
+
+    exit 1
+}
+. $logPath
 
 # --- Core Functions ---
-
-function Initialize-ScriptEnvironment {
-    <#
-    .SYNOPSIS
-        Configures the PowerShell session preferences for consistent script behavior.
-
-    .DESCRIPTION
-        Sets script-level preferences for Verbose, Debug, ErrorAction, and Progress
-        to ensure consistent and informative output throughout script execution.
-        These settings apply only to the current script scope.
-
-    .NOTES
-        This function must be called early in script execution, before any other
-        operations that depend on these preferences.
-
-    .EXAMPLE
-        Initialize-ScriptEnvironment
-        Configures all session preferences to their standard values.
-    #>
-    [CmdletBinding()]
-    param()
-
-    $script:VerbosePreference = 'Continue'
-    $script:DebugPreference = 'Continue'
-    $script:ErrorActionPreference = 'Stop'
-    $script:ProgressPreference = 'SilentlyContinue'
-}
 
 function Test-IsAdministrator {
     <#
@@ -84,56 +63,17 @@ function Test-IsAdministrator {
     param()
 
     $currentIdentity = [Security.Principal.WindowsIdentity]::GetCurrent()
+
     $currentPrincipal = [Security.Principal.WindowsPrincipal]$currentIdentity
-    return $currentPrincipal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-}
 
-function Assert-WindowsPlatform {
-    <#
-    .SYNOPSIS
-        Ensures the script is running on a Windows platform.
+    $isAdministrator = $currentPrincipal.IsInRole(
+        [Security.Principal.WindowsBuiltInRole]::Administrator
+    )
 
-    .DESCRIPTION
-        Checks the $PSVersionTable.Platform or $env:OS environment variable.
-        Throws an exception if the platform is not Windows.
+    Write-DebugLog -Scope "ELEVATION-ADMIN" `
+        -Message "Administrator check: $isAdministrator"
 
-    .NOTES
-        Volta and winget dependencies in this script are currently targeted at Windows users.
-
-    .EXAMPLE
-        Assert-WindowsPlatform
-        Validates that the current platform is Windows.
-    #>
-    [CmdletBinding()]
-    param()
-
-    $isWindowsPlatform = ($PSVersionTable.Platform -eq 'Win32NT') -or
-        ($env:OS -eq 'Windows_NT')
-    if (-not $isWindowsPlatform) {
-        throw "This script is currently Windows-only."
-    }
-}
-
-function Test-IsInteractivePowerShell {
-    <#
-    .SYNOPSIS
-        Verifies if the script is running in an interactive PowerShell host.
-
-    .DESCRIPTION
-        Checks the $Host name to ensure the script isn't running in a
-        non-interactive background process where elevation prompts might fail.
-
-    .EXAMPLE
-        Test-IsInteractivePowerShell
-        Validates that the current session is interactive.
-    #>
-    [CmdletBinding()]
-    param()
-
-    if ($null -eq $Host -or $Host.Name -eq "Default Host") {
-        Write-Error -Message "This script must be run from an interactive PowerShell terminal."
-        exit 1
-    }
+    return $isAdministrator
 }
 
 function Invoke-ElevationRequest {
@@ -152,70 +92,41 @@ function Invoke-ElevationRequest {
     [CmdletBinding()]
     param()
 
-    Write-Host -Object "==> Requesting administrative privileges..." -ForegroundColor Yellow
+    if (-not $Host.UI.RawUI) {
+        Write-ErrorLog -Scope "ELEVATION-REQUEST" `
+            -Message "Non-interactive session; run in interactive PowerShell."
 
-    $powerShellCoreCommand = Get-Command -Name 'pwsh' -ErrorAction SilentlyContinue
-    $executablePath = if ($powerShellCoreCommand) { $powerShellCoreCommand.Source } else { (Get-Process -Id $PID).Path }
-
-    try {
-        Start-Process -FilePath $executablePath -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`"" -Verb RunAs
-        exit 0
-    } catch {
-        Write-Error -Message "Elevation failed: $($_.Exception.Message)"
         exit 1
     }
-}
 
-function Invoke-PowerShellCoreTransition {
-    <#
-    .SYNOPSIS
-        Transitions the script execution to PowerShell Core (pwsh) if available.
+    Write-InfoLog -Scope "ELEVATION-REQUEST" `
+        -Message "Requesting administrative privileges"
 
-    .DESCRIPTION
-        If the current major version is less than 7 and pwsh is found in the PATH,
-        the script relaunches itself using pwsh for better performance and compatibility.
+    $powerShellCoreCommand = Get-Command -Name 'pwsh' `
+        -ErrorAction SilentlyContinue
 
-    .EXAMPLE
-        Invoke-PowerShellCoreTransition
-        Relaunches the script in PowerShell Core if available and version < 7.
-    #>
-    [CmdletBinding()]
-    param()
-
-    if ($PSVersionTable.PSVersion.Major -lt 7) {
-        $powerShellCoreCommand = Get-Command -Name 'pwsh' -ErrorAction SilentlyContinue
-        if ($powerShellCoreCommand) {
-            Write-Debug "Relaunching in PowerShell Core for better performance..."
-            & $powerShellCoreCommand.Source -NoProfile -ExecutionPolicy Bypass -File $PSCommandPath @args
-            exit $LASTEXITCODE
-        }
+    $executablePath = if ($powerShellCoreCommand) {
+        $powerShellCoreCommand.Source
+    } else {
+        (Get-Process -Id $PID).Path
     }
-}
 
-function Write-FormattedStep {
-    <#
-    .SYNOPSIS
-        Outputs a formatted step indicator to the console.
+    $argumentList = "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`""
 
-    .DESCRIPTION
-        Uses Write-Host with specific colors and formatting to highlight major
-        logical steps in the script execution.
+    try {
+        Start-Process -FilePath $executablePath `
+            -ArgumentList $argumentList `
+            -Verb RunAs
 
-    .PARAMETER Message
-        The string message to display as a step indicator.
+        exit 0
+    } catch {
+        Write-ErrorLog -Scope "ELEVATION-REQUEST" `
+            -Message "Elevation failed: $($_.Exception.Message)"
 
-    .EXAMPLE
-        Write-FormattedStep "Installing Volta"
-        Displays a formatted step message in cyan with bold font weight.
-    #>
-    [CmdletBinding()]
-    param(
-        [Parameter(Mandatory = $true, HelpMessage = "Step message to display")]
-        [ValidateNotNullOrEmpty()]
-        [string]$Message
-    )
-
-    Write-Host -Object "`n==> $Message" -ForegroundColor Cyan -FontWeight Bold
+        Write-DebugLog -Scope "ELEVATION-REQUEST" `
+            -Message "Stack Trace: $($_.ScriptStackTrace)"
+        exit 1
+    }
 }
 
 # --- Helper Functions ---
@@ -230,7 +141,8 @@ function Get-RepositoryRoot {
         Falls back to the current working directory if git is unavailable.
 
     .OUTPUTS
-        String - The absolute path to the repository root or current working directory.
+        String - The absolute path to the repository root or current working
+                    directory.
 
     .EXAMPLE
         $root = Get-RepositoryRoot
@@ -245,12 +157,16 @@ function Get-RepositoryRoot {
     if ($gitCommand) {
         try {
             $detectedRoot = (& git rev-parse --show-toplevel 2>$null).Trim()
+
             if ($detectedRoot -and (Test-Path -LiteralPath $detectedRoot)) {
-                Write-Debug "Detected Git repository root: $detectedRoot"
+                Write-DebugLog -Scope "REPO-ROOT" `
+                    -Message "Detected Git repository root: $detectedRoot"
+
                 $repositoryRoot = $detectedRoot
             }
         } catch {
-            Write-Debug "Git root detection failed, using current directory"
+            Write-DebugLog -Scope "REPO-ROOT" `
+                -Message "Git root detection failed, using current directory"
         }
     }
 
@@ -275,33 +191,58 @@ function Install-PackageWithWinget {
     #>
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory = $true, HelpMessage = "Package identifier for winget")]
+        [Parameter(Mandatory = $true, `
+            HelpMessage = "Package identifier for winget")]
         [ValidateNotNullOrEmpty()]
         [string]$PackageIdentifier
     )
 
     $wingetCommand = Get-Command -Name 'winget' -ErrorAction SilentlyContinue
     if (-not $wingetCommand) {
-        throw "Package '$PackageIdentifier' is not installed and 'winget' was not found."
+        Write-ErrorLog -Scope "WINGET-INSTALL" `
+            -Message "winget not found for package $PackageIdentifier"
+
+        $failureMessage = "Package '$PackageIdentifier' is not installed " +
+            "and winget was not found."
+
+        throw $failureMessage
     }
 
-    Write-Debug "Executing: winget install --id $PackageIdentifier --silent --accept-package-agreements"
-    & winget install --id $PackageIdentifier --source winget --silent --accept-package-agreements --accept-source-agreements
+    Write-DebugLog -Scope "WINGET-INSTALL" `
+        -Message "Installing package $PackageIdentifier via winget"
+
+    & winget install `
+        --id $PackageIdentifier `
+        --source winget `
+        --silent `
+        --accept-package-agreements `
+        --accept-source-agreements
+
     if ($LASTEXITCODE -ne 0) {
-        Write-Warning "winget installation for $PackageIdentifier failed (Exit Code: $LASTEXITCODE)"
+        $warningMessage = "winget install failed for $PackageIdentifier " +
+            "(exit $LASTEXITCODE)"
+
+        Write-WarningLog -Scope "WINGET-INSTALL" `
+            -Message $warningMessage
+
+        Write-ErrorLog -Scope "WINGET-INSTALL" `
+            -Message "winget install failed; aborting"
+
+        throw $warningMessage
     }
 }
 
-function Ensure-VoltaInstalled {
+function Install-VoltaIfMissing {
     <#
     .SYNOPSIS
-        Ensures the Volta tool manager is installed on the system.
+        Installs Volta if it is not already available on the system.
 
     .DESCRIPTION
-        Checks for the 'volta' command. If missing, attempts to install it via winget.
+        Checks for the 'volta' command. If missing, attempts to install it
+            via winget.
 
     .EXAMPLE
-        Ensure-VoltaInstalled
+        Install-VoltaIfMissing
         Installs Volta if not already present.
     #>
     [CmdletBinding()]
@@ -309,12 +250,24 @@ function Ensure-VoltaInstalled {
 
     $voltaCommand = Get-Command -Name 'volta' -ErrorAction SilentlyContinue
     if ($voltaCommand) {
-        Write-Verbose "Volta is already installed at: $($voltaCommand.Source)"
+        Write-InfoLog -Scope "VOLTA-INSTALL" `
+            -Message "Volta already installed at $($voltaCommand.Source)"
+
         return
     }
 
-    Write-FormattedStep "Volta not found. Attempting to install via winget..."
+    Write-InfoLog -Scope "VOLTA-INSTALL" `
+        -Message "Volta not found. Installing via winget."
+
     Install-PackageWithWinget -PackageIdentifier "Volta.Volta"
+
+    $voltaCommand = Get-Command -Name 'volta' -ErrorAction SilentlyContinue
+    if (-not $voltaCommand) {
+        Write-ErrorLog -Scope "VOLTA-INSTALL" `
+            -Message "Volta not found after installation"
+
+        throw "Volta installation failed or not on PATH"
+    }
 }
 
 function Add-VoltaToSessionPath {
@@ -327,16 +280,19 @@ function Add-VoltaToSessionPath {
         if not already present. Uses case-insensitive comparison for path matching.
 
     .EXAMPLE
+        # Adds Volta bin directory to the current session PATH.
         Add-VoltaToSessionPath
-        Adds Volta bin directory to the current session PATH.
     #>
     [CmdletBinding()]
     param()
 
-    $voltaBinaryDirectory = Join-Path -Path $env:LOCALAPPDATA -ChildPath 'Volta\bin'
+    $voltaBinaryDirectory = Join-Path -Path $env:LOCALAPPDATA `
+        -ChildPath 'Volta\bin'
 
     if (-not (Test-Path -LiteralPath $voltaBinaryDirectory)) {
-        Write-Debug "Creating Volta bin directory: $voltaBinaryDirectory"
+        Write-DebugLog -Scope "VOLTA-PATH" `
+            -Message "Creating Volta bin directory: $voltaBinaryDirectory"
+
         New-Item -ItemType Directory -Path $voltaBinaryDirectory -Force | Out-Null
     }
 
@@ -347,18 +303,23 @@ function Add-VoltaToSessionPath {
     foreach ($pathEntry in $pathEntries) {
         try {
             $normalizedPathEntry = [System.IO.Path]::GetFullPath($pathEntry).TrimEnd('\')
+
             $normalizedVoltaPath = [System.IO.Path]::GetFullPath($voltaBinaryDirectory).TrimEnd('\')
+
             if ($normalizedPathEntry -ieq $normalizedVoltaPath) {
                 $isVoltaInPath = $true
                 break
             }
         } catch {
-            Write-Debug "Error normalizing path: $_"
+        Write-DebugLog -Scope "VOLTA-PATH" `
+            -Message "Path normalize error: $_"
         }
     }
 
     if (-not $isVoltaInPath) {
-        Write-Verbose "Adding Volta bin to current session PATH: $voltaBinaryDirectory"
+        Write-InfoLog -Scope "VOLTA-PATH" `
+            -Message "Adding Volta bin to PATH: $voltaBinaryDirectory"
+
         $env:PATH = "$voltaBinaryDirectory$pathSeparator$env:PATH"
     }
 }
@@ -369,8 +330,8 @@ function Initialize-PackageJsonIfMissing {
         Ensures a package.json file exists for Volta pinning.
 
     .DESCRIPTION
-        Volta requires package.json to pin versions. If missing, creates a minimal one
-        with the directory name as the project name.
+        Volta requires package.json to pin versions. If missing,
+        creates a minimal one with the directory name as the project name.
 
     .PARAMETER RepositoryRoot
         The directory where package.json should reside.
@@ -379,12 +340,14 @@ function Initialize-PackageJsonIfMissing {
         String - The full path to the package.json file.
 
     .EXAMPLE
-        $packageJsonPath = Initialize-PackageJsonIfMissing -RepositoryRoot "C:\Projects\MyRepo"
-        Creates or returns the path to package.json.
+        # Creates or returns the path to package.json.
+        $packageJsonPath = Initialize-PackageJsonIfMissing `
+            -RepositoryRoot "C:\Projects\MyRepo"
     #>
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory = $true, HelpMessage = "Repository root directory path")]
+        [Parameter(Mandatory = $true, `
+            HelpMessage = "Repository root directory path")]
         [ValidateNotNullOrEmpty()]
         [string]$RepositoryRoot
     )
@@ -392,19 +355,25 @@ function Initialize-PackageJsonIfMissing {
     $packageJsonPath = Join-Path -Path $RepositoryRoot -ChildPath 'package.json'
 
     if (Test-Path -LiteralPath $packageJsonPath) {
-        Write-Verbose "Found existing package.json at $packageJsonPath"
+        Write-InfoLog -Scope "PACKAGE-JSON" `
+            -Message "Found existing package.json at $packageJsonPath"
+
         return $packageJsonPath
     }
 
-    Write-FormattedStep "Creating minimal package.json at $packageJsonPath"
+    Write-InfoLog -Scope "PACKAGE-JSON" `
+        -Message "Creating minimal package.json"
+
     $packageConfiguration = [ordered]@{
         name    = Split-Path -Leaf $RepositoryRoot
         private = $true
     }
 
     $jsonContent = $packageConfiguration | ConvertTo-Json -Depth 20
+
     Set-Content -LiteralPath $packageJsonPath -Value $jsonContent -Encoding UTF8
-    Write-Verbose "Initialized new package.json"
+
+    Write-InfoLog -Scope "PACKAGE-JSON" -Message "Initialized new package.json"
 
     return $packageJsonPath
 }
@@ -424,21 +393,25 @@ function Invoke-NodeVersionPinningWorkflow {
         The directory context for pinning Node.js.
 
     .EXAMPLE
+        # Installs Volta and pins Node.js LTS to the specified repository.
         Invoke-NodeVersionPinningWorkflow -RepositoryRoot "C:\Projects\MyRepo"
-        Installs Volta and pins Node.js LTS to the specified repository.
     #>
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory = $true, HelpMessage = "Repository root directory path")]
+        [Parameter(Mandatory = $true, `
+            HelpMessage = "Repository root directory path")]
         [ValidateNotNullOrEmpty()]
         [string]$RepositoryRoot
     )
 
-    Write-FormattedStep "Initializing Node.js LTS Environment"
-    Write-Debug "Target Directory: $RepositoryRoot"
+    Write-InfoLog -Scope "NODE-PIN" `
+        -Message "Initializing Node.js LTS environment"
+
+    Write-DebugLog -Scope "NODE-PIN" `
+        -Message "Target directory: $RepositoryRoot"
 
     # 1. Ensure Volta is available
-    Ensure-VoltaInstalled
+    Install-VoltaIfMissing
     Add-VoltaToSessionPath
 
     # 2. Ensure package.json exists
@@ -447,15 +420,22 @@ function Invoke-NodeVersionPinningWorkflow {
     # 3. Bind Node.js LTS to this folder
     Push-Location -Path $RepositoryRoot
     try {
-        Write-FormattedStep "Pinning latest LTS Node.js to this folder"
+        Write-InfoLog -Scope "NODE-PIN" `
+            -Message "Pinning latest LTS Node.js to this folder"
+
         & volta pin node@lts --verbose
 
         # 4. Verify and display state
-        Write-FormattedStep "Environment Verification"
-        Write-Verbose "Active Node.js Version:"
+        Write-InfoLog -Scope "NODE-VERIFY" `
+            -Message "Environment verification"
+
+        Write-InfoLog -Scope "NODE-VERIFY" -Message "Active Node.js version"
+
         & node --version
 
-        Write-Verbose "Volta Managed Versions in this folder:"
+        Write-InfoLog -Scope "NODE-VERIFY" `
+            -Message "Volta managed Node.js versions for this folder"
+
         & volta list node
     } finally {
         Pop-Location
@@ -467,21 +447,31 @@ function Invoke-NodeVersionPinningWorkflow {
 Initialize-ScriptEnvironment
 Test-IsInteractivePowerShell
 
+Invoke-PowerShellCoreTransition
 if (-not (Test-IsAdministrator)) {
     Invoke-ElevationRequest
 }
 
-Invoke-PowerShellCoreTransition
-
 try {
     Assert-WindowsPlatform
+
     $repositoryRoot = Get-RepositoryRoot
+
     Invoke-NodeVersionPinningWorkflow -RepositoryRoot $repositoryRoot
 
-    Write-FormattedStep "Success: Node.js LTS is now bound to this folder and session."
-    Write-Verbose "Usage: Run 'node' in ($repositoryRoot) to use the pinned version."
+    Write-InfoLog -Scope "SCRIPT-MAIN" `
+        -Message "Success: Node.js LTS now bound to this folder and session"
+
+    Write-InfoLog -Scope "SCRIPT-MAIN" `
+        -Message "Usage: run node in $repositoryRoot"
+
+    exit 0
 } catch {
-    Write-Error -Message "Failed to install/pin Node.js: $($_.Exception.Message)" -ErrorAction Continue
-    Write-Debug -Message "Stack Trace: $($_.ScriptStackTrace)"
+    Write-ErrorLog -Scope "SCRIPT-MAIN" `
+        -Message "Failed to install or pin Node.js"
+
+    Write-DebugLog -Scope "SCRIPT-MAIN" `
+        -Message "Stack Trace: $($_.ScriptStackTrace)"
+
     exit 1
 }
