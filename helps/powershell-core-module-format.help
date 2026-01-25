@@ -1,0 +1,413 @@
+# PSM1 Core Module Format and Usage Guide
+
+## Overview
+
+The PSM1 Core Module (`powershell-core.psm1`) is a reusable PowerShell Script Module that provides essential functions for elevated scripts. It consolidates common functionality including script initialization, platform validation, elevation handling, and standardized logging.
+
+The module is designed to:
+- Provide no side effects at import time
+- Follow PowerShell standards and best practices
+- Enable code reuse across elevated scripts
+- Ensure consistent behavior and logging
+
+## Module Structure
+
+The module is organized into logical sections using PowerShell regions:
+
+### 1. Core Initialization Functions
+Functions for setting up script environment and validating prerequisites:
+- `Initialize-ScriptEnvironment`: Sets PowerShell preferences (StrictMode, ErrorActionPreference, etc.)
+- `Assert-WindowsPlatform`: Validates the script is running on Windows
+- `Test-IsInteractivePowerShell`: Checks if the session is interactive
+- `Invoke-PowerShellCoreTransition`: Relaunches in pwsh 7.5.4 if needed
+- `Assert-PowerShellVersionStrict`: Enforces exact pwsh version 7.5.4
+
+### 2. Elevation Functions
+Functions for managing administrative privileges:
+- `Test-IsAdministrator`: Checks for administrative privileges
+- `Invoke-ElevationRequest`: Requests elevation via UAC (interactive only)
+
+### 3. Logging Functions
+Functions for standardized log output following CLOGF specification:
+- `Write-DebugLog`: Debug-level log entries
+- `Write-InfoLog`: Information-level log entries
+- `Write-WarningLog`: Warning-level log entries
+- `Write-ErrorLog`: Error-level log entries
+- `Write-ExceptionLog`: Exception-level log entries
+
+### 4. Formatted Output Functions
+Functions for visually formatted output:
+- `Write-FormattedStep`: Displays formatted step messages with color
+
+### 5. Private Helper Functions (Not Exported)
+Internal functions used by logging functions:
+- `Get-LogHash`: Generates hash for log entries
+- `Format-LogEntry`: Formats log entries with CLOGF specification
+- `Write-Log`: Core logging implementation
+
+## Importing the Module
+
+### Basic Import
+```powershell
+Import-Module -Name powershell-core
+```
+
+### Import with Full Path
+```powershell
+Import-Module -Name "C:\path\to\scripts\powershell-core.psm1"
+```
+
+### Verify Import
+```powershell
+Get-Module -Name powershell-core
+Get-Command -Module powershell-core
+```
+
+## Usage Examples
+
+### Initialization Pattern
+```powershell
+# Import the module
+Import-Module -Name powershell-core
+
+# Initialize script environment
+Initialize-ScriptEnvironment
+
+# Validate platform
+Assert-WindowsPlatform
+
+# Check for elevation
+if (-not (Test-IsAdministrator)) {
+    Invoke-ElevationRequest
+}
+
+# Log initialization
+Write-InfoLog -Scope "INIT-SCRIPT" -Message "Script initialized successfully"
+```
+
+### Logging Pattern
+```powershell
+# Debug logging
+Write-DebugLog -Scope "OPERATION-NAME" -Message "Starting operation"
+
+# Info logging
+Write-InfoLog -Scope "OPERATION-NAME" -Message "Operation completed"
+
+# Warning logging
+Write-WarningLog -Scope "OPERATION-NAME" -Message "Potential issue detected"
+
+# Error logging
+Write-ErrorLog -Scope "OPERATION-NAME" -Message "Operation failed"
+
+# Exception logging
+Write-ExceptionLog -Scope "OPERATION-NAME" -Message "Unhandled exception occurred"
+```
+
+### Formatted Output Pattern
+```powershell
+# Display formatted step
+Write-FormattedStep -Message "Starting deployment" -ForegroundColor Cyan
+Write-FormattedStep -Message "Deployment complete" -ForegroundColor Green
+```
+
+## Logging Format (CLOGF)
+
+All logging functions produce output in the Concise Log Format (CLOGF):
+
+```
+# TIMESTAMP LEVEL SCOPE MESSAGE [HASH]
+```
+
+### Components
+
+- **Timestamp**: ISO 8601 format with milliseconds (e.g., `2026-01-21T10:30:45.123Z`)
+- **Level**: Single character indicator
+  - `D` = Debug
+  - `I` = Information
+  - `W` = Warning
+  - `E` = Error
+  - `X` = Exception
+- **Scope**: PARENT-CHILD format (e.g., `INIT-SCRIPT`, `ELEV-REQUEST`)
+- **Message**: Descriptive message
+- **Hash**: 8-character hash for log entry verification
+
+### Example Log Output
+```
+# 2026-01-21T10:30:45.123Z I INIT-SCRIPT PowerShell preferences initialized [a1b2c3d4]
+# 2026-01-21T10:30:46.456Z I PLAT-CHECK Windows platform validation passed [b2c3d4e5]
+# 2026-01-21T10:30:47.789Z I ELEV-CHECK Running with administrative privileges [c3d4e5f6]
+```
+
+## Scope Naming Convention
+
+Scopes follow PARENT-CHILD format to indicate the component and operation:
+
+### Common Scopes
+
+- **INIT-SCRIPT**: Script initialization
+- **INIT-ENV**: Environment initialization
+- **PLAT-CHECK**: Platform validation
+- **ELEV-CHECK**: Elevation status check
+- **ELEV-REQUEST**: Elevation request
+- **LOG-ENTRY**: Log entry creation
+- **OPERATION-NAME**: Custom operation scope
+
+### Scope Format
+```
+PARENT-CHILD
+```
+
+Where:
+- **PARENT**: Primary component (e.g., INIT, ELEV, LOG, PLAT)
+- **CHILD**: Specific operation (e.g., SCRIPT, REQUEST, ENTRY, CHECK)
+
+## Function Reference
+
+### Initialize-ScriptEnvironment
+Sets up PowerShell preferences for consistent behavior.
+
+**Usage:**
+```powershell
+Initialize-ScriptEnvironment
+```
+
+**Sets:**
+- StrictMode to Version Latest
+- ErrorActionPreference to 'Stop'
+- DebugPreference to 'Continue'
+- WarningPreference to 'Continue'
+- VerbosePreference to 'Continue'
+
+### Assert-WindowsPlatform
+Validates the script is running on Windows.
+
+**Usage:**
+```powershell
+Assert-WindowsPlatform
+```
+
+**Throws:** Error if not on Windows platform
+
+### Test-IsInteractivePowerShell
+Checks if the session is interactive.
+
+**Usage:**
+```powershell
+if (Test-IsInteractivePowerShell) {
+    Write-Host "Running interactively"
+}
+```
+
+**Returns:** `$true` if interactive, `$false` otherwise
+
+### Invoke-PowerShellCoreTransition
+Relaunches in pwsh 7.5.4 if needed.
+
+**Usage:**
+```powershell
+Invoke-PowerShellCoreTransition
+```
+
+**Behavior:** Exits current process if relaunch is needed
+
+### Assert-PowerShellVersionStrict
+Enforces exact pwsh version 7.5.4.
+
+**Usage:**
+```powershell
+Assert-PowerShellVersionStrict
+```
+
+**Throws:** Error if version doesn't match exactly
+
+### Test-IsAdministrator
+Checks for administrative privileges.
+
+**Usage:**
+```powershell
+if (Test-IsAdministrator) {
+    Write-Host "Running as administrator"
+}
+```
+
+**Returns:** `$true` if administrator, `$false` otherwise
+
+### Invoke-ElevationRequest
+Requests elevation via UAC (interactive only).
+
+**Usage:**
+```powershell
+if (-not (Test-IsAdministrator)) {
+    Invoke-ElevationRequest
+}
+```
+
+**Behavior:**
+- Interactive: Shows UAC prompt and relaunches
+- Non-interactive: Logs guidance and exits with code 1
+
+### Write-DebugLog
+Outputs debug-level log entries.
+
+**Usage:**
+```powershell
+Write-DebugLog -Scope "OPERATION-NAME" -Message "Debug information"
+```
+
+### Write-InfoLog
+Outputs information-level log entries.
+
+**Usage:**
+```powershell
+Write-InfoLog -Scope "OPERATION-NAME" -Message "Operation completed"
+```
+
+### Write-WarningLog
+Outputs warning-level log entries.
+
+**Usage:**
+```powershell
+Write-WarningLog -Scope "OPERATION-NAME" -Message "Potential issue"
+```
+
+### Write-ErrorLog
+Outputs error-level log entries.
+
+**Usage:**
+```powershell
+Write-ErrorLog -Scope "OPERATION-NAME" -Message "Operation failed"
+```
+
+### Write-ExceptionLog
+Outputs exception-level log entries.
+
+**Usage:**
+```powershell
+Write-ExceptionLog -Scope "OPERATION-NAME" -Message "Exception occurred"
+```
+
+### Write-FormattedStep
+Displays formatted step messages.
+
+**Usage:**
+```powershell
+Write-FormattedStep -Message "Starting operation" -ForegroundColor Cyan
+```
+
+**Parameters:**
+- `Message`: The step message (required)
+- `ForegroundColor`: Console color (optional, default: Cyan)
+
+## Manifest File
+
+The module includes a manifest file (`powershell-core.psd1`) that declares:
+
+- **RootModule**: Points to the PSM1 file
+- **ModuleVersion**: Semantic version (0.0.0)
+- **Author**: Module author information
+- **Description**: Module purpose and functionality
+- **PowerShellVersion**: Required version (7.5.4)
+- **FunctionsToExport**: List of public functions
+- **PrivateData**: Tags and project information
+
+## No Side Effects at Import
+
+The module is designed to have no side effects when imported:
+
+- ✓ Does not modify environment variables
+- ✓ Does not set global preferences
+- ✓ Does not execute functions
+- ✓ Does not create files or directories
+- ✓ Only defines functions and exports them
+
+## Naming Conventions
+
+The module follows PowerShell naming conventions:
+
+- **Function Names**: PascalCase with approved verbs (Get, Set, Test, Assert, Invoke, Write)
+- **Variable Names**: camelCase with descriptive full names
+- **Boolean Variables**: Prefixed with is, has, should, or can
+- **No Abbreviations**: All names use full descriptive text
+- **No Single Characters**: All variables have meaningful names
+
+## Error Handling
+
+All functions implement comprehensive error handling:
+
+- Parameter validation using ValidateNotNullOrEmpty attributes
+- Try-catch blocks for error handling
+- Meaningful error messages
+- Logging integration for error tracking
+
+## Integration with Elevated Scripts
+
+The module is designed to be imported by elevated scripts:
+
+```powershell
+# Elevated script template
+#Requires -RunAsAdministrator
+
+Import-Module -Name powershell-core
+
+Initialize-ScriptEnvironment
+Assert-WindowsPlatform
+Assert-PowerShellVersionStrict
+
+if (-not (Test-IsAdministrator)) {
+    Invoke-ElevationRequest
+}
+
+Write-InfoLog -Scope "SCRIPT-NAME" -Message "Script started"
+
+# Script logic here
+
+Write-InfoLog -Scope "SCRIPT-NAME" -Message "Script completed"
+```
+
+## Troubleshooting
+
+### Module Not Found
+```powershell
+# Ensure the module path is in PSModulePath
+$env:PSModulePath -split ';'
+
+# Or import with full path
+Import-Module -Name "C:\path\to\scripts\powershell-core.psm1"
+```
+
+### Functions Not Available
+```powershell
+# Verify module is imported
+Get-Module -Name powershell-core
+
+# List exported functions
+Get-Command -Module powershell-core
+```
+
+### Elevation Request Not Working
+- Ensure running in interactive session
+- Check UAC is enabled on Windows
+- Verify running with appropriate permissions
+
+## Best Practices
+
+1. **Always Initialize**: Call `Initialize-ScriptEnvironment` early in scripts
+2. **Validate Platform**: Use `Assert-WindowsPlatform` for Windows-specific scripts
+3. **Check Version**: Use `Assert-PowerShellVersionStrict` when exact version is required
+4. **Log Operations**: Use logging functions for all significant operations
+5. **Handle Elevation**: Check and request elevation before performing admin tasks
+6. **Use Scopes**: Use meaningful scope names in logging for better tracking
+7. **Format Output**: Use `Write-FormattedStep` for user-visible progress
+
+## Related Documentation
+
+- PowerShell Module Format: `helps/powershell-module-format.help`
+- Elevated Script Format: `helps/powershell-elevated-script-format.help`
+- CLOGF Specification: Concise Log Format for standardized logging
+
+## Support
+
+For issues or questions about the PSM1 Core Module, refer to:
+- Module documentation in function help (Get-Help function-name)
+- This guide for usage patterns and examples
+- Related help files for module format specifications
