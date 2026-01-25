@@ -48,6 +48,8 @@
 !*.js
 !*.mjs
 !*.ps1
+!*.psd1
+!*.psm1
 !*.sh
 !*.zig
 
@@ -67,6 +69,8 @@
 !scripts/**/*.js
 !scripts/**/*.mjs
 !scripts/**/*.ps1
+!scripts/**/*.psd1
+!scripts/**/*.psm1
 !scripts/**/*.sh
 !scripts/**/*.bash
 !scripts/**/*.zig
