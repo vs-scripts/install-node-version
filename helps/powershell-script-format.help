@@ -11,7 +11,7 @@ PREVENT UNAUTHORIZED ALTERATIONS.
     - RFC:      CONCISE-RFC-000000
     - GROUP:    VS-SCRIPTS
     - TITLE:    POWERSHELL SCRIPT FORMAT
-    - ACRONYM:  PWSF
+    - ACRONYM:  PWSHF
     - AUTHOR:   Richeve Bebedor <richeve.bebedor+vs-scripts@gmail.com>
     - CATEGORY: SPECIFICATION
     - STATUS:   DRAFT
@@ -235,13 +235,12 @@ PREVENT UNAUTHORIZED ALTERATIONS.
 
             [string]$repositoryRoot = $PWD.Path
 
-            $gitCommand = Get-Command -Name 'git' `
-                -ErrorAction SilentlyContinue
+            $gitCommand = Get-Command -Name 'git' -ErrorAction SilentlyContinue
             if ($gitCommand) {
                 try {
                     $detectedRoot = (& git rev-parse --show-toplevel 2>$null)
-                    if ($detectedRoot -and (Test-Path -LiteralPath `
-                            $detectedRoot)) {
+                    if ($detectedRoot -and `
+                        (Test-Path -LiteralPath $detectedRoot)) {
                         $message = "Detected Git repository root: $detectedRoot"
                         Write-Debug $message
                         $repositoryRoot = $detectedRoot
