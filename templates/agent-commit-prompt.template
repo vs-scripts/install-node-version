@@ -159,6 +159,8 @@ PHASE 5 — VALIDATION
 
     - Verify each commit:
 
+        - Use: git --no-pager show --name-only <commit>
+        - Do NOT run git diff or git show without --no-pager.
         - The correct file was committed.
         - The commit scope matches the plan.
         - The commit body has exactly 5 numbered lines.
