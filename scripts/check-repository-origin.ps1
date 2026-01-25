@@ -21,7 +21,7 @@ exit /b 1
     Version: 0.0.0
     Last Modified: 2026-01-21
     Platform: Windows only
-    Requirements: pwsh 7.5.4+
+    Requirements: pwsh 7.5.4
 
 .EXAMPLE
     .\check-repository-origin.ps1
@@ -39,7 +39,8 @@ Set-StrictMode -Version Latest
 
 # Import concise-log module
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommandPath
-. "$scriptDir\concise-log.ps1"
+Import-Module -Name (Join-Path -Path $scriptDir `
+    -ChildPath 'concise-log.psm1')
 
 #region Core Functions
 
