@@ -10,22 +10,21 @@ PREVENT UNAUTHORIZED ALTERATIONS.
 
     - RFC:      CONCISE-RFC-000000
     - GROUP:    VS-SCRIPTS
-    - TITLE:    POWERSHELL MODULE FORMAT
-    - ACRONYM:  PWMF
+    - TITLE:    POWERSHELL PSM1 MODULE FORMAT
+    - ACRONYM:  PWM1F
     - AUTHOR:   Richeve Bebedor <richeve.bebedor+vs-scripts@gmail.com>
     - CATEGORY: SPECIFICATION
     - STATUS:   DRAFT
-    - VERSION:  000001 (0.0.1)
+    - VERSION:  000000 (0.0.0)
     - CREATED:  2026-01-21
     - CHECKSUM: <SHA-256>
 
 1.  Summary:
 
     This document defines the standardized format, conventions, and structure
-    for reusable PowerShell modules (non-executable, non-elevated .ps1 files)
-    designed to be imported by other scripts via dot-sourcing. All modules
-    MUST follow these patterns to ensure consistency, maintainability, and
-    adherence to SOLID principles while remaining concise, helpful, and humane.
+    for reusable PowerShell PSM1 modules. All PSM1 modules MUST follow these
+    patterns to ensure consistency, maintainability, and adherence to SOLID
+    principles while remaining concise, helpful, and humane.
 
 2.  Permission:
 
@@ -43,13 +42,14 @@ PREVENT UNAUTHORIZED ALTERATIONS.
     5.  Normative Language ................................................. 041
     6.  Naming Conventions ................................................. 049
     7.  Goals and Principles ............................................... 055
-    8.  Structure .......................................................... 065
-    9.  Compliance ......................................................... 450
+    8.  PSM1 Structure ..................................................... 065
+    9.  Compliance ......................................................... 400
 
 4.  Document Status:
 
-    - This document is a DRAFT specification for PowerShell module standards.
-    - It defines mandatory conventions for all reusable modules in this
+    - This document is a DRAFT specification for PowerShell PSM1 module
+      standards.
+    - It defines mandatory conventions for all reusable PSM1 modules in this
       repository.
     - It is intended to enforce consistency, clarity, and SOLID principles.
 
@@ -67,8 +67,8 @@ PREVENT UNAUTHORIZED ALTERATIONS.
 
 6.  Naming Conventions:
 
-    - PowerShell module file names SHOULD use lowercase with hyphens.
-    - PowerShell module file names SHOULD be descriptive and concise.
+    - PowerShell module file names MUST use lowercase with hyphens.
+    - PowerShell module file names MUST be descriptive and concise.
     - Function names MUST use PascalCase with approved PowerShell verbs.
     - Variable names MUST use camelCase with descriptive full names.
     - Boolean variables MUST use prefixes: is, has, should, can.
@@ -85,28 +85,11 @@ PREVENT UNAUTHORIZED ALTERATIONS.
     - Avoid unnecessary complexity.
     - Remain concise, helpful, and humane.
 
-8.  Structure:
+8.  PSM1 Structure:
 
-8.1 Shebang and Batch Fallback Header
+8.1 Module Metadata
 
-    - All modules MUST include a dual-mode header that allows execution from
-      both PowerShell and batch environments:
-
-        <# :
-        @echo off
-        echo.
-        echo Error: This script must be run from a PowerShell terminal.
-        echo.
-        exit /b 1
-        #>
-
-    - Purpose: Prevents accidental execution from cmd.exe with clear error
-      messaging.
-
-8.2 Module Metadata
-
-    - Immediately after the header, modules MUST include comprehensive
-      documentation:
+    - PSM1 modules MUST include comprehensive documentation:
 
         <#
         .SYNOPSIS
@@ -121,10 +104,10 @@ PREVENT UNAUTHORIZED ALTERATIONS.
             Version: 0.0.0
             Last Modified: [Date]
             Platform: Windows only
-            Requirements: pwsh 7.5.4+
+            Requirements: pwsh 7.5.4
 
         .EXAMPLE
-            . .\module-name.ps1
+            Import-Module -Name module-name
             Invoke-ModuleFunction -Parameter "value"
 
         .EXIT CODES
@@ -132,64 +115,78 @@ PREVENT UNAUTHORIZED ALTERATIONS.
             1 - Failure (with error message)
         #>
 
-8.3 Module Structure Requirements
+8.2 PSM1 Manifest File Requirements
 
-    - Reusable modules MUST NOT declare CmdletBinding at script level.
-    - Reusable modules MUST NOT declare parameters at script level.
-    - Reusable modules MUST NOT execute any code at import time.
-    - Reusable modules MUST NOT call functions during import.
-    - Reusable modules MUST NOT perform initialization or validation.
-    - All execution log
-n1 = $false
-        $script:ConfigurationOption2 = $false
+    - PSM1 modules MUST have a corresponding .psd1 manifest file.
+    - Manifest file name MUST match module name: module-name.psm1 and
+      module-name.psd1.
+    - Manifest MUST declare ModuleVersion with semantic versioning.
+    - Manifest MUST declare Author with contact information.
+    - Manifest MUST declare Description with clear module purpose.
+    - Manifest MUST declare FunctionsToExport with all public functions.
+    - Manifest MUST declare PowerShellVersion requirement 7.5.4.
+    - Manifest MUST declare RootModule pointing to .psm1 file.
 
-    - Configuration variables MUST use $script: prefix.
-    - Configuration variables MUST have descriptive names (no abbreviations).
-    - Configuration variables MUST have sensible defaults.
-    - Calling scripts MAY modify these variables before using module functions.
+8.3 PSM1 Module Structure Requirements
 
-8.6 Function Organization
+    - PSM1 modules MUST NOT declare CmdletBinding at script level.
+    - PSM1 modules MUST NOT declare parameters at script level.
+    - PSM1 modules MUST NOT execute any code at import time.
+    - PSM1 modules MUST NOT call functions during import.
+    - PSM1 modules MUST NOT perform initialization or validation.
+    - PSM1 modules MUST include Set-StrictMode -Version Latest.
+    - PSM1 modules MUST use #region and #endregion for code organization.
+    - PSM1 modules MUST export public functions via Export-ModuleMember.
 
-8.6.1 Function Documentation
+8.4 Function Documentation
 
     - All functions MUST include comprehensive documentation:
 
         function Get-RepositoryRoot {
             <#
-              [ValidateNotNullOrEmpty()]
-                [string]$DestinationFilePath
+            .SYNOPSIS
+                Gets the root directory of the repository.
+
+            .DESCRIPTION
+                Locates and returns the root directory of the current
+                repository by searching for .git directory.
+
+            .PARAMETER StartPath
+                The path to start searching from. Defaults to current
+                directory.
+
+            .OUTPUTS
+                [string] The root directory path.
+
+            .EXAMPLE
+                $root = Get-RepositoryRoot
+                Write-Host "Repository root: $root"
+
+            .NOTES
+                Throws if repository root cannot be found.
+            #>
+            [CmdletBinding()]
+            param(
+                [Parameter(Mandatory = $false)]
+                [ValidateNotNullOrEmpty()]
+                [string]$StartPath = (Get-Location).Path
             )
 
             # Implementation
         }
 
-8.6.3 Function Return Values
-
-    - Functions SHOULD return values explicitly:
-
-        function Get-Configuration {
-            [CmdletBinding()]
-            param()
-
-            [string]$configValue = "default"
-
-            if (Test-Path -LiteralPath $configPath) {
-                $configValue = Get-Content -LiteralPath $configPath
-            }
-
-            return $configValue
-        }
-
-8.7 Variable Naming Conventions
+8.5 Variable Naming Conventions
 
     - No single-character variables: Use $index not $i, $temporaryValue not $x
-    - No abbreviations: Use $repositoryRoot not $repo, $configuration not $config
-    - Descriptive names: $isAdministrator not $admin, $windowsCapability not $cap
+    - No abbreviations: Use $repositoryRoot not $repo, $configuration not
+      $config
+    - Descriptive names: $isAdministrator not $admin, $windowsCapability not
+      $cap
     - Boolean prefixes: Use $is, $has, $should, $can
     - Scope prefix for script-level: $script:VerbosePreference not
       $VerbosePreference
 
-8.8 Path Handling
+8.6 Path Handling
 
     - All path operations MUST use -LiteralPath parameter to avoid
       interpretation of special characters:
@@ -199,14 +196,14 @@ n1 = $false
             Set-Content -LiteralPath $destinationPath -Value $content
         }
 
-8.9 Command Execution
+8.7 Command Execution
 
     - Dynamic command execution MUST use the call operator &:
 
         $nodeVersion = & node --version
         $gitRoot = & git rev-parse --show-toplevel
 
-8.10 Validation and Assertions
+8.8 Validation and Assertions
 
     - Use validation attributes and assertion functions:
 
@@ -231,7 +228,7 @@ n1 = $false
             }
         }
 
-8.11 No Side Effects
+8.9 No Side Effects
 
     - Functions MUST NOT modify global state unless explicitly documented:
 
@@ -255,9 +252,9 @@ n1 = $false
         $updatedPath = Get-UpdatedPath -NewPathEntry "C:\NewPath"
         $env:PATH = $updatedPath
 
-8.12 SOLID Principles Application
+8.10 SOLID Principles Application
 
-8.12.1 Single Responsibility
+8.10.1 Single Responsibility
 
     - Each function MUST have one clear purpose:
 
@@ -268,7 +265,7 @@ n1 = $false
         # Bad: Multiple responsibilities
         function CheckAndElevate { }  # Does two things
 
-8.12.2 Open-Closed
+8.10.2 Open-Closed
 
     - Functions MUST be open for extension via parameters, closed for
       modification:
@@ -285,7 +282,7 @@ n1 = $false
             # Implementation
         }
 
-8.12.3 Liskov Substitution
+8.10.3 Liskov Substitution
 
     - Functions MUST follow consistent contracts:
 
@@ -293,7 +290,7 @@ n1 = $false
         function Get-RepositoryRoot { [string] }
         function Get-ConfigurationPath { [string] }
 
-8.12.4 Interface Segregation
+8.10.4 Interface Segregation
 
     - Functions MUST accept only necessary parameters:
 
@@ -307,7 +304,7 @@ n1 = $false
             param([string]$RepositoryRoot, [string]$Unused1)
         }
 
-8.12.5 Dependency Inversion
+8.10.5 Dependency Inversion
 
     - Functions MUST depend on abstractions, not concrete implementations:
 
@@ -322,14 +319,14 @@ n1 = $false
             & git rev-parse --show-toplevel
         }
 
-8.13 Code Region Folding
+8.11 Code Region Folding
 
     - All modules SHOULD use #region and #endregion comments to organize code
       into collapsible sections in VS Code.
     - Regions improve readability and navigation in longer modules.
     - Region names MUST be descriptive and match the section purpose.
 
-8.13.1 Region Organization Pattern
+8.11.1 Region Organization Pattern
 
     #region Public Functions
 
@@ -351,7 +348,7 @@ n1 = $false
 
     #endregion
 
-8.13.2 Region Naming Conventions
+8.11.2 Region Naming Conventions
 
     - Region names SHOULD be PascalCase
     - Region names SHOULD be concise but descriptive
@@ -362,126 +359,180 @@ n1 = $false
         #region Helper Functions
         #region Configuration
 
-8.14 Module Export Pattern
+8.12 PSM1 Structure Template
 
-    - All modules MUST export public functions using Export-ModuleMember:
+    <#
+    .SYNOPSIS
+        Brief description of module purpose.
 
-        #region Public Functions
+    .DESCRIPTION
+        Detailed description of what this module provides and its key
+        functions.
 
-        function Public-Function {
-            [CmdletBinding()]
-            param()
-            # Implementation
-        }
+    .NOTES
+        Author: [Author Name]
+        Version: 0.0.0
+        Last Modified: [Date]
+        Platform: Windows only
+        Requirements: pwsh 7.5.4+
+    #>
 
-        #endregion
+    Set-StrictMode -Version Latest
 
-        #region Private Functions
+    #region Public Functions
 
-        function Private-Helper {
-            [CmdletBinding()]
-            param()
-            # Implementation
-        }
+    function Get-ExampleValue {
+        <#
+        .SYNOPSIS
+            Gets an example value.
 
-        #endregion
+        .DESCRIPTION
+            Returns an example value for demonstration purposes.
 
-        # Export all public functions
-        Export-ModuleMember -Function @(
-            'Public-Function'
-        )
+        .OUTPUTS
+            [string] The example value.
 
-    - Private helper functions MUST NOT be exported.
-    - Only public functions MUST be listed in Export-ModuleMember.
-
-8.15 Module Import Pattern
-
-    - Calling scripts MUST import reusable modules using dot-sourcing:
-
+        .EXAMPLE
+            $value = Get-ExampleValue
+            Write-Host $value
+        #>
         [CmdletBinding()]
         param()
 
-        Set-StrictMode -Version Latest
+        return "example-value"
+    }
 
-        # Import the reusable module
-        $scriptDir = Split-Path -Parent $MyInvocation.MyCommandPath
-        . "$scriptDir\module-name.ps1"
+    #endregion
+
+    #region Private Functions
+
+    function Private-Helper {
+        [CmdletBinding()]
+        param()
+
+        # Implementation
+    }
+
+    #endregion
+
+    # Export public functions
+    Export-ModuleMember -Function @(
+        'Get-ExampleValue'
+    )
+
+8.13 PSM1 Function Documentation Template
+
+    function Function-Name {
+        <#
+        .SYNOPSIS
+            One-line description of what the function does.
+
+        .DESCRIPTION
+            Detailed explanation of the function's purpose, behavior, and
+            any important context about its operation.
+
+        .PARAMETER ParameterName
+            Description of the parameter, its type, and expected values.
+
+        .PARAMETER AnotherParameter
+            Description of another parameter.
+
+        .OUTPUTS
+            [ReturnType] Description of what the function returns.
+
+        .EXAMPLE
+            Function-Name -ParameterName "value"
+            Description of what this example does.
+
+        .EXAMPLE
+            Function-Name -ParameterName "value" -AnotherParameter "other"
+            Description of another usage example.
+
+        .NOTES
+            Author: [Author Name]
+            Version: 0.0.0
+            Any important notes about the function.
+
+        .LINK
+            https://learn.microsoft.com/en-us/powershell/module/
+        #>
+        [CmdletBinding()]
+        param(
+            [Parameter(Mandatory = $true)]
+            [ValidateNotNullOrEmpty()]
+            [string]$ParameterName,
+
+            [Parameter(Mandatory = $false)]
+            [string]$AnotherParameter = "default"
+        )
+
+        # Implementation
+    }
+
+8.14 PSM1 Manifest Template
+
+    @{
+        RootModule           = 'module-name.psm1'
+        ModuleVersion        = '0.0.0'
+        GUID                 = '00000000-0000-0000-0000-000000000000'
+        Author               = 'Author Name'
+        CompanyName          = 'Company Name'
+        Copyright            = '(c) 2026 Author Name. All rights reserved.'
+        Description          = 'Brief description of module purpose.'
+        PowerShellVersion    = '7.0'
+        FunctionsToExport    = @(
+            'Get-ExampleValue'
+            'Invoke-ExampleFunction'
+        )
+        PrivateData          = @{
+            PSData = @{
+                Tags       = @('example', 'module')
+                ProjectUri = 'https://github.com/example/project'
+                LicenseUri = 'https://github.com/example/project/LICENSE'
+            }
+        }
+    }
+
+8.15 PSM1 Export Patterns
+
+    - All public functions MUST be explicitly exported:
+
+        Export-ModuleMember -Function @(
+            'Get-RepositoryRoot'
+            'Test-IsAdministrator'
+            'Invoke-ModuleFunction'
+        )
+
+    - Private helper functions MUST NOT be exported.
+    - Only functions listed in Export-ModuleMember are accessible to
+      importing scripts.
+
+8.16 PSM1 Import Patterns
+
+    - Calling scripts MUST import PSM1 modules using Import-Module:
+
+        Import-Module -Name module-name
 
         # Now functions from the module are available
-        Public-Function -Parameter "value"
+        Get-ExampleValue
 
-8.16 Module Configuration Usage
-
-    - Reusable modules MAY provide configuration variables that calling
-      scripts can modify before using module functions:
-
-        # Module defines defaults
-        $script:DisableLogColors = $false
-        $script:EnableVerboseMode = $false
-
-        # Calling script can modify before using functions
-        . .\concise-log.ps1
-        $script:DisableLogColors = $true
-        Write-InfoLog -Scope "INIT-SCRIPT" -Message "Colors disabled"
-
-8.17 Module Scope Considerations
-
-    - Functions defined in modules are available in the calling script's
-      scope after dot-sourcing.
-    - Module-level variables (prefixed with $script:) are accessible to
-      module functions but not to calling scripts unless explicitly exposed.
-    - Use Export-ModuleMember to control which functions are public.
-    - Private helper functions MAY be defined but not exported.
-
-        #region Public Functions
-
-        function Public-Function {
-            # Available to calling scripts
-        }
-
-        #endregion
-
-        #region Private Functions
-
-        function Private-Helper {
-            # Only available within module
-        }
-
-        #endregion
-
-        # Only export public functions
-        Export-ModuleMember -Function 'Public-Function'
-
-8.18 Common Module Patterns
-
-8.18.1 Logging Module Pattern
-
-    - Modules providing logging functionality MUST follow the concise log
-      format specification.
-    - Logging modules MUST export logging functions for use by calling scripts.
-    - Logging modules MUST provide configuration variables for customization.
-
-8.18.2 Utility Module Pattern
-
-    - Utility modules MUST provide focused, single-purpose functions.
-    - Utility modules MUST NOT depend on other modules unless documented.
-    - Utility modules MUST return values instead of modifying global state.
-
-8.18.3 Configuration Module Pattern
-
-    - Configuration modules MUST provide functions to read and validate
-      configuration.
-    - Configuration modules MUST return configuration objects or values.
-    - Configuration modules MUST NOT modify configuration files.
+    - PSM1 modules are loaded into a separate module scope.
+    - Functions are available in the calling script's scope after import.
+    - Module-level variables are NOT accessible to calling scripts unless
+      explicitly exported.
 
 9.1 Review Checklist
 
-    - [ ] Shebang and batch fallback header present
     - [ ] Module metadata with SYNOPSIS, DESCRIPTION, NOTES
+    - [ ] Corresponding .psd1 manifest file present
+    - [ ] Manifest declares ModuleVersion with semantic versioning
+    - [ ] Manifest declares Author with contact information
+    - [ ] Manifest declares Description with clear purpose
+    - [ ] Manifest declares FunctionsToExport with all public functions
+    - [ ] Manifest declares PowerShellVersion requirement
     - [ ] NO CmdletBinding or parameters at script level
     - [ ] NO auto-execution of code at import time
     - [ ] Set-StrictMode -Version Latest present
-    - [ ] Module-level configuration variables have defaults
     - [ ] All functions have full documentation
     - [ ] All functions declare [CmdletBinding()]
     - [ ] No abbreviations or single-character variables
@@ -493,7 +544,7 @@ n1 = $false
     - [ ] All public functions exported via Export-ModuleMember
     - [ ] Private helper functions NOT exported
     - [ ] Functions return values instead of calling exit
-    - [ ] Module can be safely dot-sourced without side effects
+    - [ ] Module can be safely imported without side effects
 
 9.2 References
 
