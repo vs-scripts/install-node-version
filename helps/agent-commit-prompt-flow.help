@@ -115,6 +115,8 @@ PREVENT UNAUTHORIZED ALTERATIONS.
 
         AI agent decision logic:
         - Execute: git status --short
+        - View changes with: git --no-pager diff
+        - Do NOT use interactive diff tools or pagers
         - Parse output into three categories:
             - Modified files (M prefix)
             - Added/untracked files (? prefix)
