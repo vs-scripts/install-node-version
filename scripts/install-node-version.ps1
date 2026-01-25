@@ -415,28 +415,192 @@ function Invoke-NodeVersionPinningWorkflow {
     Add-VoltaToSessionPath
 
     # 2. Ensure package.json exists
-    $null = Initialize-PackageJsonIfMissing -RepositoryRoot $RepositoryRoot
+    $packageJsonPath = Join-Path -Path $RepositoryRoot -ChildPath 'package.json'
+    $normalizeVersion = {
+        param(
+            [string]$versionOutput,
+            [string]$versionLabel
+        )
+
+        if (-not $versionOutput) {
+            throw "Missing $versionLabel version value"
+        }
+
+        $versionValue = $versionOutput.Trim()
+        if ($versionValue.StartsWith('v')) {
+            $versionValue = $versionValue.Substring(1)
+        }
+
+        if (-not ($versionValue -match '^\d+\.\d+\.\d+$')) {
+            throw "$versionLabel version is invalid: $versionOutput"
+        }
+
+        return $versionValue
+    }
+
+    $targetNodeVersion = $null
+    $targetNpmVersion = $null
+
+    if (Test-Path -LiteralPath $packageJsonPath) {
+        Write-InfoLog -Scope "PACKAGE-JSON" `
+            -Message "Found existing package.json"
+
+        $packageJsonRaw = Get-Content -LiteralPath $packageJsonPath -Raw
+        try {
+            $packageData = $packageJsonRaw | ConvertFrom-Json
+        } catch {
+            throw "package.json is not valid JSON"
+        }
+
+        $hasEngines = $packageData.PSObject.Properties.Name `
+            -contains 'engines'
+        $engines = if ($hasEngines) {
+            $packageData.engines
+        } else {
+            $null
+        }
+
+        if ($engines -and $engines.node -and $engines.npm) {
+            $targetNodeVersion = & $normalizeVersion `
+                $engines.node `
+                "Node.js"
+            $targetNpmVersion = & $normalizeVersion `
+                $engines.npm `
+                "npm"
+
+            Write-InfoLog -Scope "PACKAGE-JSON" `
+                -Message "Using engines from package.json"
+        } else {
+            Write-InfoLog -Scope "PACKAGE-JSON" `
+                -Message "Resolving latest LTS engines"
+
+            & volta install node@lts
+            if ($LASTEXITCODE -ne 0) {
+                throw "Volta failed to install Node.js LTS"
+            }
+
+            $nodeVersionOutput = & node --version
+            $targetNodeVersion = & $normalizeVersion `
+                $nodeVersionOutput `
+                "Node.js"
+
+            $npmVersionOutput = & node -p "process.versions.npm"
+            $targetNpmVersion = & $normalizeVersion `
+                $npmVersionOutput `
+                "npm"
+
+            $enginesValue = [ordered]@{
+                node = $targetNodeVersion
+                npm  = $targetNpmVersion
+            }
+
+            if ($hasEngines) {
+                $packageData.engines = $enginesValue
+            } else {
+                $packageData | Add-Member `
+                    -NotePropertyName 'engines' `
+                    -NotePropertyValue $enginesValue
+            }
+
+            $jsonContent = $packageData | ConvertTo-Json -Depth 20
+            Set-Content -LiteralPath $packageJsonPath `
+                -Value $jsonContent `
+                -Encoding UTF8
+
+            Write-InfoLog -Scope "PACKAGE-JSON" `
+                -Message "Added engines to package.json"
+        }
+    } else {
+        Write-InfoLog -Scope "PACKAGE-JSON" `
+            -Message "Creating minimal package.json"
+
+        & volta install node@lts
+        if ($LASTEXITCODE -ne 0) {
+            throw "Volta failed to install Node.js LTS"
+        }
+
+        $nodeVersionOutput = & node --version
+        $targetNodeVersion = & $normalizeVersion `
+            $nodeVersionOutput `
+            "Node.js"
+
+        $npmVersionOutput = & node -p "process.versions.npm"
+        $targetNpmVersion = & $normalizeVersion `
+            $npmVersionOutput `
+            "npm"
+
+        $packageConfiguration = [ordered]@{
+            name    = Split-Path -Leaf $RepositoryRoot
+            private = $true
+            engines = [ordered]@{
+                node = $targetNodeVersion
+                npm  = $targetNpmVersion
+            }
+        }
+
+        $jsonContent = $packageConfiguration | ConvertTo-Json -Depth 20
+        Set-Content -LiteralPath $packageJsonPath `
+            -Value $jsonContent `
+            -Encoding UTF8
+
+        Write-InfoLog -Scope "PACKAGE-JSON" `
+            -Message "Initialized package.json with engines"
+    }
 
     # 3. Bind Node.js LTS to this folder
     Push-Location -Path $RepositoryRoot
     try {
         Write-InfoLog -Scope "NODE-PIN" `
-            -Message "Pinning latest LTS Node.js to this folder"
+            -Message "Installing Node.js and npm for this folder"
 
-        & volta pin node@lts --verbose
+        $installMessage = "Installing Node.js $targetNodeVersion " +
+            "and npm $targetNpmVersion"
+        Write-InfoLog -Scope "NODE-PIN" -Message $installMessage
 
-        # 4. Verify and display state
+        & volta install `
+            "node@$targetNodeVersion" `
+            "npm@$targetNpmVersion"
+        if ($LASTEXITCODE -ne 0) {
+            throw "Volta failed to install Node.js or npm"
+        }
+
+        Write-InfoLog -Scope "NODE-PIN" `
+            -Message "Pinning Node.js and npm to this folder"
+
+        & volta pin `
+            "node@$targetNodeVersion" `
+            "npm@$targetNpmVersion"
+        if ($LASTEXITCODE -ne 0) {
+            throw "Volta failed to pin Node.js or npm"
+        }
+
         Write-InfoLog -Scope "NODE-VERIFY" `
-            -Message "Environment verification"
+            -Message "Validating active Node.js and npm versions"
 
-        Write-InfoLog -Scope "NODE-VERIFY" -Message "Active Node.js version"
+        $installedNodeOutput = & node --version
+        $installedNodeVersion = & $normalizeVersion `
+            $installedNodeOutput `
+            "Node.js"
 
-        & node --version
+        $installedNpmOutput = & npm --version
+        $installedNpmVersion = & $normalizeVersion `
+            $installedNpmOutput `
+            "npm"
+
+        if ($installedNodeVersion -ne $targetNodeVersion) {
+            $nodeMismatch = "Node.js version mismatch. " +
+                "Expected $targetNodeVersion, got $installedNodeVersion"
+            throw $nodeMismatch
+        }
+
+        if ($installedNpmVersion -ne $targetNpmVersion) {
+            $npmMismatch = "npm version mismatch. " +
+                "Expected $targetNpmVersion, got $installedNpmVersion"
+            throw $npmMismatch
+        }
 
         Write-InfoLog -Scope "NODE-VERIFY" `
-            -Message "Volta managed Node.js versions for this folder"
-
-        & volta list node
+            -Message "Validated Node.js and npm versions"
     } finally {
         Pop-Location
     }
