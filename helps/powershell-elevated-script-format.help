@@ -15,7 +15,7 @@ PREVENT UNAUTHORIZED ALTERATIONS.
     - AUTHOR:   Richeve Bebedor <richeve.bebedor+vs-scripts@gmail.com>
     - CATEGORY: SPECIFICATION
     - STATUS:   DRAFT
-    - VERSION:  000002 (0.0.2)
+    - VERSION:  000000 (0.0.0)
     - CREATED:  2026-01-21
     - CHECKSUM: <SHA-256>
 
@@ -65,11 +65,13 @@ PREVENT UNAUTHORIZED ALTERATIONS.
 
       in this document SHOULD follow RFC-2119 and RFC-8174.
     - This document MUST NOT use MAY.
+    - The key word "MUST" denotes "required".
+    - The key word "SHOULD" denotes "optional".
 
 6.  Naming Conventions:
 
-    - PowerShell script file names SHOULD use lowercase with hyphens.
-    - PowerShell script file names SHOULD be descriptive and concise.
+    - PowerShell script file names MUST use lowercase with hyphens.
+    - PowerShell script file names MUST be descriptive and concise.
     - Function names MUST use PascalCase with approved PowerShell verbs.
     - Variable names MUST use camelCase with descriptive full names.
     - Boolean variables MUST use prefixes: is, has, should, can.
@@ -79,8 +81,24 @@ PREVENT UNAUTHORIZED ALTERATIONS.
     - Strictly preserve overall logic and purpose.
     - Follow latest PowerShell standards and conventions.
     - Produce self-documenting code.
-    - Eliminate abbr
-r: This script must be run from a PowerShell terminal.
+    - Eliminate abbreviations, shortened names, and single-character variables.
+    - Prevent side effects and scope creep.
+    - Respect SOLID principles.
+    - Strict adherence to Single Responsibility principle.
+    - Avoid unnecessary complexity.
+    - Remain concise, helpful, and humane.
+
+8.  Structure:
+
+8.1 Shebang and Batch Fallback Header
+
+    - All scripts MUST include a dual-mode header that allows execution from both
+      PowerShell and batch environments:
+
+        <# :
+        @echo off
+        echo.
+        echo Error: This script must be run from a PowerShell terminal.
         echo.
         exit /b 1
         #>
@@ -107,7 +125,7 @@ r: This script must be run from a PowerShell terminal.
             Version: 0.0.0
             Last Modified: [Date]
             Platform: Windows only
-            Requirements: pwsh 7.5.4+, Administrator privileges
+            Requirements: pwsh 7.5.4 (exact), Administrator privileges
 
         .EXAMPLE
             .\script-name.ps1
@@ -129,8 +147,7 @@ r: This script must be run from a PowerShell terminal.
 
         [CmdletBinding()]
         param(
-            [Parameter(Mandatory = $true, `
-                HelpMessage = "Description")]
+            [Parameter(Mandatory = $true, HelpMessage = "Description")]
             [ValidateNotNullOrEmpty()]
             [string]$ParameterName,
 
@@ -140,17 +157,15 @@ r: This script must be run from a PowerShell terminal.
 
 8.4 Strict Mode and Error Handling
 
-    - All scripts MUST set strict mode and error preferences:
-
-        Set-StrictMode -Version Latest
-        $ErrorActionPreference = 'Stop'
-
-    - Note: These are set in Initialize-ScriptEnvironment function for
-      consistency.
+    - Scripts MUST NOT set StrictMode or ErrorActionPreference directly.
+    - These settings are set exclusively by Initialize-ScriptEnvironment.
+    - Scripts MUST call Initialize-ScriptEnvironment as an early step to
+      enforce strict mode and error preferences.
 
 8.5 Core Functions Required in All Elevated Scripts
 
-    - Every elevated script MUST include these foundational functions:
+    - Every elevated script MUST import concise-log.ps1 and CALL these foundational
+      functions; scripts MUST NOT redefine them:
 
     8.5.1 Initialize-ScriptEnvironment
 
@@ -162,11 +177,16 @@ r: This script must be run from a PowerShell terminal.
 
     8.5.3 Test-IsInteractivePowerShell
 
-        - Ensures the script runs in an interactive terminal.
+        - Interactive user input is prohibited except for elevation consent (UAC).
+          Elevated scripts MUST NOT prompt for inputs and MUST run
+          non-interactively by default, except that UAC elevation prompts are
+          permitted when not elevated.
 
     8.5.4 Invoke-PowerShellCoreTransition
 
-        - Relaunches in PowerShell Core (pwsh) if available and version < 7.
+        - Relaunches in PowerShell (pwsh) when current host is Windows PowerShell
+          or pwsh version mismatch (strictly requires 7.5.4).
+          Transition occurs before elevation.
 
     8.5.5 Write-FormattedStep
 
@@ -178,15 +198,17 @@ r: This script must be run from a PowerShell terminal.
 
     8.5.7 Invoke-ElevationRequest
 
-        - Requests elevation and relaunches the script (REQUIRED for elevated
-          scripts).
+        - Requests elevation and relaunches the script.
+          UAC elevation prompts are permitted when not elevated.
+          In non-interactive contexts, MUST log guidance and exit 1.
 
 8.6 Elevation Requirement
 
     - Elevated scripts MUST check for administrative privileges at startup.
-    - Elevated scripts MUST request elevation if not running as administrator.
-    - Elevated scripts MUST use Test-IsAdministrator and Invoke-ElevationRequest
-      functions.
+    - Elevated scripts MUST prompt for elevation consent (UAC) when not elevated.
+    - Elevated scripts MUST use Test-IsAdministrator and Invoke-ElevationRequest.
+    - In non-interactive contexts, scripts MUST NOT attempt elevation;
+      they MUST log guidance and exit 1.
     - Elevated scripts MUST NOT proceed with operations if elevation fails.
 
 8.7 Function Organization
@@ -195,32 +217,29 @@ r: This script must be run from a PowerShell terminal.
 
     - All functions MUST include comprehensive documentation:
 
-        function Initialize-ScriptEnvironment {
+        function Backup-UserConfig {
             <#
             .SYNOPSIS
-                Initializes PowerShell session preferences.
+                Backs up the user configuration file.
 
             .DESCRIPTION
-                Sets script-level preferences for Verbose, Debug, ErrorAction,
-                and Progress to ensure consistent and informative output
-                throughout script execution. These settings apply only to the
-                current script scope.
+                Creates a backup of the user configuration file to the backup
+                directory. Ensure the backup directory exists before calling.
 
             .NOTES
-                This function MUST be called early in script execution, before
-                any other operations that depend on these preferences.
+                This function requires read access to the config file and write
+                access to the backup directory.
 
             .EXAMPLE
-                Initialize-ScriptEnvironment
-                Configures all session preferences to their standard values.
+                Backup-UserConfig
+                Performs the backup operation.
             #>
             [CmdletBinding()]
             param()
 
-            $script:VerbosePreference = 'Continue'
-            $script:DebugPreference = 'Continue'
-            $script:ErrorActionPreference = 'Stop'
-            $script:ProgressPreference = 'SilentlyContinue'
+            Write-InfoLog -Scope "CONFIG-BACKUP" -Message "Starting backup..."
+
+            # Implementation
         }
 
 8.7.2 Function Parameters
@@ -230,16 +249,17 @@ r: This script must be run from a PowerShell terminal.
         function Copy-TemplateFile {
             [CmdletBinding()]
             param(
-                [Parameter(Mandatory = $true, `
-                    HelpMessage = "Source file")]
+                [Parameter(Mandatory = $true, HelpMessage = "Source file")]
                 [ValidateNotNullOrEmpty()]
                 [string]$SourceFilePath,
 
-                [Parameter(Mandatory = $true, `
-                    HelpMessage = "Destination")]
+                [Parameter(Mandatory = $true, HelpMessage = "Destination")]
                 [ValidateNotNullOrEmpty()]
                 [string]$DestinationFilePath
             )
+
+            Write-InfoLog -Scope "FILE-COPY" `
+                -Message "Copying $SourceFilePath to $DestinationFilePath"
 
             # Implementation
         }
@@ -250,32 +270,27 @@ r: This script must be run from a PowerShell terminal.
 
         function Get-RepositoryRoot {
             [CmdletBinding()]
-            param()
+            [OutputType([string])]
+            param(
+                [switch]$FallbackToScriptRoot
+            )
 
-            [string]$repositoryRoot = $PWD.Path
+            $root = $PWD.Path
 
-            $gitCommand = Get-Command -Name 'git' `
-                -ErrorAction SilentlyContinue
-            if ($gitCommand) {
-                try {
-                    $detectedRoot = (& git rev-parse --show-toplevel `
-                        2>$null)
-                    if ($detectedRoot -and (Test-Path -LiteralPath `
-                            $detectedRoot)) {
-                        $message = "Detected Git repository root: " + `
-                            "$detectedRoot"
-                        Write-DebugLog -Scope "REPO-ORIGIN" `
-                            -Message $message
-                        $repositoryRoot = $detectedRoot
-                    }
-                } catch {
-                    $message = "Git root detection failed, using current " + `
-                        "directory"
-                    Write-DebugLog -Scope "REPO-ORIGIN" -Message $message
+            $git = Get-Command -Name 'git' -ErrorAction SilentlyContinue
+            if ($git) {
+                $gitRoot = (& git rev-parse --show-toplevel 2>$null)
+                if ($gitRoot -and (Test-Path -LiteralPath $gitRoot)) {
+                    $root = $gitRoot
                 }
             }
 
-            return $repositoryRoot
+            if ($FallbackToScriptRoot -and $PSScriptRoot `
+                -and (Test-Path -LiteralPath $PSScriptRoot)) {
+                $root = $PSScriptRoot
+            }
+
+            return $root
         }
 
 8.8 Variable Naming Conventions
@@ -296,12 +311,12 @@ r: This script must be run from a PowerShell terminal.
         Initialize-ScriptEnvironment
         Test-IsInteractivePowerShell
 
+        Invoke-PowerShellCoreTransition
+
         # Check for elevation (REQUIRED for elevated scripts)
         if (-not (Test-IsAdministrator)) {
             Invoke-ElevationRequest
         }
-
-        Invoke-PowerShellCoreTransition
 
         try {
             Assert-WindowsPlatform
@@ -309,13 +324,17 @@ r: This script must be run from a PowerShell terminal.
             # Main script logic here
             Invoke-PrimaryWorkflow
 
-            Write-FormattedStep "Success: Operation completed successfully"
+            Write-InfoLog -Scope "SCRIPT-MAIN" `
+                -Message "Success: Operation completed successfully"
+
             exit 0
         } catch {
             Write-ErrorLog -Scope "SCRIPT-MAIN" `
                 -Message "Operation failed: $($_.Exception.Message)"
+
             Write-DebugLog -Scope "SCRIPT-MAIN" `
                 -Message "Stack Trace: $($_.ScriptStackTrace)"
+
             exit 1
         }
 
@@ -328,13 +347,16 @@ r: This script must be run from a PowerShell terminal.
 
         try {
             $result = Invoke-Operation
+
             Write-InfoLog -Scope "OPERATION-NAME" `
                 -Message "Operation completed: $result"
         } catch {
             Write-ErrorLog -Scope "OPERATION-NAME" `
                 -Message "Operation failed: $($_.Exception.Message)"
+
             Write-DebugLog -Scope "OPERATION-NAME" `
                 -Message "Stack Trace: $($_.ScriptStackTrace)"
+
             exit 1
         }
 
@@ -387,9 +409,16 @@ r: This script must be run from a PowerShell terminal.
 
             $command = Get-Command -Name $CommandName `
                 -ErrorAction SilentlyContinue
+
             if (-not $command) {
+                Write-ErrorLog -Scope "CMD-CHECK" `
+                    -Message "Required command not found: $CommandName"
+
                 throw "Required command not found: $CommandName"
             }
+
+            Write-DebugLog -Scope "CMD-CHECK" `
+                -Message "Command verified: $CommandName"
         }
 
 8.15 No Side Effects
@@ -409,11 +438,18 @@ r: This script must be run from a PowerShell terminal.
                 [string]$NewPathEntry
             )
 
+            Write-DebugLog -Scope "PATH-CALC" `
+                -Message "Calculating new path with entry: $NewPathEntry"
+
             return "$NewPathEntry;$env:PATH"
         }
 
         # Caller applies the change
         $updatedPath = Get-UpdatedPath -NewPathEntry "C:\NewPath"
+
+        Write-InfoLog -Scope "ENV-UPDATE" `
+            -Message "Updating PATH environment variable"
+
         $env:PATH = $updatedPath
 
 8.16 SOLID Principles Application
@@ -434,25 +470,40 @@ r: This script must be run from a PowerShell terminal.
     - Functions MUST be open for extension via parameters, closed for
       modification:
 
-        function Write-FormattedStep {
+        function Send-Notification {
             [CmdletBinding()]
             param(
                 [Parameter(Mandatory = $true)]
                 [string]$Message,
 
                 [Parameter(Mandatory = $false)]
-                [ConsoleColor]$ForegroundColor = [ConsoleColor]::Cyan
+                [string]$Priority = "Normal"
             )
+
+            Write-InfoLog -Scope "NOTIFY-SEND" `
+                -Message "Sending notification ($Priority): $Message"
+
             # Implementation
         }
 
 8.16.3 Liskov Substitution
-
     - Functions MUST follow consistent contracts:
 
-        # All Get-* functions return the same type
-        function Get-RepositoryRoot { [string] }
-        function Get-ConfigurationPath { [string] }
+        # Example: annotate and return [string]
+
+        [OutputType([string])]
+        function Get-RepositoryRoot {
+            [CmdletBinding()]
+            param()
+            return $PWD.Path
+        }
+
+        [OutputType([string])]
+        function Get-ConfigurationPath {
+            [CmdletBinding()]
+            param()
+            return (Join-Path $PWD.Path 'config.json')
+        }
 
 8.16.4 Interface Segregation
 
@@ -473,9 +524,11 @@ r: This script must be run from a PowerShell terminal.
     - Functions MUST depend on abstractions, not concrete implementations:
 
         # Good: Accepts command name as parameter
-        function Invoke-Command {
-            param([string]$CommandName)
-            & $CommandName
+        function Invoke-DependencyTool {
+            param([string]$ToolName)
+
+            Write-InfoLog -Scope "TOOL-EXEC" -Message "Executing tool: $ToolName"
+            & $ToolName
         }
 
         # Bad: Hardcoded dependency
@@ -485,8 +538,8 @@ r: This script must be run from a PowerShell terminal.
 
 8.17 Code Region Folding
 
-    - All scripts SHOULD use #region and #endregion comments to organize code
-      into collapsible sections in VS Code.
+    - All scripts MUST use #region and #endregion comments to organize code
+      into collapsible sections in any code editor that support this.
     - Regions improve readability and navigation in longer scripts.
     - Region names MUST be descriptive and match the section purpose.
 
@@ -537,8 +590,8 @@ r: This script must be run from a PowerShell terminal.
 
 8.17.2 Region Naming Conventions
 
-    - Region names SHOULD be PascalCase
-    - Region names SHOULD be concise but descriptive
+    - Region names MUST be Title Case with spaces
+    - Region names MUST be concise but descriptive
     - Common region names:
 
         #region Core Functions
@@ -556,21 +609,27 @@ r: This script must be run from a PowerShell terminal.
 
 8.18.1 Import Pattern (CRITICAL)
 
-    - Import concise-log.ps1 IMMEDIATELY after Set-StrictMode.
-    - Import BEFORE defining any functions.
-    - Import BEFORE calling Initialize-ScriptEnvironment.
+    - Import concise-log.ps1 before defining any functions.
+    - Initialize-ScriptEnvironment is the single owner for StrictMode and
+      preferences.
+    - Scripts MUST NOT set StrictMode in scripts.
+    - Pre-import logging exception: Scripts may use Write-Error or Write-Host
+      before module import strictly for fatal messages; after import, only
+      concise-log functions MUST be used.
     - Use this exact pattern:
 
         [CmdletBinding()]
         param()
 
-        Set-StrictMode -Version Latest
-
         # Import concise-log module
-        $scriptDir = Split-Path -Parent $MyInvocation.MyCommandPath
-        . "$scriptDir\concise-log.ps1"
+        $logPath = Join-Path $PSScriptRoot 'concise-log.ps1'
+        if (-not (Test-Path -LiteralPath $logPath)) {
+            Write-Error 'Required module not found: concise-log.ps1'
+            exit 1
+        }
+        . $logPath
 
-        # Now call Initialize-ScriptEnvironment from concise-log
+        # Initialize environment (sets StrictMode and preferences)
         Initialize-ScriptEnvironment
 
 8.18.2 Available Functions from concise-log.ps1
@@ -581,6 +640,7 @@ r: This script must be run from a PowerShell terminal.
         - Assert-WindowsPlatform: Validates Windows platform
         - Test-IsInteractivePowerShell: Ensures interactive terminal
         - Invoke-PowerShellCoreTransition: Transitions to pwsh if needed
+        - Assert-PowerShellVersionStrict: Enforces exact pwsh version (7.5.4)
         - Write-FormattedStep: Outputs formatted step messages
         - Write-DebugLog: Writes debug level logs
         - Write-InfoLog: Writes information level logs
@@ -607,7 +667,8 @@ r: This script must be run from a PowerShell terminal.
 8.18.4 Log Message Guidelines
 
     - Log messages MUST be concise and descriptive.
-    - Log messages MUST NOT exceed 83 characters per line (auto-wrapped).
+    - Log messages SHOULD target 83 characters per line;
+      concise-log.ps1 handles wrapping. Scripts MUST NOT implement wrapping.
     - Each log entry automatically includes timestamp, level, scope, hash.
     - Log levels:
 
