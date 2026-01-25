@@ -225,6 +225,8 @@ PREVENT UNAUTHORIZED ALTERATIONS.
         - Enforces strict compliance
 
         AI agent decision logic:
+        - When inspecting commits, use: git --no-pager show --name-only <hash>
+        - Do NOT run git diff or git show without --no-pager
         - Verify the correct file was committed
         - Verify commit scope matches the file
         - Verify commit header length ≤ 83 characters
