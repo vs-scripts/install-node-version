@@ -222,8 +222,8 @@ function Write-LogToHost {
         The log level (I, W).
 
     .EXAMPLE
+        # Writes an information log entry.
         Write-LogToHost -Message "Log message" -Level "I"
-        Displays the log message in dark green.
     #>
     [CmdletBinding()]
     param(
