@@ -438,8 +438,32 @@ function Invoke-NodeVersionPinningWorkflow {
         return $versionValue
     }
 
+    $resolveLtsVersions = {
+        & volta install node@lts
+        if ($LASTEXITCODE -ne 0) {
+            throw "Volta failed to install Node.js LTS"
+        }
+
+        $ltsNodeOutput = & volta run node@lts -- node --version
+        $ltsNodeVersion = & $normalizeVersion `
+            $ltsNodeOutput `
+            "Node.js"
+
+        $ltsNpmOutput = & volta run node@lts -- node `
+            -p "process.versions.npm"
+        $ltsNpmVersion = & $normalizeVersion `
+            $ltsNpmOutput `
+            "npm"
+
+        return [ordered]@{
+            node = $ltsNodeVersion
+            npm  = $ltsNpmVersion
+        }
+    }
+
     $targetNodeVersion = $null
     $targetNpmVersion = $null
+    $packageData = $null
 
     if (Test-Path -LiteralPath $packageJsonPath) {
         Write-InfoLog -Scope "PACKAGE-JSON" `
@@ -468,26 +492,45 @@ function Invoke-NodeVersionPinningWorkflow {
                 $engines.npm `
                 "npm"
 
+            $ltsVersions = & $resolveLtsVersions
+            $isNodeLts = $targetNodeVersion -eq $ltsVersions.node
+            $isNpmLts = $targetNpmVersion -eq $ltsVersions.npm
+
+            if (-not $isNodeLts -or -not $isNpmLts) {
+                Write-WarningLog -Scope "PACKAGE-JSON" `
+                    -Message "Engines are not LTS; updating to latest LTS"
+
+                $targetNodeVersion = $ltsVersions.node
+                $targetNpmVersion = $ltsVersions.npm
+
+                $enginesValue = [ordered]@{
+                    node = $targetNodeVersion
+                    npm  = $targetNpmVersion
+                }
+
+                $packageData.engines = $enginesValue
+
+                $jsonContent = $packageData | ConvertTo-Json -Depth 20
+                Set-Content -LiteralPath $packageJsonPath `
+                    -Value $jsonContent `
+                    -Encoding UTF8
+
+                Write-InfoLog -Scope "PACKAGE-JSON" `
+                    -Message "Updated engines to latest LTS versions"
+            } else {
+                Write-InfoLog -Scope "PACKAGE-JSON" `
+                    -Message "Engines already use latest LTS versions"
+            }
+
             Write-InfoLog -Scope "PACKAGE-JSON" `
                 -Message "Using engines from package.json"
         } else {
             Write-InfoLog -Scope "PACKAGE-JSON" `
                 -Message "Resolving latest LTS engines"
 
-            & volta install node@lts
-            if ($LASTEXITCODE -ne 0) {
-                throw "Volta failed to install Node.js LTS"
-            }
-
-            $nodeVersionOutput = & node --version
-            $targetNodeVersion = & $normalizeVersion `
-                $nodeVersionOutput `
-                "Node.js"
-
-            $npmVersionOutput = & node -p "process.versions.npm"
-            $targetNpmVersion = & $normalizeVersion `
-                $npmVersionOutput `
-                "npm"
+            $ltsVersions = & $resolveLtsVersions
+            $targetNodeVersion = $ltsVersions.node
+            $targetNpmVersion = $ltsVersions.npm
 
             $enginesValue = [ordered]@{
                 node = $targetNodeVersion
@@ -514,20 +557,9 @@ function Invoke-NodeVersionPinningWorkflow {
         Write-InfoLog -Scope "PACKAGE-JSON" `
             -Message "Creating minimal package.json"
 
-        & volta install node@lts
-        if ($LASTEXITCODE -ne 0) {
-            throw "Volta failed to install Node.js LTS"
-        }
-
-        $nodeVersionOutput = & node --version
-        $targetNodeVersion = & $normalizeVersion `
-            $nodeVersionOutput `
-            "Node.js"
-
-        $npmVersionOutput = & node -p "process.versions.npm"
-        $targetNpmVersion = & $normalizeVersion `
-            $npmVersionOutput `
-            "npm"
+        $ltsVersions = & $resolveLtsVersions
+        $targetNodeVersion = $ltsVersions.node
+        $targetNpmVersion = $ltsVersions.npm
 
         $packageConfiguration = [ordered]@{
             name    = Split-Path -Leaf $RepositoryRoot
@@ -545,47 +577,103 @@ function Invoke-NodeVersionPinningWorkflow {
 
         Write-InfoLog -Scope "PACKAGE-JSON" `
             -Message "Initialized package.json with engines"
+
+        $packageData = $packageConfiguration
     }
 
     # 3. Bind Node.js LTS to this folder
     Push-Location -Path $RepositoryRoot
     try {
-        Write-InfoLog -Scope "NODE-PIN" `
-            -Message "Installing Node.js and npm for this folder"
+        $installedNodeVersion = $null
+        $installedNpmVersion = $null
+        $installedVersionsMatch = $false
 
-        $installMessage = "Installing Node.js $targetNodeVersion " +
-            "and npm $targetNpmVersion"
-        Write-InfoLog -Scope "NODE-PIN" -Message $installMessage
+        try {
+            $installedNodeOutput = & node --version
+            $installedNodeVersion = & $normalizeVersion `
+                $installedNodeOutput `
+                "Node.js"
 
-        & volta install `
-            "node@$targetNodeVersion" `
-            "npm@$targetNpmVersion"
-        if ($LASTEXITCODE -ne 0) {
-            throw "Volta failed to install Node.js or npm"
+            $installedNpmOutput = & npm --version
+            $installedNpmVersion = & $normalizeVersion `
+                $installedNpmOutput `
+                "npm"
+
+            $installedVersionsMatch = `
+                ($installedNodeVersion -eq $targetNodeVersion) -and `
+                ($installedNpmVersion -eq $targetNpmVersion)
+        } catch {
+            $installedVersionsMatch = $false
         }
 
-        Write-InfoLog -Scope "NODE-PIN" `
-            -Message "Pinning Node.js and npm to this folder"
+        $voltaVersionsMatch = $false
+        if ($packageData) {
+            $hasVolta = $packageData.PSObject.Properties.Name `
+                -contains 'volta'
+            $voltaValues = if ($hasVolta) {
+                $packageData.volta
+            } else {
+                $null
+            }
 
-        & volta pin `
-            "node@$targetNodeVersion" `
-            "npm@$targetNpmVersion"
-        if ($LASTEXITCODE -ne 0) {
-            throw "Volta failed to pin Node.js or npm"
+            if ($voltaValues -and $voltaValues.node -and $voltaValues.npm) {
+                $voltaNodeVersion = & $normalizeVersion `
+                    $voltaValues.node `
+                    "Node.js"
+                $voltaNpmVersion = & $normalizeVersion `
+                    $voltaValues.npm `
+                    "npm"
+
+                $voltaVersionsMatch = `
+                    ($voltaNodeVersion -eq $targetNodeVersion) -and `
+                    ($voltaNpmVersion -eq $targetNpmVersion)
+            }
+        }
+
+        $shouldInstallAndPin = -not ($installedVersionsMatch `
+            -and $voltaVersionsMatch)
+
+        if ($shouldInstallAndPin) {
+            Write-InfoLog -Scope "NODE-PIN" `
+                -Message "Installing Node.js and npm for this folder"
+
+            $installMessage = "Installing Node.js $targetNodeVersion " +
+                "and npm $targetNpmVersion"
+            Write-InfoLog -Scope "NODE-PIN" -Message $installMessage
+
+            & volta install `
+                "node@$targetNodeVersion" `
+                "npm@$targetNpmVersion"
+            if ($LASTEXITCODE -ne 0) {
+                throw "Volta failed to install Node.js or npm"
+            }
+
+            Write-InfoLog -Scope "NODE-PIN" `
+                -Message "Pinning Node.js and npm to this folder"
+
+            & volta pin `
+                "node@$targetNodeVersion" `
+                "npm@$targetNpmVersion"
+            if ($LASTEXITCODE -ne 0) {
+                throw "Volta failed to pin Node.js or npm"
+            }
+
+            $installedNodeOutput = & node --version
+            $installedNodeVersion = & $normalizeVersion `
+                $installedNodeOutput `
+                "Node.js"
+
+            $installedNpmOutput = & npm --version
+            $installedNpmVersion = & $normalizeVersion `
+                $installedNpmOutput `
+                "npm"
+        } else {
+            Write-InfoLog -Scope "NODE-VERIFY" `
+                -Message "Versions already match engines; verifying only"
         }
 
         Write-InfoLog -Scope "NODE-VERIFY" `
             -Message "Validating active Node.js and npm versions"
-
-        $installedNodeOutput = & node --version
-        $installedNodeVersion = & $normalizeVersion `
-            $installedNodeOutput `
-            "Node.js"
-
-        $installedNpmOutput = & npm --version
-        $installedNpmVersion = & $normalizeVersion `
-            $installedNpmOutput `
-            "npm"
 
         if ($installedNodeVersion -ne $targetNodeVersion) {
             $nodeMismatch = "Node.js version mismatch. " +
