@@ -207,44 +207,6 @@ function Write-FormattedStep {
 
 # --- Logging Functions ---
 
-function Write-LogToHost {
-    <#
-    .SYNOPSIS
-        Writes a log entry to the host console with color.
-
-    .DESCRIPTION
-        Outputs a formatted log entry to the console with color based on log level.
-
-    .PARAMETER Message
-        The formatted log message to display.
-
-    .PARAMETER Level
-        The log level (I, W).
-
-    .EXAMPLE
-        # Writes an information log entry.
-        Write-LogToHost -Message "Log message" -Level "I"
-    #>
-    [CmdletBinding()]
-    param(
-        [Parameter(Mandatory = $true)]
-        [string]$Message,
-
-        [Parameter(Mandatory = $true)]
-        [ValidateSet('I', 'W')]
-        [string]$Level
-    )
-
-    if ($script:DisableLogColors) {
-        Write-Host $Message
-    } else {
-        switch ($Level) {
-            'I' { Write-Host $Message -ForegroundColor DarkGreen }
-            'W' { Write-Host $Message -ForegroundColor DarkYellow }
-        }
-    }
-}
-
 function Write-Log {
     <#
     .SYNOPSIS
@@ -350,35 +312,47 @@ function Write-Log {
             Write-Debug $formattedLog
         }
         'I' {
-            # Information level uses Write-Verbose if verbose mode enabled
             if ($script:EnableVerboseMode) {
                 Write-Verbose $formattedLog
             } else {
-                Write-LogToHost -Message $formattedLog -Level $Level
+                if ($script:DisableLogColors) {
+                    Write-Host $formattedLog
+                } else {
+                    Write-Host $formattedLog -ForegroundColor DarkGreen
+                }
             }
         }
         'W' {
-            # Warning level uses Write-Verbose if verbose mode enabled
             if ($script:EnableVerboseMode) {
                 Write-Verbose $formattedLog
             } else {
-                Write-LogToHost -Message $formattedLog -Level $Level
+                if ($script:DisableLogColors) {
+                    Write-Host $formattedLog
+                } else {
+                    Write-Host $formattedLog -ForegroundColor DarkYellow
+                }
             }
         }
         'E' {
-            # Error level uses Write-Verbose if verbose mode enabled
             if ($script:EnableVerboseMode) {
                 Write-Verbose $formattedLog
             } else {
-                Write-Host $formattedLog -ForegroundColor Red
+                if ($script:DisableLogColors) {
+                    Write-Host $formattedLog
+                } else {
+                    Write-Host $formattedLog -ForegroundColor Red
+                }
             }
         }
         'X' {
-            # Exception level uses Write-Verbose if verbose mode enabled
             if ($script:EnableVerboseMode) {
                 Write-Verbose $formattedLog
             } else {
-                Write-Host $formattedLog -ForegroundColor DarkRed
+                if ($script:DisableLogColors) {
+                    Write-Host $formattedLog
+                } else {
+                    Write-Host $formattedLog -ForegroundColor DarkRed
+                }
             }
         }
     }
