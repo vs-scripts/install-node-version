@@ -374,7 +374,7 @@ PREVENT UNAUTHORIZED ALTERATIONS.
         Version: 0.0.0
         Last Modified: [Date]
         Platform: Windows only
-        Requirements: pwsh 7.5.4+
+        Requirements: pwsh 7.5.4
     #>
 
     Set-StrictMode -Version Latest
@@ -479,7 +479,7 @@ PREVENT UNAUTHORIZED ALTERATIONS.
         CompanyName          = 'Company Name'
         Copyright            = '(c) 2026 Author Name. All rights reserved.'
         Description          = 'Brief description of module purpose.'
-        PowerShellVersion    = '7.0'
+        PowerShellVersion    = '7.5.4'
         FunctionsToExport    = @(
             'Get-ExampleValue'
             'Invoke-ExampleFunction'
