@@ -21,7 +21,7 @@ exit /b 1
     Version: 0.0.0
     Last Modified: 2026-01-19
     Platform: Windows only
-    Requirements: pwsh 7.5.4+
+    Requirements: pwsh 7.5.4
 
 .EXAMPLE
     . .\concise-log.ps1
