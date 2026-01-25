@@ -90,6 +90,8 @@ PHASE 3 — ANALYSIS
         - Verify each file can be committed independently.
         - Check that commit messages can follow concise-commit-format.help.
         - Identify any conflicts with ./RULES or ./FORMAT.
+        - When viewing changes, use: git --no-pager diff
+        - Do NOT use interactive diff tools or pagers.
 
     - Failure Rule:
 
