@@ -44,7 +44,7 @@ PREVENT UNAUTHORIZED ALTERATIONS.
     6.  Naming Conventions ................................................. 049
     7.  Goals and Principles ............................................... 055
     8.  Core Module Structure .............................................. 065
-    9.  Compliance ......................................................... 400
+    9.  Compliance ......................................................... 415
 
 4.  Document Status:
 
@@ -136,13 +136,30 @@ PREVENT UNAUTHORIZED ALTERATIONS.
             Last Modified: [Date]
             Platform: Windows only
             Requirements: pwsh 7.5.4
-            Dependencies: concise-log.psm1 (for Write-InfoLog)
+            Dependencies: concise-log.psm1
 
         .EXAMPLE
+            # Example: Non-elevated script structure
             Import-Module -Name concise-log
             Import-Module -Name powershell-core
+
             Initialize-ScriptEnvironment
             Assert-WindowsPlatform
+            Invoke-PowerShellCoreTransition
+            Assert-PowerShellVersionStrict
+
+            # Example: Elevated script structure
+            Import-Module -Name concise-log
+            Import-Module -Name powershell-core
+
+            Initialize-ScriptEnvironment
+            Assert-WindowsPlatform
+            Invoke-PowerShellCoreTransition
+            Assert-PowerShellVersionStrict
+
+            if (-not (Test-IsAdministrator)) {
+                Invoke-ElevationRequest
+            }
 
         .EXIT CODES
             0 - Success
@@ -174,7 +191,8 @@ PREVENT UNAUTHORIZED ALTERATIONS.
 
 8.6 Function Documentation
 
-    - All functions MUST include comprehensive documentation:
+    - All functions MUST include comprehensive documentation placed directly inside
+      the function body as shown in the example below:
 
         function Initialize-ScriptEnvironment {
             <#
@@ -513,10 +531,10 @@ PREVENT UNAUTHORIZED ALTERATIONS.
             'Assert-WindowsPlatform'
         )
         PrivateData          = @{
-            PSData = @{
-                Tags       = @('core', 'module')
-                ProjectUri = 'https://github.com/example/project'
-                LicenseUri = 'https://github.com/example/project/LICENSE'
+            PSData           = @{
+                Tags         = @('core', 'module')
+                ProjectUri   = 'https://github.com/example/project'
+                LicenseUri   = 'https://github.com/example/project/LICENSE'
             }
         }
     }
