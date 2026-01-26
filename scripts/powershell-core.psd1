@@ -17,10 +17,10 @@
         'Invoke-ElevationRequest'
     )
     PrivateData          = @{
-        PSData = @{
-            Tags       = @('core', 'elevation', 'utilities', 'powershell')
-            ProjectUri = 'https://github.com/vs-scripts/install-node-version'
-            LicenseUri = 'https://github.com/vs-scripts/install-node-version/LICENSE'
+        PSData           = @{
+            Tags         = @('core', 'elevation', 'utilities', 'powershell')
+            ProjectUri   = 'https://github.com/vs-scripts/install-node-version'
+            LicenseUri   = 'https://github.com/vs-scripts/install-node-version/LICENSE'
         }
     }
 }
