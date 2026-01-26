@@ -2,7 +2,7 @@
     RootModule           = 'concise-log.psm1'
     ModuleVersion        = '0.0.0'
     GUID                 = '00000000-0000-0000-0000-000000000000'
-    Author               = 'Richeve Bebedor'
+    Author               = 'Richeve Bebedor <richeve.bebedor+vs-scripts@gmail.com>'
     CompanyName          = 'vs-scripts'
     Copyright            = '(c) 2026 Richeve Bebedor. All rights reserved.'
     Description          = 'Provides logging functions for concise log format'
