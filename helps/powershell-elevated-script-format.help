@@ -27,6 +27,10 @@ PREVENT UNAUTHORIZED ALTERATIONS.
     to ensure consistency, maintainability, and adherence to SOLID principles
     while remaining concise, helpful, and humane.
 
+    This document depends on and references the PowerShell Core Module Format
+    specification (helps/powershell-core-module-format.help) for core function
+    definitions and usage patterns.
+
 2.  Permission:
 
     NOTICE: PERMISSION TO USE, MODIFY, COPY, AND/OR DISTRIBUTE THIS DOCUMENT
@@ -162,45 +166,28 @@ PREVENT UNAUTHORIZED ALTERATIONS.
     - Scripts MUST call Initialize-ScriptEnvironment as an early step to
       enforce strict mode and error preferences.
 
-8.5 Core Functions Required in All Elevated Scripts
+8.5 Core Module Dependencies
 
-    - Every elevated script MUST import concise-log.ps1 and CALL these foundational
-      functions; scripts MUST NOT redefine them:
+    - All elevated scripts MUST import the powershell-core module.
+    - The powershell-core module provides foundational functions required
+      for elevated script execution.
+    - For complete documentation of core module functions, refer to:
+      helps/powershell-core-module-format.help
 
-    8.5.1 Initialize-ScriptEnvironment
+8.5.1 Required Core Functions for Elevated Scripts
 
-        - Sets up PowerShell preferences for consistent behavior.
+    - Elevated scripts MUST use these functions from powershell-core module:
 
-    8.5.2 Assert-WindowsPlatform
+        - Initialize-ScriptEnvironment
+        - Assert-WindowsPlatform
+        - Test-IsInteractivePowerShell
+        - Invoke-PowerShellCoreTransition
+        - Assert-PowerShellVersionStrict
+        - Test-IsAdministrator (REQUIRED for elevation)
+        - Invoke-ElevationRequest (REQUIRED for elevation)
 
-        - Validates the script is running on Windows.
-
-    8.5.3 Test-IsInteractivePowerShell
-
-        - Interactive user input is prohibited except for elevation consent (UAC).
-          Elevated scripts MUST NOT prompt for inputs and MUST run
-          non-interactively by default, except that UAC elevation prompts are
-          permitted when not elevated.
-
-    8.5.4 Invoke-PowerShellCoreTransition
-
-        - Relaunches in PowerShell (pwsh) when current host is Windows PowerShell
-          or pwsh version mismatch (strictly requires 7.5.4).
-          Transition occurs before elevation.
-
-    8.5.5 Write-FormattedStep
-
-        - Outputs formatted step messages to console.
-
-    8.5.6 Test-IsAdministrator
-
-        - Checks for administrative privileges (REQUIRED for elevated scripts).
-
-    8.5.7 Invoke-ElevationRequest
-
-        - Requests elevation and relaunches the script.
-          UAC elevation prompts are permitted when not elevated.
-          In non-interactive contexts, MUST log guidance and exit 1.
+    - See powershell-core-module-format.help section 8.2 for complete
+      function specifications and usage details.
 
 8.6 Elevation Requirement
 
@@ -362,8 +349,8 @@ PREVENT UNAUTHORIZED ALTERATIONS.
 
 8.11 Output and Logging
 
-    - Use concise-log.ps1 module for standardized logging.
-    - The concise-log.ps1 module provides standardized logging functions that
+    - Use concise-log module for standardized logging.
+    - The concise-log module provides standardized logging functions that
       follow the CLOGF (Concise Log Format) specification:
 
         - Write-InfoLog: Information level logs (I)
@@ -599,49 +586,63 @@ PREVENT UNAUTHORIZED ALTERATIONS.
         #region Primary Functions
         #region Main Script Execution
 
-8.18 Concise Log Format Integration
+8.18 Module Integration
 
-    - All elevated scripts MUST use the concise-log.ps1 module for ALL
+    - All elevated scripts MUST use the concise-log module for ALL
       logging operations.
-    - The concise-log.ps1 module implements the CLOGF specification.
-    - Scripts MUST NOT define their own logging functions.
-    - Scripts MUST NOT redefine core functions from concise-log.ps1.
+    - All elevated scripts MUST use the powershell-core module for ALL
+      core functions.
+    - The concise-log module implements the CLOGF specification.
+    - The powershell-core module provides initialization and elevation
+      functions.
+    - Scripts MUST NOT define their own logging or core functions.
+    - Scripts MUST NOT redefine functions from these modules.
 
 8.18.1 Import Pattern (CRITICAL)
 
-    - Import concise-log.ps1 before defining any functions.
+    - Import required modules before defining any functions.
     - Initialize-ScriptEnvironment is the single owner for StrictMode and
       preferences.
     - Scripts MUST NOT set StrictMode in scripts.
     - Pre-import logging exception: Scripts may use Write-Error or Write-Host
       before module import strictly for fatal messages; after import, only
-      concise-log functions MUST be used.
+      module functions MUST be used.
     - Use this exact pattern:
 
         [CmdletBinding()]
         param()
 
-        # Import concise-log module
-        $logPath = Join-Path $PSScriptRoot 'concise-log.ps1'
-        if (-not (Test-Path -LiteralPath $logPath)) {
-            Write-Error 'Required module not found: concise-log.ps1'
+        # Import required modules
+        $scriptPath = $PSScriptRoot
+        $conciseLogPath = Join-Path $scriptPath 'concise-log.psm1'
+        $coreModulePath = Join-Path $scriptPath 'powershell-core.psm1'
+
+        if (-not (Test-Path -LiteralPath $conciseLogPath)) {
+            Write-Error 'Required module not found: concise-log.psm1'
             exit 1
         }
-        . $logPath
+
+        if (-not (Test-Path -LiteralPath $coreModulePath)) {
+            Write-Error 'Required module not found: powershell-core.psm1'
+            exit 1
+        }
+
+        Import-Module -Name $conciseLogPath
+        Import-Module -Name $coreModulePath
 
         # Initialize environment (sets StrictMode and preferences)
         Initialize-ScriptEnvironment
 
-8.18.2 Available Functions from concise-log.ps1
+8.18.2 Available Functions from Core Modules
 
-    - DO NOT redefine these functions. They are provided by concise-log.ps1:
+    - Scripts MUST import powershell-core module for core functions.
+    - Scripts MUST import concise-log module for logging functions.
+    - DO NOT redefine these functions in scripts.
 
-        - Initialize-ScriptEnvironment: Sets PowerShell preferences
-        - Assert-WindowsPlatform: Validates Windows platform
-        - Test-IsInteractivePowerShell: Ensures interactive terminal
-        - Invoke-PowerShellCoreTransition: Transitions to pwsh if needed
-        - Assert-PowerShellVersionStrict: Enforces exact pwsh version (7.5.4)
-        - Write-FormattedStep: Outputs formatted step messages
+    - Core functions from powershell-core module:
+        See helps/powershell-core-module-format.help section 8.2
+
+    - Logging functions from concise-log module:
         - Write-DebugLog: Writes debug level logs
         - Write-InfoLog: Writes information level logs
         - Write-WarningLog: Writes warning level logs
@@ -668,7 +669,8 @@ PREVENT UNAUTHORIZED ALTERATIONS.
 
     - Log messages MUST be concise and descriptive.
     - Log messages SHOULD target 83 characters per line;
-      concise-log.ps1 handles wrapping. Scripts MUST NOT implement wrapping.
+      concise-log module handles wrapping. Scripts MUST NOT implement
+      wrapping.
     - Each log entry automatically includes timestamp, level, scope, hash.
     - Log levels:
 
@@ -693,15 +695,20 @@ PREVENT UNAUTHORIZED ALTERATIONS.
     - [ ] Main execution flow follows standard pattern
     - [ ] Exit codes: 0 for success, 1 for failure
     - [ ] Code organized with #region and #endregion for folding
-    - [ ] concise-log.ps1 module imported
+    - [ ] concise-log module imported
+    - [ ] powershell-core module imported
     - [ ] Log scope in PARENT-CHILD format
     - [ ] Log entries do not exceed 83 characters per line
     - [ ] Appropriate log level used (D, I, W, E, X)
     - [ ] Test-IsAdministrator called at startup
     - [ ] Invoke-ElevationRequest called if not elevated
     - [ ] Script metadata documents elevation requirement
+    - [ ] References powershell-core-module-format.help for core functions
 
 9.2 References
+
+    - PowerShell Core Module Format (PWCMF)
+      helps/powershell-core-module-format.help
 
     - PowerShell Scripting Best Practices
       https://learn.microsoft.com/en-us/powershell/scripting/learn/
