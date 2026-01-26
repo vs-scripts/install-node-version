@@ -1,413 +1,621 @@
-# PSM1 Core Module Format and Usage Guide
-
-## Overview
-
-The PSM1 Core Module (`powershell-core.psm1`) is a reusable PowerShell Script Module that provides essential functions for elevated scripts. It consolidates common functionality including script initialization, platform validation, elevation handling, and standardized logging.
-
-The module is designed to:
-- Provide no side effects at import time
-- Follow PowerShell standards and best practices
-- Enable code reuse across elevated scripts
-- Ensure consistent behavior and logging
-
-## Module Structure
-
-The module is organized into logical sections using PowerShell regions:
-
-### 1. Core Initialization Functions
-Functions for setting up script environment and validating prerequisites:
-- `Initialize-ScriptEnvironment`: Sets PowerShell preferences (StrictMode, ErrorActionPreference, etc.)
-- `Assert-WindowsPlatform`: Validates the script is running on Windows
-- `Test-IsInteractivePowerShell`: Checks if the session is interactive
-- `Invoke-PowerShellCoreTransition`: Relaunches in pwsh 7.5.4 if needed
-- `Assert-PowerShellVersionStrict`: Enforces exact pwsh version 7.5.4
+|<------------------------------->[ BEGIN-CRFCF ]<------------------------------->|
+
+NOTICE: UNAUTHORIZED MODIFICATION OF THIS DOCUMENT IS EXPRESSLY PROHIBITED. EDITING
+PRIVILEGES ARE EXCLUSIVELY RESERVED FOR THE AUTHOR, DESIGNATED CONTRIBUTORS, AND
+AUTHORIZED ARTIFICIAL INTELLIGENCE AGENTS. DOCUMENT INTEGRITY IS SECURED BY A
+CRYPTOGRAPHIC CHECKSUM; AUTOMATED VERIFICATION SCRIPTS ARE EMPLOYED TO DETECT AND
+PREVENT UNAUTHORIZED ALTERATIONS.
+
+0.  METADATA:
+
+    - RFC:      CONCISE-RFC-000000
+    - GROUP:    VS-SCRIPTS
+    - TITLE:    POWERSHELL CORE MODULE FORMAT
+    - ACRONYM:  PWCMF
+    - AUTHOR:   Richeve Bebedor <richeve.bebedor+vs-scripts@gmail.com>
+    - CATEGORY: SPECIFICATION
+    - STATUS:   DRAFT
+    - VERSION:  000000 (0.0.0)
+    - CREATED:  2026-01-21
+    - CHECKSUM: <SHA-256>
 
-### 2. Elevation Functions
-Functions for managing administrative privileges:
-- `Test-IsAdministrator`: Checks for administrative privileges
-- `Invoke-ElevationRequest`: Requests elevation via UAC (interactive only)
-
-### 3. Logging Functions
-Functions for standardized log output following CLOGF specification:
-- `Write-DebugLog`: Debug-level log entries
-- `Write-InfoLog`: Information-level log entries
-- `Write-WarningLog`: Warning-level log entries
-- `Write-ErrorLog`: Error-level log entries
-- `Write-ExceptionLog`: Exception-level log entries
-
-### 4. Formatted Output Functions
-Functions for visually formatted output:
-- `Write-FormattedStep`: Displays formatted step messages with color
-
-### 5. Private Helper Functions (Not Exported)
-Internal functions used by logging functions:
-- `Get-LogHash`: Generates hash for log entries
-- `Format-LogEntry`: Formats log entries with CLOGF specification
-- `Write-Log`: Core logging implementation
-
-## Importing the Module
-
-### Basic Import
-```powershell
-Import-Module -Name powershell-core
-```
-
-### Import with Full Path
-```powershell
-Import-Module -Name "C:\path\to\scripts\powershell-core.psm1"
-```
-
-### Verify Import
-```powershell
-Get-Module -Name powershell-core
-Get-Command -Module powershell-core
-```
-
-## Usage Examples
-
-### Initialization Pattern
-```powershell
-# Import the module
-Import-Module -Name powershell-core
-
-# Initialize script environment
-Initialize-ScriptEnvironment
-
-# Validate platform
-Assert-WindowsPlatform
-
-# Check for elevation
-if (-not (Test-IsAdministrator)) {
-    Invoke-ElevationRequest
-}
-
-# Log initialization
-Write-InfoLog -Scope "INIT-SCRIPT" -Message "Script initialized successfully"
-```
-
-### Logging Pattern
-```powershell
-# Debug logging
-Write-DebugLog -Scope "OPERATION-NAME" -Message "Starting operation"
-
-# Info logging
-Write-InfoLog -Scope "OPERATION-NAME" -Message "Operation completed"
-
-# Warning logging
-Write-WarningLog -Scope "OPERATION-NAME" -Message "Potential issue detected"
-
-# Error logging
-Write-ErrorLog -Scope "OPERATION-NAME" -Message "Operation failed"
-
-# Exception logging
-Write-ExceptionLog -Scope "OPERATION-NAME" -Message "Unhandled exception occurred"
-```
-
-### Formatted Output Pattern
-```powershell
-# Display formatted step
-Write-FormattedStep -Message "Starting deployment" -ForegroundColor Cyan
-Write-FormattedStep -Message "Deployment complete" -ForegroundColor Green
-```
-
-## Logging Format (CLOGF)
-
-All logging functions produce output in the Concise Log Format (CLOGF):
+1.  Summary:
+
+    This document defines the standardized format, conventions, and structure
+    for reusable PowerShell core modules that provide foundational functions
+    for scripts and other modules. All core modules MUST follow these patterns
+    to ensure consistency, maintainability, and adherence to SOLID principles
+    while remaining concise, helpful, and humane.
 
-```
-# TIMESTAMP LEVEL SCOPE MESSAGE [HASH]
-```
-
-### Components
-
-- **Timestamp**: ISO 8601 format with milliseconds (e.g., `2026-01-21T10:30:45.123Z`)
-- **Level**: Single character indicator
-  - `D` = Debug
-  - `I` = Information
-  - `W` = Warning
-  - `E` = Error
-  - `X` = Exception
-- **Scope**: PARENT-CHILD format (e.g., `INIT-SCRIPT`, `ELEV-REQUEST`)
-- **Message**: Descriptive message
-- **Hash**: 8-character hash for log entry verification
+2.  Permission:
 
-### Example Log Output
-```
-# 2026-01-21T10:30:45.123Z I INIT-SCRIPT PowerShell preferences initialized [a1b2c3d4]
-# 2026-01-21T10:30:46.456Z I PLAT-CHECK Windows platform validation passed [b2c3d4e5]
-# 2026-01-21T10:30:47.789Z I ELEV-CHECK Running with administrative privileges [c3d4e5f6]
-```
+    NOTICE: PERMISSION TO USE, MODIFY, COPY, AND/OR DISTRIBUTE THIS DOCUMENT
+    AND/OR REPOSITORY IS GRANTED UNDER THE TERMS OF THE LICENSE AGREEMENT
+    SPECIFIED IN THE LICENSE FILE. PLEASE REFER TO THE LICENSE FILE FOR DETAILS.
 
-## Scope Naming Convention
-
-Scopes follow PARENT-CHILD format to indicate the component and operation:
-
-### Common Scopes
-
-- **INIT-SCRIPT**: Script initialization
-- **INIT-ENV**: Environment initialization
-- **PLAT-CHECK**: Platform validation
-- **ELEV-CHECK**: Elevation status check
-- **ELEV-REQUEST**: Elevation request
-- **LOG-ENTRY**: Log entry creation
-- **OPERATION-NAME**: Custom operation scope
-
-### Scope Format
-```
-PARENT-CHILD
-```
-
-Where:
-- **PARENT**: Primary component (e.g., INIT, ELEV, LOG, PLAT)
-- **CHILD**: Specific operation (e.g., SCRIPT, REQUEST, ENTRY, CHECK)
-
-## Function Reference
+3.  Contents:
 
-### Initialize-ScriptEnvironment
-Sets up PowerShell preferences for consistent behavior.
+    0.  METADATA ........................................................... 001
+    1.  Summary ............................................................ 015
+    2.  Permission ......................................................... 021
+    3.  Contents ........................................................... 027
+    4.  Document Status .................................................... 035
+    5.  Normative Language ................................................. 041
+    6.  Naming Conventions ................................................. 049
+    7.  Goals and Principles ............................................... 055
+    8.  Core Module Structure .............................................. 065
+    9.  Compliance ......................................................... 400
 
-**Usage:**
-```powershell
-Initialize-ScriptEnvironment
-```
+4.  Document Status:
 
-**Sets:**
-- StrictMode to Version Latest
-- ErrorActionPreference to 'Stop'
-- DebugPreference to 'Continue'
-- WarningPreference to 'Continue'
-- VerbosePreference to 'Continue'
-
-### Assert-WindowsPlatform
-Validates the script is running on Windows.
-
-**Usage:**
-```powershell
-Assert-WindowsPlatform
-```
-
-**Throws:** Error if not on Windows platform
-
-### Test-IsInteractivePowerShell
-Checks if the session is interactive.
+    - This document is a DRAFT specification for PowerShell core module
+      standards.
+    - It defines mandatory conventions for all core modules in this
+      repository.
+    - It is intended to enforce consistency, clarity, and SOLID principles.
 
-**Usage:**
-```powershell
-if (Test-IsInteractivePowerShell) {
-    Write-Host "Running interactively"
-}
-```
-
-**Returns:** `$true` if interactive, `$false` otherwise
-
-### Invoke-PowerShellCoreTransition
-Relaunches in pwsh 7.5.4 if needed.
+5.  Normative Language:
 
-**Usage:**
-```powershell
-Invoke-PowerShellCoreTransition
-```
-
-**Behavior:** Exits current process if relaunch is needed
-
-### Assert-PowerShellVersionStrict
-Enforces exact pwsh version 7.5.4.
+    - The key words,
 
-**Usage:**
-```powershell
-Assert-PowerShellVersionStrict
-```
+        - MUST,
+        - MUST NOT,
+        - SHOULD,
+        - and SHOULD NOT
 
-**Throws:** Error if version doesn't match exactly
-
-### Test-IsAdministrator
-Checks for administrative privileges.
+      in this document SHOULD follow RFC-2119 and RFC-8174.
+    - This document MUST NOT use MAY.
+    - The key word "MUST" denotes "required".
+    - The key word "SHOULD" denotes "optional".
 
-**Usage:**
-```powershell
-if (Test-IsAdministrator) {
-    Write-Host "Running as administrator"
-}
-```
+6.  Naming Conventions:
 
-**Returns:** `$true` if administrator, `$false` otherwise
+    - PowerShell core module file names MUST use lowercase with hyphens.
+    - PowerShell core module file names MUST be descriptive and concise.
+    - Function names MUST use PascalCase with approved PowerShell verbs.
+    - Variable names MUST use camelCase with descriptive full names.
+    - Boolean variables MUST use prefixes: is, has, should, can.
 
-### Invoke-ElevationRequest
-Requests elevation via UAC (interactive only).
+7.  Goals and Principles:
 
-**Usage:**
-```powershell
-if (-not (Test-IsAdministrator)) {
-    Invoke-ElevationRequest
-}
-```
+    - Strictly preserve overall logic and purpose.
+    - Follow latest PowerShell standards and conventions.
+    - Produce self-documenting code.
+    - Eliminate abbreviations, shortened names, and single-character variables.
+    - Prevent side effects and scope creep.
+    - Respect SOLID principles.
+    - Strict adherence to Single Responsibility principle.
+    - Avoid unnecessary complexity.
+    - Remain concise, helpful, and humane.
+
+8.  Core Module Structure:
 
-**Behavior:**
-- Interactive: Shows UAC prompt and relaunches
-- Non-interactive: Logs guidance and exits with code 1
+8.1 Module Purpose
+
+    - Core modules provide foundational functions used by scripts and other
+      modules.
+    - Core modules MUST NOT have side effects at import time.
+    - Core modules MUST be designed for reusability across multiple scripts.
+    - Core modules MUST follow the PSM1 module format specification.
+
+8.2 Core Module Categories
 
-### Write-DebugLog
-Outputs debug-level log entries.
+    - Core modules are organized by function category:
 
-**Usage:**
-```powershell
-Write-DebugLog -Scope "OPERATION-NAME" -Message "Debug information"
-```
+    8.2.1 Initialization Functions
 
-### Write-InfoLog
-Outputs information-level log entries.
+        - Initialize-ScriptEnvironment: Sets PowerShell preferences
+        - Assert-WindowsPlatform: Validates Windows platform
+        - Test-IsInteractivePowerShell: Checks for interactive session
+        - Invoke-PowerShellCoreTransition: Transitions to pwsh if needed
+        - Assert-PowerShellVersionStrict: Enforces exact pwsh version
 
-**Usage:**
-```powershell
-Write-InfoLog -Scope "OPERATION-NAME" -Message "Operation completed"
-```
+    8.2.2 Elevation Functions
 
-### Write-WarningLog
-Outputs warning-level log entries.
+        - Test-IsAdministrator: Checks for administrative privileges
+        - Invoke-ElevationRequest: Requests elevation via UAC
 
-**Usage:**
-```powershell
-Write-WarningLog -Scope "OPERATION-NAME" -Message "Potential issue"
-```
+    8.2.3 Logging Functions
 
-### Write-ErrorLog
-Outputs error-level log entries.
+        - Write-DebugLog: Debug-level log entries
+        - Write-InfoLog: Information-level log entries
+        - Write-WarningLog: Warning-level log entries
+        - Write-ErrorLog: Error-level log entries
+        - Write-ExceptionLog: Exception-level log entries
 
-**Usage:**
-```powershell
-Write-ErrorLog -Scope "OPERATION-NAME" -Message "Operation failed"
-```
+    8.2.4 Formatted Output Functions
 
-### Write-ExceptionLog
-Outputs exception-level log entries.
+        - Write-FormattedStep: Displays formatted step messages
 
-**Usage:**
-```powershell
-Write-ExceptionLog -Scope "OPERATION-NAME" -Message "Exception occurred"
-```
+    8.2.5 Private Helper Functions
 
-### Write-FormattedStep
-Displays formatted step messages.
+        - Get-LogHash: Generates hash for log entries
+        - Format-LogEntry: Formats log entries with CLOGF specification
+        - Write-Log: Core logging implementation
 
-**Usage:**
-```powershell
-Write-FormattedStep -Message "Starting operation" -ForegroundColor Cyan
-```
+8.3 Module Metadata
 
-**Parameters:**
-- `Message`: The step message (required)
-- `ForegroundColor`: Console color (optional, default: Cyan)
+    - Core modules MUST include comprehensive documentation:
 
-## Manifest File
+        <#
+        .SYNOPSIS
+            Brief one-line description of what the module provides.
 
-The module includes a manifest file (`powershell-core.psd1`) that declares:
+        .DESCRIPTION
+            Detailed explanation of the module's purpose, what functions it
+            provides, and any important context about its operation.
 
-- **RootModule**: Points to the PSM1 file
-- **ModuleVersion**: Semantic version (0.0.0)
-- **Author**: Module author information
-- **Description**: Module purpose and functionality
-- **PowerShellVersion**: Required version (7.5.4)
-- **FunctionsToExport**: List of public functions
-- **PrivateData**: Tags and project information
+        .NOTES
+            Author: [Author Name]
+            Version: 0.0.0
+            Last Modified: [Date]
+            Platform: Windows only
+            Requirements: pwsh 7.5.4
 
-## No Side Effects at Import
+        .EXAMPLE
+            Import-Module -Name module-name
+            Initialize-ScriptEnvironment
 
-The module is designed to have no side effects when imported:
+        .EXIT CODES
+            0 - Success
+            1 - Failure (with error message)
+        #>
 
-- ✓ Does not modify environment variables
-- ✓ Does not set global preferences
-- ✓ Does not execute functions
-- ✓ Does not create files or directories
-- ✓ Only defines functions and exports them
+8.4 Manifest File Requirements
 
-## Naming Conventions
+    - Core modules MUST have a corresponding .psd1 manifest file.
+    - Manifest file name MUST match module name: module-name.psm1 and
+      module-name.psd1.
+    - Manifest MUST declare ModuleVersion with semantic versioning.
+    - Manifest MUST declare Author with contact information.
+    - Manifest MUST declare Description with clear module purpose.
+    - Manifest MUST declare FunctionsToExport with all public functions.
+    - Manifest MUST declare PowerShellVersion requirement 7.5.4.
+    - Manifest MUST declare RootModule pointing to .psm1 file.
 
-The module follows PowerShell naming conventions:
+8.5 Core Module Structure Requirements
 
-- **Function Names**: PascalCase with approved verbs (Get, Set, Test, Assert, Invoke, Write)
-- **Variable Names**: camelCase with descriptive full names
-- **Boolean Variables**: Prefixed with is, has, should, or can
-- **No Abbreviations**: All names use full descriptive text
-- **No Single Characters**: All variables have meaningful names
+    - Core modules MUST NOT declare CmdletBinding at script level.
+    - Core modules MUST NOT declare parameters at script level.
+    - Core modules MUST NOT execute any code at import time.
+    - Core modules MUST NOT call functions during import.
+    - Core modules MUST NOT perform initialization or validation.
+    - Core modules MUST include Set-StrictMode -Version Latest.
+    - Core modules MUST use #region and #endregion for code organization.
+    - Core modules MUST export public functions via Export-ModuleMember.
 
-## Error Handling
+8.6 Function Documentation
 
-All functions implement comprehensive error handling:
+    - All functions MUST include comprehensive documentation:
 
-- Parameter validation using ValidateNotNullOrEmpty attributes
-- Try-catch blocks for error handling
-- Meaningful error messages
-- Logging integration for error tracking
+        function Initialize-ScriptEnvironment {
+            <#
+            .SYNOPSIS
+                Sets up PowerShell preferences for consistent behavior.
 
-## Integration with Elevated Scripts
+            .DESCRIPTION
+                Initializes PowerShell environment by setting StrictMode,
+                ErrorActionPreference, and other preferences for consistent
+                script execution.
 
-The module is designed to be imported by elevated scripts:
+            .OUTPUTS
+                None. Sets global preferences.
 
-```powershell
-# Elevated script template
-#Requires -RunAsAdministrator
+            .EXAMPLE
+                Initialize-ScriptEnvironment
+                Sets up PowerShell preferences.
 
-Import-Module -Name powershell-core
+            .NOTES
+                This function MUST be called early in script execution.
+            #>
+            [CmdletBinding()]
+            param()
 
-Initialize-ScriptEnvironment
-Assert-WindowsPlatform
-Assert-PowerShellVersionStrict
+            # Implementation
+        }
 
-if (-not (Test-IsAdministrator)) {
-    Invoke-ElevationRequest
-}
+8.7 Variable Naming Conventions
 
-Write-InfoLog -Scope "SCRIPT-NAME" -Message "Script started"
+    - No single-character variables: Use $index not $i, $temporaryValue not $x
+    - No abbreviations: Use $repositoryRoot not $repo, $configuration not
+      $config
+    - Descriptive names: $isAdministrator not $admin, $windowsCapability not
+      $cap
+    - Boolean prefixes: Use $is, $has, $should, $can
+    - Scope prefix for script-level: $script:VerbosePreference not
+      $VerbosePreference
 
-# Script logic here
+8.8 Path Handling
 
-Write-InfoLog -Scope "SCRIPT-NAME" -Message "Script completed"
-```
+    - All path operations MUST use -LiteralPath parameter to avoid
+      interpretation of special characters:
 
-## Troubleshooting
+        if (Test-Path -LiteralPath $filePath) {
+            $content = Get-Content -LiteralPath $filePath
+            Set-Content -LiteralPath $destinationPath -Value $content
+        }
 
-### Module Not Found
-```powershell
-# Ensure the module path is in PSModulePath
-$env:PSModulePath -split ';'
+8.9 Command Execution
 
-# Or import with full path
-Import-Module -Name "C:\path\to\scripts\powershell-core.psm1"
-```
+    - Dynamic command execution MUST use the call operator &:
 
-### Functions Not Available
-```powershell
-# Verify module is imported
-Get-Module -Name powershell-core
+        $nodeVersion = & node --version
+        $gitRoot = & git rev-parse --show-toplevel
 
-# List exported functions
-Get-Command -Module powershell-core
-```
+8.10 Validation and Assertions
 
-### Elevation Request Not Working
-- Ensure running in interactive session
-- Check UAC is enabled on Windows
-- Verify running with appropriate permissions
+    - Use validation attributes and assertion functions:
 
-## Best Practices
+        # Parameter validation
+        [ValidateNotNullOrEmpty()]
+        [ValidateScript({ Test-Path -LiteralPath $_ })]
+        [string]$FilePath
 
-1. **Always Initialize**: Call `Initialize-ScriptEnvironment` early in scripts
-2. **Validate Platform**: Use `Assert-WindowsPlatform` for Windows-specific scripts
-3. **Check Version**: Use `Assert-PowerShellVersionStrict` when exact version is required
-4. **Log Operations**: Use logging functions for all significant operations
-5. **Handle Elevation**: Check and request elevation before performing admin tasks
-6. **Use Scopes**: Use meaningful scope names in logging for better tracking
-7. **Format Output**: Use `Write-FormattedStep` for user-visible progress
+        # Assertion functions
+        function Assert-CommandExists {
+            [CmdletBinding()]
+            param(
+                [Parameter(Mandatory = $true)]
+                [ValidateNotNullOrEmpty()]
+                [string]$CommandName
+            )
 
-## Related Documentation
+            $command = Get-Command -Name $CommandName `
+                -ErrorAction SilentlyContinue
+            if (-not $command) {
+                throw "Required command not found: $CommandName"
+            }
+        }
 
-- PowerShell Module Format: `helps/powershell-module-format.help`
-- Elevated Script Format: `helps/powershell-elevated-script-format.help`
-- CLOGF Specification: Concise Log Format for standardized logging
+8.11 No Side Effects
 
-## Support
+    - Functions MUST NOT modify global state unless explicitly documented:
 
-For issues or questions about the PSM1 Core Module, refer to:
-- Module documentation in function help (Get-Help function-name)
-- This guide for usage patterns and examples
-- Related help files for module format specifications
+        # BAD: Modifies global environment
+        function Set-GlobalPath {
+            $env:PATH = "C:\NewPath;$env:PATH"  # Side effect!
+        }
+
+        # GOOD: Returns value, caller decides to apply
+        function Get-UpdatedPath {
+            [CmdletBinding()]
+            param(
+                [Parameter(Mandatory = $true)]
+                [string]$NewPathEntry
+            )
+
+            return "$NewPathEntry;$env:PATH"
+        }
+
+        # Caller applies the change
+        $updatedPath = Get-UpdatedPath -NewPathEntry "C:\NewPath"
+        $env:PATH = $updatedPath
+
+8.12 SOLID Principles Application
+
+8.12.1 Single Responsibility
+
+    - Each function MUST have one clear purpose:
+
+        # Good: Single responsibility
+        function Test-IsAdministrator { }
+        function Get-RepositoryRoot { }
+
+        # Bad: Multiple responsibilities
+        function CheckAndElevate { }  # Does two things
+
+8.12.2 Open-Closed
+
+    - Functions MUST be open for extension via parameters, closed for
+      modification:
+
+        function Write-FormattedMessage {
+            [CmdletBinding()]
+            param(
+                [Parameter(Mandatory = $true)]
+                [string]$Message,
+
+                [Parameter(Mandatory = $false)]
+                [ConsoleColor]$ForegroundColor = [ConsoleColor]::Cyan
+            )
+            # Implementation
+        }
+
+8.12.3 Liskov Substitution
+
+    - Functions MUST follow consistent contracts:
+
+        # All Get-* functions return the same type
+        function Get-RepositoryRoot { [string] }
+        function Get-ConfigurationPath { [string] }
+
+8.12.4 Interface Segregation
+
+    - Functions MUST accept only necessary parameters:
+
+        # Good: Only required parameters
+        function Initialize-Environment {
+            param([string]$RepositoryRoot)
+        }
+
+        # Bad: Accepts unnecessary parameters
+        function Initialize-Environment {
+            param([string]$RepositoryRoot, [string]$Unused1)
+        }
+
+8.12.5 Dependency Inversion
+
+    - Functions MUST depend on abstractions, not concrete implementations:
+
+        # Good: Accepts command name as parameter
+        function Invoke-Command {
+            param([string]$CommandName)
+            & $CommandName
+        }
+
+        # Bad: Hardcoded dependency
+        function Invoke-Git {
+            & git rev-parse --show-toplevel
+        }
+
+8.13 Code Region Folding
+
+    - All core modules SHOULD use #region and #endregion comments to organize
+      code into collapsible sections in VS Code.
+    - Regions improve readability and navigation in longer modules.
+    - Region names MUST be descriptive and match the section purpose.
+
+8.13.1 Region Organization Pattern
+
+    #region Public Functions
+
+    function Public-Function-One {
+        # Implementation
+    }
+
+    function Public-Function-Two {
+        # Implementation
+    }
+
+    #endregion
+
+    #region Private Functions
+
+    function Private-Helper {
+        # Implementation
+    }
+
+    #endregion
+
+8.13.2 Region Naming Conventions
+
+    - Region names SHOULD be Title Case with spaces
+    - Region names SHOULD be concise but descriptive
+    - Common region names:
+
+        #region Public Functions
+        #region Private Functions
+        #region Helper Functions
+        #region Configuration
+
+8.14 Core Module Structure Template
+
+    <#
+    .SYNOPSIS
+        Brief description of module purpose.
+
+    .DESCRIPTION
+        Detailed description of what this module provides and its key
+        functions.
+
+    .NOTES
+        Author: [Author Name]
+        Version: 0.0.0
+        Last Modified: [Date]
+        Platform: Windows only
+        Requirements: pwsh 7.5.4
+    #>
+
+    Set-StrictMode -Version Latest
+
+    #region Public Functions
+
+    function Initialize-ScriptEnvironment {
+        <#
+        .SYNOPSIS
+            Sets up PowerShell preferences for consistent behavior.
+
+        .DESCRIPTION
+            Initializes PowerShell environment by setting StrictMode,
+            ErrorActionPreference, and other preferences.
+
+        .OUTPUTS
+            None. Sets global preferences.
+
+        .EXAMPLE
+            Initialize-ScriptEnvironment
+            Sets up PowerShell preferences.
+        #>
+        [CmdletBinding()]
+        param()
+
+        # Implementation
+    }
+
+    #endregion
+
+    #region Private Functions
+
+    function Private-Helper {
+        [CmdletBinding()]
+        param()
+
+        # Implementation
+    }
+
+    #endregion
+
+    # Export public functions
+    Export-ModuleMember -Function @(
+        'Initialize-ScriptEnvironment'
+    )
+
+8.15 Core Module Function Documentation Template
+
+    function Function-Name {
+        <#
+        .SYNOPSIS
+            One-line description of what the function does.
+
+        .DESCRIPTION
+            Detailed explanation of the function's purpose, behavior, and
+            any important context about its operation.
+
+        .PARAMETER ParameterName
+            Description of the parameter, its type, and expected values.
+
+        .PARAMETER AnotherParameter
+            Description of another parameter.
+
+        .OUTPUTS
+            [ReturnType] Description of what the function returns.
+
+        .EXAMPLE
+            Function-Name -ParameterName "value"
+            Description of what this example does.
+
+        .EXAMPLE
+            Function-Name -ParameterName "value" -AnotherParameter "other"
+            Description of another usage example.
+
+        .NOTES
+            Author: [Author Name]
+            Version: 0.0.0
+            Any important notes about the function.
+
+        .LINK
+            https://learn.microsoft.com/en-us/powershell/module/
+        #>
+        [CmdletBinding()]
+        param(
+            [Parameter(Mandatory = $true)]
+            [ValidateNotNullOrEmpty()]
+            [string]$ParameterName,
+
+            [Parameter(Mandatory = $false)]
+            [string]$AnotherParameter = "default"
+        )
+
+        # Implementation
+    }
+
+8.16 Core Module Manifest Template
+
+    @{
+        RootModule           = 'module-name.psm1'
+        ModuleVersion        = '0.0.0'
+        GUID                 = '00000000-0000-0000-0000-000000000000'
+        Author               = 'Author Name'
+        CompanyName          = 'Company Name'
+        Copyright            = '(c) 2026 Author Name. All rights reserved.'
+        Description          = 'Brief description of module purpose.'
+        PowerShellVersion    = '7.5.4'
+        FunctionsToExport    = @(
+            'Initialize-ScriptEnvironment'
+            'Assert-WindowsPlatform'
+        )
+        PrivateData          = @{
+            PSData = @{
+                Tags       = @('core', 'module')
+                ProjectUri = 'https://github.com/example/project'
+                LicenseUri = 'https://github.com/example/project/LICENSE'
+            }
+        }
+    }
+
+8.17 Core Module Export Patterns
+
+    - All public functions MUST be explicitly exported:
+
+        Export-ModuleMember -Function @(
+            'Initialize-ScriptEnvironment'
+            'Assert-WindowsPlatform'
+            'Test-IsAdministrator'
+        )
+
+    - Private helper functions MUST NOT be exported.
+    - Only functions listed in Export-ModuleMember are accessible to
+      importing scripts.
+
+8.18 Core Module Import Patterns
+
+    - Calling scripts MUST import core modules using Import-Module:
+
+        Import-Module -Name module-name
+
+        # Now functions from the module are available
+        Initialize-ScriptEnvironment
+
+    - Core modules are loaded into a separate module scope.
+    - Functions are available in the calling script's scope after import.
+    - Module-level variables are NOT accessible to calling scripts unless
+      explicitly exported.
+
+8.19 No Side Effects at Import
+
+    - Core modules are designed to have no side effects when imported:
+
+        - ✓ Does not modify environment variables
+        - ✓ Does not set global preferences
+        - ✓ Does not execute functions
+        - ✓ Does not create files or directories
+        - ✓ Only defines functions and exports them
+
+9.1 Review Checklist
+
+    - [ ] Module metadata with SYNOPSIS, DESCRIPTION, NOTES
+    - [ ] Corresponding .psd1 manifest file present
+    - [ ] Manifest declares ModuleVersion with semantic versioning
+    - [ ] Manifest declares Author with contact information
+    - [ ] Manifest declares Description with clear purpose
+    - [ ] Manifest declares FunctionsToExport with all public functions
+    - [ ] Manifest declares PowerShellVersion requirement
+    - [ ] NO CmdletBinding or parameters at script level
+    - [ ] NO auto-execution of code at import time
+    - [ ] Set-StrictMode -Version Latest present
+    - [ ] All functions have full documentation
+    - [ ] All functions declare [CmdletBinding()]
+    - [ ] No abbreviations or single-character variables
+    - [ ] No side effects outside function scope
+    - [ ] Path handling uses -LiteralPath
+    - [ ] Command execution uses & operator
+    - [ ] SOLID principles applied
+    - [ ] Code organized with #region and #endregion for folding
+    - [ ] All public functions exported via Export-ModuleMember
+    - [ ] Private helper functions NOT exported
+    - [ ] Functions return values instead of calling exit
+    - [ ] Module can be safely imported without side effects
+
+9.2 References
+
+    - PowerShell Scripting Best Practices
+      https://learn.microsoft.com/en-us/powershell/scripting/learn/
+      ps101/09-functions
+
+    - Approved PowerShell Verbs
+      https://learn.microsoft.com/en-us/powershell/scripting/developer/
+      cmdlet/approved-verbs-for-powershell-commands
+
+    - SOLID Principles
+      https://en.wikipedia.org/wiki/SOLID
+
+    - PowerShell Style Guide
+      https://poshcode.gitbook.io/powershell-practice-and-style/
+
+    - RFC 2119 - Key words for use in RFCs
+      https://tools.ietf.org/html/rfc2119
+
+    - RFC 8174 - Ambiguity of Uppercase vs Lowercase in RFC 2119
+      https://tools.ietf.org/html/rfc8174
+
+|<------------------------------->[ ENDED-CRFCF ]<------------------------------->|
