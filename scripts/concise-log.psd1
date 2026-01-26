@@ -16,10 +16,10 @@
         'Write-ExceptionLog'
     )
     PrivateData          = @{
-        PSData = @{
-            Tags       = @('logging', 'concise-log', 'module')
-            ProjectUri = 'https://github.com/vs-scripts/install-node-version'
-            LicenseUri = 'https://github.com/vs-scripts/install-node-version/LICENSE'
+        PSData           = @{
+            Tags         = @('logging', 'concise-log', 'module')
+            ProjectUri   = 'https://github.com/vs-scripts/install-node-version'
+            LicenseUri   = 'https://github.com/vs-scripts/install-node-version/LICENSE'
         }
     }
 }
