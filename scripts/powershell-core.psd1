@@ -1,11 +1,11 @@
 @{
     RootModule           = 'powershell-core.psm1'
     ModuleVersion        = '0.0.0'
-    GUID                 = '12345678-1234-1234-1234-123456789012'
-    Author               = 'PowerShell Core Module Team'
-    CompanyName          = 'Organization'
-    Copyright            = '(c) 2026 PowerShell Core Module Team. All rights reserved.'
-    Description          = 'Core functions for elevated PowerShell scripts including initialization, elevation, logging, and formatted output'
+    GUID                 = '00000000-0000-0000-0000-000000000000'
+    Author               = 'Richeve Bebedor'
+    CompanyName          = 'vs-scripts'
+    Copyright            = '(c) 2026 Richeve Bebedor. All rights reserved.'
+    Description          = 'Core functions for elevated and non-elevated executable PowerShell scripts.'
     PowerShellVersion    = '7.5.4'
     FunctionsToExport    = @(
         'Initialize-ScriptEnvironment'
@@ -15,18 +15,12 @@
         'Assert-PowerShellVersionStrict'
         'Test-IsAdministrator'
         'Invoke-ElevationRequest'
-        'Write-DebugLog'
-        'Write-InfoLog'
-        'Write-WarningLog'
-        'Write-ErrorLog'
-        'Write-ExceptionLog'
-        'Write-FormattedStep'
     )
     PrivateData          = @{
         PSData = @{
-            Tags       = @('core', 'elevation', 'logging', 'utilities', 'powershell')
-            ProjectUri = 'https://github.com/example/project'
-            LicenseUri = 'https://github.com/example/project/LICENSE'
+            Tags       = @('core', 'elevation', 'utilities', 'powershell')
+            ProjectUri = 'https://github.com/vs-scripts/install-node-version'
+            LicenseUri = 'https://github.com/vs-scripts/install-node-version/LICENSE'
         }
     }
 }
