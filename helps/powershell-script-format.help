@@ -44,38 +44,7 @@ PREVENT UNAUTHORIZED ALTERATIONS.
     6.  Naming Conventions ................................................. 049
     7.  Goals and Principles ............................................... 055
     8.  Structure .......................................................... 065
-        8.1  Shebang and Batch Fallback Header ............................ 124
-        8.2  Script Metadata ............................................... 140
-        8.3  CmdletBinding and Parameters .................................. 169
-        8.4  Strict Mode and Error Handling ................................ 198
-        8.5  Function Organization ......................................... 209
-        8.6  Variable Naming Conventions ................................... 291
-        8.7  Core Module Dependencies ...................................... 300
-        8.8  Main Execution Flow ........................................... 319
-        8.9  Error Handling ................................................ 347
-        8.10 Output and Logging ............................................ 366
-        8.11 Path Handling ................................................. 378
-        8.12 Command Execution ............................................. 388
-        8.13 Validation and Assertions ..................................... 395
-        8.14 No Side Effects ............................................... 419
-        8.15 SOLID Principles Application .................................. 443
-             8.15.1 Single Responsibility .................................. 445
-             8.15.2 Open-Closed ............................................ 456
-             8.15.3 Liskov Substitution .................................... 473
-             8.15.4 Interface Segregation .................................. 481
-             8.15.5 Dependency Inversion ................................... 495
-        8.16 Template Structure ............................................ 510
-        8.17 Code Region Folding ........................................... 580
-        8.18 Common Patterns ............................................... 627
-        8.19 Concise Log Format Integration ................................ 696
-             8.19.1 Mandatory Requirements ................................. 698
-             8.19.2 Module Import Pattern .................................. 706
-             8.19.3 Available Core Functions ............................... 722
-             8.19.4 Log Scope Naming (PARENT-CHILD Format) ................ 730
-             8.19.5 Log Message Guidelines ................................. 746
     9.  Compliance ......................................................... 759
-        9.1  Review Checklist .............................................. 759
-        9.2  References .................................................... 779
 
 4.  Document Status:
 
@@ -321,7 +290,9 @@ PREVENT UNAUTHORIZED ALTERATIONS.
     - The main execution section MUST follow this pattern:
 
         # Import required modules
-        Import-Module -Name powershell-core
+        $scriptDirectory = Split-Path -Parent $MyInvocation.MyCommandPath
+        Import-Module -Name (Join-Path $scriptDirectory "concise-log")
+        Import-Module -Name (Join-Path $scriptDirectory "powershell-core")
 
         # Initialize and validate environment
         Initialize-ScriptEnvironment
@@ -353,13 +324,16 @@ PREVENT UNAUTHORIZED ALTERATIONS.
 
         try {
             $result = Invoke-Operation
+
             Write-InfoLog -Scope "OPERATION-NAME" `
                 -Message "Operation completed: $result"
         } catch {
             Write-ErrorLog -Scope "OPERATION-NAME" `
                 -Message "Operation failed: $($_.Exception.Message)"
+
             Write-DebugLog -Scope "OPERATION-NAME" `
                 -Message "Stack Trace: $($_.ScriptStackTrace)"
+
             exit 1
         }
 
@@ -382,6 +356,7 @@ PREVENT UNAUTHORIZED ALTERATIONS.
 
         if (Test-Path -LiteralPath $filePath) {
             $content = Get-Content -LiteralPath $filePath
+
             Set-Content -LiteralPath $destinationPath -Value $content
         }
 
@@ -390,6 +365,7 @@ PREVENT UNAUTHORIZED ALTERATIONS.
     - Dynamic command execution MUST use the call operator &:
 
         $nodeVersion = & node --version
+
         $gitRoot = & git rev-parse --show-toplevel
 
 8.13 Validation and Assertions
@@ -438,6 +414,7 @@ PREVENT UNAUTHORIZED ALTERATIONS.
 
         # Caller applies the change
         $updatedPath = Get-UpdatedPath -NewPathEntry "C:\NewPath"
+
         $env:PATH = $updatedPath
 
 8.15 SOLID Principles Application
@@ -538,8 +515,9 @@ PREVENT UNAUTHORIZED ALTERATIONS.
 
         Set-StrictMode -Version Latest
 
-        # Import powershell-core module
+        # Import required modules
         $scriptDirectory = Split-Path -Parent $MyInvocation.MyCommandPath
+        Import-Module -Name (Join-Path $scriptDirectory "concise-log")
         Import-Module -Name (Join-Path $scriptDirectory "powershell-core")
 
         #region Primary Functions
@@ -565,10 +543,12 @@ PREVENT UNAUTHORIZED ALTERATIONS.
 
         try {
             Invoke-PrimaryWorkflow
+
             exit 0
         } catch {
             Write-ErrorLog -Scope "SCRIPT-MAIN" `
                 -Message "Failed: $($_.Exception.Message)"
+
             exit 1
         }
 
@@ -646,10 +626,12 @@ PREVENT UNAUTHORIZED ALTERATIONS.
             if ($toolCommand) {
                 Write-InfoLog -Scope "TOOL-CHECK" `
                     -Message "$ToolName is already installed"
+
                 return
             }
 
             Write-FormattedStep "$ToolName not found. Installing..."
+
             Install-PackageWithWinget -PackageId $PackageId
         }
 
@@ -685,11 +667,14 @@ PREVENT UNAUTHORIZED ALTERATIONS.
             if (Test-Path -LiteralPath $ConfigurationPath) {
                 $configContent = Get-Content -LiteralPath `
                     $ConfigurationPath
+
                 return $configContent | ConvertFrom-Json
             }
 
             $message = "Configuration file not found, using defaults"
+
             Write-InfoLog -Scope "CONFIG-LOAD" -Message $message
+
             return @{ DefaultSetting = $true }
         }
 
@@ -697,6 +682,10 @@ PREVENT UNAUTHORIZED ALTERATIONS.
 
     8.19.1 Mandatory Requirements
 
+        - All non-elevated scripts MUST explicitly import the concise-log.psm1
+          module BEFORE importing powershell-core module.
+        - Even though concise-log is a dependency of powershell-core, explicit
+          import ensures logging functions are immediately available.
         - All non-elevated scripts MUST use the concise-log.ps1 module for ALL
           logging operations.
         - The concise-log.ps1 module implements the CLOGF specification.
@@ -705,27 +694,31 @@ PREVENT UNAUTHORIZED ALTERATIONS.
 
     8.19.2 Module Import Pattern
 
-        - Import powershell-core module at script start:
+        - Import concise-log and powershell-core modules at script start:
 
             [CmdletBinding()]
             param()
 
             Set-StrictMode -Version Latest
 
-            # Import powershell-core module
+            # Import required modules
             $scriptDirectory = Split-Path -Parent $MyInvocation.MyCommandPath
+            Import-Module -Name (Join-Path $scriptDirectory "concise-log")
             Import-Module -Name (Join-Path $scriptDirectory "powershell-core")
 
             # Initialize environment
             Initialize-ScriptEnvironment
+
+        - Note: Even though concise-log is a dependency of powershell-core,
+          it MUST be explicitly imported first to ensure logging functions
+          are available throughout the script execution.
 
     8.19.3 Available Core Functions
 
         - Core functions are provided by powershell-core module.
         - See powershell-core-module-format.help section 8.2 for complete
           function list and documentation.
-        - Logging functions are provided by concise-log module (dependency
-          of powershell-core).
+        - Logging functions are provided by concise-log module.
 
     8.19.4 Log Scope Naming (PARENT-CHILD Format)
 
@@ -771,8 +764,9 @@ PREVENT UNAUTHORIZED ALTERATIONS.
     - [ ] Main execution flow follows standard pattern
     - [ ] Exit codes: 0 for success, 1 for failure
     - [ ] Code organized with #region and #endregion for folding
-    - [ ] powershell-core module imported
-    - [ ] Module import uses Join-Path for cross-platform compatibility
+    - [ ] concise-log module explicitly imported FIRST
+    - [ ] powershell-core module imported AFTER concise-log
+    - [ ] Module imports use Join-Path for cross-platform compatibility
     - [ ] Log scope in PARENT-CHILD format
     - [ ] Log entries do not exceed 83 characters per line
     - [ ] Appropriate log level used (D, I, W, E, X)
