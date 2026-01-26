@@ -1,0 +1,528 @@
+|<------------------------------->[ BEGIN-CRFCF ]<------------------------------->|
+
+NOTICE: UNAUTHORIZED MODIFICATION OF THIS DOCUMENT IS EXPRESSLY PROHIBITED.
+EDITING PRIVILEGES ARE EXCLUSIVELY RESERVED FOR THE AUTHOR, DESIGNATED
+CONTRIBUTORS, AND AUTHORIZED ARTIFICIAL INTELLIGENCE AGENTS. DOCUMENT INTEGRITY
+IS SECURED BY A CRYPTOGRAPHIC CHECKSUM; AUTOMATED VERIFICATION SCRIPTS ARE
+EMPLOYED TO DETECT AND PREVENT UNAUTHORIZED ALTERATIONS.
+
+0.  METADATA:
+
+    - RFC:      CONCISE-RFC-000000
+    - GROUP:    VS-SCRIPTS
+    - TITLE:    POWERSHELL MODULE SCRIPT FORMAT ALIGNMENT
+    - ACRONYM:  PMSFA
+    - AUTHOR:   Richeve Bebedor <richeve.bebedor+vs-scripts@gmail.com>
+    - CATEGORY: SPECIFICATION
+    - STATUS:   DRAFT
+    - VERSION:  000000 (0.0.0)
+    - CREATED:  2026-01-26
+    - CHECKSUM: <SHA-256>
+
+1.  Summary:
+
+    This document identifies ambiguities, inconsistencies, redundancies,
+    misalignments, scope creep, out-of-scope issues, and unnecessary
+    complexities across four PowerShell format specification documents. It
+    provides detailed analysis and actionable recommendations to align these
+    documents with repository standards while maintaining compliance with
+    5LAWS, RULES, and FORMAT requirements.
+
+2.  Permission:
+
+    NOTICE: PERMISSION TO USE, MODIFY, COPY, AND/OR DISTRIBUTE THIS DOCUMENT
+    AND/OR REPOSITORY IS GRANTED UNDER THE TERMS OF THE LICENSE AGREEMENT
+    SPECIFIED IN THE LICENSE FILE. PLEASE REFER TO THE LICENSE FILE FOR
+    DETAILS.
+
+3.  Contents:
+
+    0.  METADATA ........................................................... 009
+    1.  Summary ............................................................ 022
+    2.  Permission ......................................................... 028
+    3.  Contents ........................................................... 034
+    4.  Document Status .................................................... 046
+    5.  Normative Language ................................................. 052
+    6.  Naming Conventions ................................................. 058
+    7.  Structure .......................................................... 063
+    8.  Compliance ......................................................... 990
+
+4.  Document Status:
+
+    - This document is a DRAFT specification for alignment issues.
+    - It identifies critical problems across PowerShell format documents.
+    - It provides prioritized recommendations for resolution.
+
+5.  Normative Language:
+
+    - The key words MUST, MUST NOT, SHOULD, and SHOULD NOT in this document
+      follow RFC-2119 and RFC-8174.
+    - The key word MUST denotes required.
+    - The key word SHOULD denotes optional.
+
+6.  Naming Conventions:
+
+    - Document references use acronyms: PWM1F, PWCMF, PWSHF, PWESF.
+    - Section references use format: Document Section.Subsection.
+    - Priority levels: Critical, High, Medium, Low, Enhancement.
+
+7.  Structure:
+
+7.1 Affected Documents
+
+    - helps/powershell-module-format.help (PWM1F)
+    - helps/powershell-core-module-format.help (PWCMF)
+    - helps/powershell-script-format.help (PWSHF)
+    - helps/powershell-elevated-script-format.help (PWESF)
+
+7.2 Issue Categories
+
+    - Ambiguities: Unclear or contradictory guidance
+    - Inconsistencies: Conflicting specifications
+    - Redundancies: Duplicated content across documents
+    - Misalignments: Deviation from repository standards
+    - Scope Creep: Content beyond document purpose
+    - Out of Scope: Platform or implementation specifics
+    - Unnecessary Complexities: Overly complex structures
+
+7.3 Critical Ambiguities
+
+7.3.1 StrictMode Ownership (Priority: Critical)
+
+    Location: PWSHF 8.4, PWESF 8.4, PWSHF 8.16
+    Issue: PWSHF states scripts MUST set strict mode but also says
+    Initialize-ScriptEnvironment sets it. PWSHF template shows
+    Set-StrictMode directly. PWESF says scripts MUST NOT set StrictMode.
+    Impact: Contradictory guidance causes implementation conflicts.
+    Resolution: Standardize that modules set StrictMode at module level,
+    scripts call Initialize-ScriptEnvironment which sets it.
+
+7.3.2 Module Import Pattern (Priority: Critical)
+
+    Location: PWM1F 8.16, PWCMF 8.18, PWSHF 8.8/8.19, PWESF 8.18
+    Issue: PWM1F shows Import-Module -Name module-name while PWSHF shows
+    Import-Module -Name (Join-Path $scriptDirectory "concise-log") with
+    different path resolution methods.
+    Impact: Unclear correct import pattern for modules versus scripts.
+    Resolution: Standardize modules use simple name, scripts use
+    $PSScriptRoot with Join-Path.
+
+7.3.3 Logging Module Reference (Priority: Critical)
+
+    Location: PWSHF 8.10, PWSHF 8.19
+    Issue: PWSHF 8.10 refers to concise-log.ps1 module while 8.19 refers
+    to concise-log.psm1 module.
+    Impact: Unclear file extension for logging module.
+    Resolution: Standardize on .psm1 extension throughout all documents.
+
+7.3.4 Core Functions Attribution (Priority: Critical)
+
+    Location: PWSHF 8.17.1
+    Issue: Comments say Implementation provided by concise-log.ps1 for
+    Initialize-ScriptEnvironment and Assert-WindowsPlatform, but these
+    are from powershell-core module per section 8.7.
+    Impact: Misleading attribution of function sources.
+    Resolution: Correct attribution to powershell-core module or remove
+    implementation comments.
+
+7.3.5 Region Folding Editor Reference (Priority: High)
+
+    Location: PWM1F 8.11, PWESF 8.17
+    Issue: PWM1F says in VS Code while PWESF says in any code editor that
+    support this.
+    Impact: Inconsistent platform specificity.
+    Resolution: Use editor-agnostic language consistently.
+
+7.4 Critical Inconsistencies
+
+7.4.1 Section Numbering Mismatch (Priority: High)
+
+    Location: All documents section 3 Contents
+    Issue: PWM1F Contents shows 9. Compliance line 400 but actual starts
+    line 580. PWCMF shows line 415 but actual is 650. PWSHF shows line
+    759 but actual is 780. PWESF shows line 450 but actual is 470.
+    Impact: Table of contents line numbers do not match actual content.
+    Resolution: Update Contents section line numbers to match actual.
+
+7.4.2 Compliance Section Structure (Priority: High)
+
+    Location: All documents section 9
+    Issue: All documents have 9.1 Review Checklist and 9.2 References but
+    FORMAT file shows Compliance should be single section without
+    subsections.
+    Impact: Deviation from FORMAT specification.
+    Resolution: Restructure section 9 to match FORMAT or update FORMAT to
+    allow subsections.
+
+7.4.3 EXIT CODES in Module Metadata (Priority: High)
+
+    Location: PWM1F 8.1, PWCMF 8.3
+    Issue: Module metadata includes .EXIT CODES section but modules do
+    not exit, only scripts do.
+    Impact: Inappropriate documentation element for modules.
+    Resolution: Remove .EXIT CODES from module metadata templates.
+
+7.4.4 Template Import Pattern (Priority: High)
+
+    Location: PWSHF 8.16, PWESF 8.18.1
+    Issue: PWSHF uses Split-Path -Parent $MyInvocation.MyCommandPath and
+    Join-Path, PWESF uses $PSScriptRoot and Join-Path with explicit path
+    validation.
+    Impact: Different approaches to same problem without justification.
+    Resolution: Standardize on $PSScriptRoot approach.
+
+7.5 Major Redundancies
+
+7.5.1 SOLID Principles Repetition (Priority: Medium)
+
+    Location: PWM1F 8.10, PWCMF 8.12, PWSHF 8.15, PWESF 8.16
+    Issue: All four documents repeat identical SOLID principles
+    explanations with same examples.
+    Impact: Violates DRY principle, increases maintenance burden, wastes
+    approximately 150 lines per document.
+    Resolution: Create powershell-common-standards.help with SOLID
+    principles, reference from all documents.
+
+7.5.2 Variable Naming Conventions (Priority: Medium)
+
+    Location: PWM1F 8.5, PWCMF 8.7, PWSHF 8.6, PWESF 8.8
+    Issue: Identical variable naming rules repeated in all four documents.
+    Impact: Redundant content should reference common specification.
+    Resolution: Extract to powershell-common-standards.help.
+
+7.5.3 Path Handling Duplication (Priority: Medium)
+
+    Location: PWM1F 8.6, PWCMF 8.8, PWSHF 8.11, PWESF 8.12
+    Issue: Same -LiteralPath guidance repeated identically.
+    Impact: Unnecessary repetition.
+    Resolution: Extract to powershell-common-standards.help.
+
+7.5.4 Command Execution Duplication (Priority: Medium)
+
+    Location: PWM1F 8.7, PWCMF 8.9, PWSHF 8.12, PWESF 8.13
+    Issue: Identical call operator ampersand examples in all documents.
+    Impact: Redundant specification.
+    Resolution: Extract to powershell-common-standards.help.
+
+7.5.5 Validation and Assertions (Priority: Medium)
+
+    Location: PWM1F 8.8, PWCMF 8.10, PWSHF 8.13, PWESF 8.14
+    Issue: Same Assert-CommandExists example repeated in all documents.
+    Impact: Maintenance overhead.
+    Resolution: Extract to powershell-common-standards.help.
+
+7.5.6 No Side Effects Pattern (Priority: Medium)
+
+    Location: PWM1F 8.9, PWCMF 8.11, PWSHF 8.14, PWESF 8.15
+    Issue: Identical Set-GlobalPath versus Get-UpdatedPath examples.
+    Impact: Redundant content.
+    Resolution: Extract to powershell-common-standards.help.
+
+7.5.7 Region Folding Pattern (Priority: Medium)
+
+    Location: PWM1F 8.11, PWCMF 8.13, PWSHF 8.17, PWESF 8.17
+    Issue: Same region organization patterns and naming conventions.
+    Impact: Unnecessary repetition.
+    Resolution: Extract to powershell-common-standards.help.
+
+7.6 Misalignments with Repository Standards
+
+7.6.1 Goals and Principles Alignment (Priority: Low)
+
+    Location: All documents section 7
+    Issue: All documents have identical Goals and Principles but do not
+    reference 5LAWS explicitly. 5LAWS mandates HUMANE, HELPFUL, CONCISE,
+    SOLID, SMART but documents only mention SOLID.
+    Impact: Missing explicit alignment with 5LAWS requirements.
+    Resolution: Add explicit 5LAWS references in section 7 of all
+    documents.
+
+7.6.2 Checklist Alignment with RULES (Priority: High)
+
+    Location: All documents section 9.1
+    Issue: Checklists do not include RULE 08 (83 char max) or RULE 09
+    (997 line max) verification except PWCMF.
+    Impact: Missing compliance checks for repository rules.
+    Resolution: Add RULE 08 and RULE 09 checks to all checklists.
+
+7.6.3 Normative Language Alignment (Priority: Low)
+
+    Location: All documents section 5
+    Issue: All documents have identical normative language section.
+    Impact: Should reference FORMAT file instead of repeating.
+    Resolution: Reference FORMAT file with brief summary.
+
+7.6.4 Document Status Hierarchy (Priority: Low)
+
+    Location: All documents section 4
+    Issue: All documents say DRAFT but do not explain relationship to each
+    other or hierarchy.
+    Impact: Unclear which document takes precedence.
+    Resolution: Establish clear document hierarchy and precedence rules.
+
+7.7 Scope Creep Issues
+
+7.7.1 Script Templates in Module Document (Priority: Medium)
+
+    Location: PWCMF 8.20, 8.21
+    Issue: PWCMF is about PowerShell Core Module Format but includes
+    elevated and non-elevated script templates.
+    Impact: Module specification contains script implementation details.
+    Resolution: Move section 8.20 to PWESF and section 8.21 to PWSHF.
+
+7.7.2 Common Patterns in Script Document (Priority: Low)
+
+    Location: PWSHF 8.18
+    Issue: Common Patterns section includes utility patterns that could be
+    in separate pattern library document.
+    Impact: Script format specification includes implementation patterns.
+    Resolution: Consider extracting to separate patterns document.
+
+7.7.3 Logging Integration Details (Priority: Medium)
+
+    Location: PWSHF 8.19, PWESF 8.18
+    Issue: Extensive logging module integration details in script format
+    documents.
+    Impact: Script format tightly coupled to specific logging
+    implementation.
+    Resolution: Create concise-log-format.help specification.
+
+7.7.4 Write-FormattedStep Visibility (Priority: Medium)
+
+    Location: PWCMF 8.20, 8.21
+    Issue: Templates reference Write-FormattedStep as private but
+    available which is confusing.
+    Impact: Unclear function visibility and purpose.
+    Resolution: Either export and document properly or remove from
+    templates and use Write-InfoLog directly.
+
+7.8 Out of Scope Issues
+
+7.8.1 VS Code Specific References (Priority: High)
+
+    Location: PWM1F 8.11
+    Issue: Document specifies VS Code for region folding but this is
+    editor-specific.
+    Impact: Unnecessarily limits to one editor.
+    Resolution: Use editor-agnostic language.
+
+7.8.2 Windows-Only Platform (Priority: Enhancement)
+
+    Location: All documents metadata examples
+    Issue: All documents hardcode Platform: Windows only in examples.
+    Impact: Limits cross-platform applicability without justification.
+    Resolution: Make platform specification configurable in examples.
+
+7.8.3 Specific PowerShell Version (Priority: Enhancement)
+
+    Location: All documents metadata examples
+    Issue: All documents hardcode Requirements: pwsh 7.5.4 exact version.
+    Impact: Brittle specification requires updates for every PowerShell
+    release.
+    Resolution: Make version specification flexible with minimum or exact
+    format.
+
+7.8.4 Concise-Log Module Coupling (Priority: Medium)
+
+    Location: PWSHF 8.19, PWESF 8.18
+    Issue: Script formats mandate specific logging module implementation.
+    Impact: Tight coupling to implementation detail.
+    Resolution: Define logging interface requirements, note
+    concise-log.psm1 as reference implementation.
+
+7.9 Unnecessary Complexities
+
+7.9.1 Dual Section Numbering (Priority: Low)
+
+    Location: All documents all sections
+    Issue: Documents use both 8.1 and 8.1.1 style numbering
+    inconsistently.
+    Impact: Confusing navigation and referencing.
+    Resolution: Standardize numbering depth consistently.
+
+7.9.2 Multiple Template Sections (Priority: Medium)
+
+    Location: PWM1F 8.12-8.16, PWCMF 8.14-8.21, PWSHF 8.16-8.19
+    Issue: Templates scattered across multiple sections instead of
+    consolidated.
+    Impact: Hard to find complete template.
+    Resolution: Consolidate templates into single section per document.
+
+7.9.3 Inline Examples versus Templates (Priority: Low)
+
+    Location: All documents section 8
+    Issue: Mix of inline code examples and full templates without clear
+    distinction.
+    Impact: Unclear what is required versus illustrative.
+    Resolution: Use consistent formatting with clear labels.
+
+7.9.4 Cross-Document References (Priority: Low)
+
+    Location: PWSHF, PWESF multiple sections
+    Issue: Frequent See powershell-core-module-format.help section X.Y
+    references.
+    Impact: Requires jumping between documents to understand requirements.
+    Resolution: After creating common specifications, reduce
+    cross-references.
+
+7.9.5 Checklist Granularity (Priority: Low)
+
+    Location: All documents section 9.1
+    Issue: Checklists have 20 plus items with varying levels of
+    specificity.
+    Impact: Difficult to use as practical verification tool.
+    Resolution: Reorganize checklists by category.
+
+7.10 Recommendations Summary
+
+7.10.1 Priority 1 Critical Resolutions
+
+    - Resolve StrictMode ownership ambiguity
+    - Standardize import patterns across documents
+    - Fix logging module reference to .psm1
+    - Correct core functions attribution
+
+7.10.2 Priority 2 High Resolutions
+
+    - Fix section numbering in Contents
+    - Remove EXIT CODES from module metadata
+    - Standardize editor references
+    - Add RULES compliance to checklists
+
+7.10.3 Priority 3 Medium Resolutions
+
+    - Create powershell-common-standards.help
+    - Create concise-log-format.help
+    - Remove script templates from core module document
+    - Consolidate template sections
+
+7.10.4 Priority 4 Low Resolutions
+
+    - Restructure document hierarchy
+    - Add explicit 5LAWS references
+    - Establish document precedence
+    - Standardize section numbering depth
+
+7.10.5 Priority 5 Enhancement Resolutions
+
+    - Separate examples from requirements
+    - Reduce cross-document references
+    - Simplify checklists by category
+    - Make platform and version specifications flexible
+
+7.11 Implementation Checklist
+
+    - [ ] Review all four PowerShell format documents
+    - [ ] Identify all instances of StrictMode guidance
+    - [ ] Standardize StrictMode ownership rules
+    - [ ] Update all import pattern examples
+    - [ ] Change all concise-log.ps1 to concise-log.psm1
+    - [ ] Correct function attribution in PWSHF 8.17.1
+    - [ ] Update Contents section line numbers
+    - [ ] Restructure Compliance sections
+    - [ ] Remove EXIT CODES from module templates
+    - [ ] Standardize path resolution to $PSScriptRoot
+    - [ ] Change VS Code to editor-agnostic language
+    - [ ] Add RULE 08 and RULE 09 to all checklists
+    - [ ] Create powershell-common-standards.help
+    - [ ] Extract SOLID principles to common standards
+    - [ ] Extract variable naming to common standards
+    - [ ] Extract path handling to common standards
+    - [ ] Extract command execution to common standards
+    - [ ] Extract validation patterns to common standards
+    - [ ] Extract no side effects to common standards
+    - [ ] Extract region folding to common standards
+    - [ ] Create concise-log-format.help
+    - [ ] Move PWCMF 8.20 to PWESF
+    - [ ] Move PWCMF 8.21 to PWSHF
+    - [ ] Clarify Write-FormattedStep visibility
+    - [ ] Consolidate template sections in each document
+    - [ ] Add explicit 5LAWS references to section 7
+    - [ ] Establish document hierarchy in section 4
+    - [ ] Reference FORMAT for normative language
+    - [ ] Standardize section numbering depth
+    - [ ] Label examples and templates clearly
+    - [ ] Reorganize checklists by category
+    - [ ] Make platform specification configurable
+    - [ ] Make version specification flexible
+    - [ ] Define logging interface requirements
+    - [ ] Verify all lines maximum 83 characters
+    - [ ] Verify all files maximum 997 lines
+    - [ ] Test compliance with FORMAT specification
+    - [ ] Review alignment with 5LAWS
+    - [ ] Review alignment with RULES
+
+7.12 Document Hierarchy Proposal
+
+    - FORMAT (foundation for all documents)
+    - powershell-common-standards.help (shared specifications)
+    - concise-log-format.help (logging specification)
+    - powershell-module-format.help (general modules)
+    - powershell-core-module-format.help (extends module format)
+    - powershell-script-format.help (non-elevated scripts)
+    - powershell-elevated-script-format.help (extends script format)
+
+7.13 Common Standards Content Proposal
+
+    - Section: Naming Conventions
+    - Section: SOLID Principles Application
+    - Section: Code Quality Standards
+    - Section: Variable Naming Standards
+    - Section: Path Handling Standards
+    - Section: Command Execution Standards
+    - Section: Validation and Assertion Patterns
+    - Section: No Side Effects Principle
+    - Section: Region Folding Standards
+    - Section: Error Handling Patterns
+
+7.14 Logging Format Content Proposal
+
+    - Section: Log Scope Naming (PARENT-CHILD format)
+    - Section: Log Levels (D, I, W, E, X)
+    - Section: Log Functions (Write-DebugLog, Write-InfoLog, etc)
+    - Section: Integration Patterns
+    - Section: Message Guidelines
+    - Section: Implementation Requirements
+
+7.15 Expected Outcomes
+
+    - Clear StrictMode ownership across all contexts
+    - Consistent import patterns for modules and scripts
+    - Accurate function attribution and module references
+    - Reduced document size through common specifications
+    - Eliminated redundancy across documents
+    - Clear document hierarchy and precedence
+    - Complete compliance with RULES and FORMAT
+    - Explicit alignment with 5LAWS principles
+    - Improved maintainability and clarity
+    - Reduced cross-document dependencies
+
+7.16 Validation Criteria
+
+    - All lines maximum 83 characters (RULE 08)
+    - All files maximum 997 lines (RULE 09)
+    - All documents follow FORMAT structure
+    - All documents reference 5LAWS explicitly
+    - All checklists include RULES compliance
+    - No contradictory guidance across documents
+    - No redundant content across documents
+    - Clear document relationships established
+    - All templates consolidated per document
+    - All cross-references minimized and accurate
+
+8.  Compliance:
+
+    - This document follows CONCISE-RFC-000000 format specification.
+    - This document respects the 5LAWS principles.
+    - This document adheres to RULES requirements.
+    - This document identifies issues for resolution.
+    - This document provides actionable recommendations.
+    - All recommendations prioritized by impact and urgency.
+    - Implementation checklist provided for systematic resolution.
+    - Document hierarchy proposal establishes clear relationships.
+    - Common standards proposal reduces redundancy.
+    - Logging format proposal addresses scope creep.
+    - Expected outcomes align with repository goals.
+    - Validation criteria ensure compliance verification.
+
+|<------------------------------->[ ENDED-CRFCF ]<------------------------------->|
