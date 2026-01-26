@@ -16,7 +16,7 @@ PREVENT UNAUTHORIZED ALTERATIONS.
     - CATEGORY: SPECIFICATION
     - STATUS:   DRAFT
     - VERSION:  000000 (0.0.0)
-    - CREATED:  2026-01-18
+    - CREATED:  2026-01-26
     - CHECKSUM: <SHA-256>
 
 1.  Summary:
@@ -44,8 +44,38 @@ PREVENT UNAUTHORIZED ALTERATIONS.
     6.  Naming Conventions ................................................. 049
     7.  Goals and Principles ............................................... 055
     8.  Structure .......................................................... 065
-    8.17 Code Region Folding ............................................... 560
-    9.  Compliance ......................................................... 450
+        8.1  Shebang and Batch Fallback Header ............................ 124
+        8.2  Script Metadata ............................................... 140
+        8.3  CmdletBinding and Parameters .................................. 169
+        8.4  Strict Mode and Error Handling ................................ 198
+        8.5  Function Organization ......................................... 209
+        8.6  Variable Naming Conventions ................................... 291
+        8.7  Core Module Dependencies ...................................... 300
+        8.8  Main Execution Flow ........................................... 319
+        8.9  Error Handling ................................................ 347
+        8.10 Output and Logging ............................................ 366
+        8.11 Path Handling ................................................. 378
+        8.12 Command Execution ............................................. 388
+        8.13 Validation and Assertions ..................................... 395
+        8.14 No Side Effects ............................................... 419
+        8.15 SOLID Principles Application .................................. 443
+             8.15.1 Single Responsibility .................................. 445
+             8.15.2 Open-Closed ............................................ 456
+             8.15.3 Liskov Substitution .................................... 473
+             8.15.4 Interface Segregation .................................. 481
+             8.15.5 Dependency Inversion ................................... 495
+        8.16 Template Structure ............................................ 510
+        8.17 Code Region Folding ........................................... 580
+        8.18 Common Patterns ............................................... 627
+        8.19 Concise Log Format Integration ................................ 696
+             8.19.1 Mandatory Requirements ................................. 698
+             8.19.2 Module Import Pattern .................................. 706
+             8.19.3 Available Core Functions ............................... 722
+             8.19.4 Log Scope Naming (PARENT-CHILD Format) ................ 730
+             8.19.5 Log Message Guidelines ................................. 746
+    9.  Compliance ......................................................... 759
+        9.1  Review Checklist .............................................. 759
+        9.2  References .................................................... 779
 
 4.  Document Status:
 
@@ -66,11 +96,13 @@ PREVENT UNAUTHORIZED ALTERATIONS.
 
       in this document SHOULD follow RFC-2119 and RFC-8174.
     - This document MUST NOT use MAY.
+    - The key word "MUST" denotes "required".
+    - The key word "SHOULD" denotes "optional".
 
 6.  Naming Conventions:
 
-    - PowerShell script file names SHOULD use lowercase with hyphens.
-    - PowerShell script file names SHOULD be descriptive and concise.
+    - PowerShell script file names MUST use lowercase with hyphens.
+    - PowerShell script file names MUST be descriptive and concise.
     - Function names MUST use PascalCase with approved PowerShell verbs.
     - Variable names MUST use camelCase with descriptive full names.
     - Boolean variables MUST use prefixes: is, has, should, can.
@@ -123,7 +155,7 @@ PREVENT UNAUTHORIZED ALTERATIONS.
             Version: 0.0.0
             Last Modified: [Date]
             Platform: Windows only
-            Requirements: pwsh 7.5.4+
+            Requirements: pwsh 7.5.4
 
         .EXAMPLE
             .\script-name.ps1
@@ -170,7 +202,9 @@ PREVENT UNAUTHORIZED ALTERATIONS.
         Set-StrictMode -Version Latest
         $ErrorActionPreference = 'Stop'
 
-    - Note: These are set in Initialize-ScriptEnvironment function for consistency.
+    - Note: These are set by Initialize-ScriptEnvironment function from
+      powershell-core module. See powershell-core-module-format.help
+      section 8.2.1 for details.
 
 8.5 Function Organization
 
@@ -263,60 +297,49 @@ PREVENT UNAUTHORIZED ALTERATIONS.
     - Scope prefix for script-level: $script:VerbosePreference not
       $VerbosePreference
 
-8.7 Core Functions Required in All Non-Elevated Scripts
+8.7 Core Module Dependencies
 
-    - Every non-elevated script MUST include these foundational functions:
+    - Non-elevated scripts depend on the powershell-core module for
+      foundational functions.
+    - See powershell-core-module-format.help section 8.2.1 for complete
+      documentation of initialization functions.
 
-    8.7.1 Initialize-ScriptEnvironment
+    Required functions from powershell-core module:
 
-        - Sets up PowerShell preferences for consistent behavior.
+    - Initialize-ScriptEnvironment
+    - Assert-WindowsPlatform
+    - Test-IsInteractivePowerShell
+    - Invoke-PowerShellCoreTransition
+    - Assert-PowerShellVersionStrict
 
-    8.7.2 Assert-WindowsPlatform
-
-        - Validates the script is running on Windows.
-
-    8.7.3 Test-IsInteractivePowerShell
-
-        - Ensures the script runs in an interactive terminal.
-
-    8.7.4 Invoke-PowerShellCoreTransition
-
-        - Relaunches in PowerShell Core (pwsh) if available and version < 7.
-
-    8.7.5 Write-FormattedStep
-
-        - Outputs formatted step messages to console.
-
-    - Note: Test-IsAdministrator and Invoke-ElevationRequest are NOT required
-      for non-elevated scripts. Use powershell-elevated-script-format.help if
-      your script requires elevation.
+    Note: Elevation functions (Test-IsAdministrator,
+    Invoke-ElevationRequest) are NOT required for non-elevated scripts.
+    See powershell-elevated-script-format.help for elevated scripts.
 
 8.8 Main Execution Flow
 
     - The main execution section MUST follow this pattern:
 
-        # --- Main Script Execution ---
+        # Import required modules
+        Import-Module -Name powershell-core
 
+        # Initialize and validate environment
         Initialize-ScriptEnvironment
-        Test-IsInteractivePowerShell
+        Assert-WindowsPlatform
+        Assert-PowerShellVersionStrict
 
-        Invoke-PowerShellCoreTransition
-
+        # Main script logic
         try {
-            Assert-WindowsPlatform
-
-            # Main script logic here
             Invoke-PrimaryWorkflow
-
-            Write-FormattedStep "Success: Operation completed successfully"
             exit 0
         } catch {
             Write-ErrorLog -Scope "SCRIPT-MAIN" `
-                -Message "Operation failed: $($_.Exception.Message)"
-            Write-DebugLog -Scope "SCRIPT-MAIN" `
-                -Message "Stack Trace: $($_.ScriptStackTrace)"
+                -Message "Failed: $($_.Exception.Message)"
             exit 1
         }
+
+    - See powershell-core-module-format.help section 8.21 for complete
+      non-elevated script template.
 
     - Note: Non-elevated scripts do NOT check for elevation. If your script
       requires elevation, use powershell-elevated-script-format.help instead.
@@ -486,7 +509,7 @@ PREVENT UNAUTHORIZED ALTERATIONS.
 
 8.16 Template Structure
 
-    - All non-elevated scripts SHOULD follow this minimal template structure:
+    - All non-elevated scripts MUST follow this template:
 
         <# :
         @echo off
@@ -507,6 +530,7 @@ PREVENT UNAUTHORIZED ALTERATIONS.
             Author: [Author]
             Version: 0.0.0
             Platform: Windows only
+            Requirements: pwsh 7.5.4
         #>
 
         [CmdletBinding()]
@@ -514,37 +538,20 @@ PREVENT UNAUTHORIZED ALTERATIONS.
 
         Set-StrictMode -Version Latest
 
-        # Import concise-log module
-        $scriptDir = Split-Path -Parent $MyInvocation.MyCommandPath
-        . "$scriptDir\concise-log.ps1"
-
-        #region Core Functions
-
-        function Initialize-ScriptEnvironment {
-            # Implementation (provided by concise-log.ps1)
-        }
-
-        function Assert-WindowsPlatform {
-            # Implementation (provided by concise-log.ps1)
-        }
-
-        function Test-IsInteractivePowerShell {
-            # Implementation (provided by concise-log.ps1)
-        }
-
-        function Invoke-PowerShellCoreTransition {
-            # Implementation (provided by concise-log.ps1)
-        }
-
-        function Write-FormattedStep {
-            # Implementation (provided by concise-log.ps1)
-        }
-
-        #endregion
+        # Import powershell-core module
+        $scriptDirectory = Split-Path -Parent $MyInvocation.MyCommandPath
+        Import-Module -Name (Join-Path $scriptDirectory "powershell-core")
 
         #region Primary Functions
 
         function Invoke-PrimaryWorkflow {
+            <#
+            .SYNOPSIS
+                Primary workflow implementation.
+            #>
+            [CmdletBinding()]
+            param()
+
             # Implementation
         }
 
@@ -553,27 +560,26 @@ PREVENT UNAUTHORIZED ALTERATIONS.
         #region Main Script Execution
 
         Initialize-ScriptEnvironment
-        Test-IsInteractivePowerShell
-        Invoke-PowerShellCoreTransition
+        Assert-WindowsPlatform
+        Assert-PowerShellVersionStrict
 
         try {
-            Assert-WindowsPlatform
             Invoke-PrimaryWorkflow
-            Write-FormattedStep "Success: Operation completed"
             exit 0
         } catch {
             Write-ErrorLog -Scope "SCRIPT-MAIN" `
-                -Message "Operation failed: $($_.Exception.Message)"
-            Write-DebugLog -Scope "SCRIPT-MAIN" `
-                -Message "Stack Trace: $($_.ScriptStackTrace)"
+                -Message "Failed: $($_.Exception.Message)"
             exit 1
         }
 
         #endregion
 
+    - See powershell-core-module-format.help section 8.21 for complete
+      template with all core functions.
+
 8.17 Code Region Folding
 
-    - All scripts SHOULD use #region and #endregion comments to organize code
+    - All scripts MUST use #region and #endregion comments to organize code
       into collapsible sections in VS Code.
     - Regions improve readability and navigation in longer scripts.
     - Region names MUST be descriptive and match the section purpose.
@@ -610,8 +616,8 @@ PREVENT UNAUTHORIZED ALTERATIONS.
 
 8.17.2 Region Naming Conventions
 
-    - Region names SHOULD be PascalCase
-    - Region names SHOULD be concise but descriptive
+    - Region names MUST be Title Case with spaces
+    - Region names MUST be concise but descriptive
     - Common region names:
 
         #region Core Functions
@@ -697,39 +703,29 @@ PREVENT UNAUTHORIZED ALTERATIONS.
         - Scripts MUST NOT define their own logging functions.
         - Scripts MUST NOT redefine core functions from concise-log.ps1.
 
-    8.19.2 Import Pattern (CRITICAL)
+    8.19.2 Module Import Pattern
 
-        - Import concise-log.ps1 IMMEDIATELY after Set-StrictMode.
-        - Import BEFORE defining any functions.
-        - Import BEFORE calling Initialize-ScriptEnvironment.
-        - Use this exact pattern:
+        - Import powershell-core module at script start:
 
             [CmdletBinding()]
             param()
 
             Set-StrictMode -Version Latest
 
-            # Import concise-log module
-            $scriptDir = Split-Path -Parent $MyInvocation.MyCommandPath
-            . "$scriptDir\concise-log.ps1"
+            # Import powershell-core module
+            $scriptDirectory = Split-Path -Parent $MyInvocation.MyCommandPath
+            Import-Module -Name (Join-Path $scriptDirectory "powershell-core")
 
-            # Now call Initialize-ScriptEnvironment from concise-log
+            # Initialize environment
             Initialize-ScriptEnvironment
 
-    8.19.3 Available Functions from concise-log.ps1
+    8.19.3 Available Core Functions
 
-        - DO NOT redefine these functions. They are provided by concise-log.ps1:
-
-            - Initialize-ScriptEnvironment: Sets PowerShell preferences
-            - Assert-WindowsPlatform: Validates Windows platform
-            - Test-IsInteractivePowerShell: Ensures interactive terminal
-            - Invoke-PowerShellCoreTransition: Transitions to pwsh if needed
-            - Write-FormattedStep: Outputs formatted step messages
-            - Write-DebugLog: Writes debug level logs
-            - Write-InfoLog: Writes information level logs
-            - Write-WarningLog: Writes warning level logs
-            - Write-ErrorLog: Writes error level logs
-            - Write-ExceptionLog: Writes exception level logs
+        - Core functions are provided by powershell-core module.
+        - See powershell-core-module-format.help section 8.2 for complete
+          function list and documentation.
+        - Logging functions are provided by concise-log module (dependency
+          of powershell-core).
 
     8.19.4 Log Scope Naming (PARENT-CHILD Format)
 
@@ -775,7 +771,8 @@ PREVENT UNAUTHORIZED ALTERATIONS.
     - [ ] Main execution flow follows standard pattern
     - [ ] Exit codes: 0 for success, 1 for failure
     - [ ] Code organized with #region and #endregion for folding
-    - [ ] concise-log.ps1 module imported
+    - [ ] powershell-core module imported
+    - [ ] Module import uses Join-Path for cross-platform compatibility
     - [ ] Log scope in PARENT-CHILD format
     - [ ] Log entries do not exceed 83 characters per line
     - [ ] Appropriate log level used (D, I, W, E, X)
