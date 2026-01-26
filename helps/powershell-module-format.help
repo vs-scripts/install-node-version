@@ -16,7 +16,7 @@ PREVENT UNAUTHORIZED ALTERATIONS.
     - CATEGORY: SPECIFICATION
     - STATUS:   DRAFT
     - VERSION:  000000 (0.0.0)
-    - CREATED:  2026-01-21
+    - CREATED:  2026-01-26
     - CHECKSUM: <SHA-256>
 
 1.  Summary:
@@ -321,7 +321,7 @@ PREVENT UNAUTHORIZED ALTERATIONS.
 
 8.11 Code Region Folding
 
-    - All modules SHOULD use #region and #endregion comments to organize code
+    - All modules MUST use #region and #endregion comments to organize code
       into collapsible sections in VS Code.
     - Regions improve readability and navigation in longer modules.
     - Region names MUST be descriptive and match the section purpose.
@@ -350,8 +350,8 @@ PREVENT UNAUTHORIZED ALTERATIONS.
 
 8.11.2 Region Naming Conventions
 
-    - Region names SHOULD be PascalCase
-    - Region names SHOULD be concise but descriptive
+    - Region names MUST be Title Case with spaces
+    - Region names MUST be concise but descriptive
     - Common region names:
 
         #region Public Functions
