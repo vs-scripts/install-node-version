@@ -16,7 +16,7 @@ PREVENT UNAUTHORIZED ALTERATIONS.
     - CATEGORY: SPECIFICATION
     - STATUS:   DRAFT
     - VERSION:  000000 (0.0.0)
-    - CREATED:  2026-01-21
+    - CREATED:  2026-01-26
     - CHECKSUM: <SHA-256>
 
 1.  Summary:
@@ -102,7 +102,7 @@ PREVENT UNAUTHORIZED ALTERATIONS.
 
     - Core modules are organized by function category:
 
-    8.2.1 Initialization Functions
+    8.2.1 Initialization Functions (All Contexts)
 
         - Initialize-ScriptEnvironment: Sets PowerShell preferences
         - Assert-WindowsPlatform: Validates Windows platform
@@ -110,28 +110,10 @@ PREVENT UNAUTHORIZED ALTERATIONS.
         - Invoke-PowerShellCoreTransition: Transitions to pwsh if needed
         - Assert-PowerShellVersionStrict: Enforces exact pwsh version
 
-    8.2.2 Elevation Functions
+    8.2.2 Elevation Functions (Elevated Scripts Only)
 
         - Test-IsAdministrator: Checks for administrative privileges
         - Invoke-ElevationRequest: Requests elevation via UAC
-
-    8.2.3 Logging Functions
-
-        - Write-DebugLog: Debug-level log entries
-        - Write-InfoLog: Information-level log entries
-        - Write-WarningLog: Warning-level log entries
-        - Write-ErrorLog: Error-level log entries
-        - Write-ExceptionLog: Exception-level log entries
-
-    8.2.4 Formatted Output Functions
-
-        - Write-FormattedStep: Displays formatted step messages
-
-    8.2.5 Private Helper Functions
-
-        - Get-LogHash: Generates hash for log entries
-        - Format-LogEntry: Formats log entries with CLOGF specification
-        - Write-Log: Core logging implementation
 
 8.3 Module Metadata
 
@@ -143,7 +125,10 @@ PREVENT UNAUTHORIZED ALTERATIONS.
 
         .DESCRIPTION
             Detailed explanation of the module's purpose, what functions it
-            provides, and any important context about its operation.
+            provides, and any important context about its operation. For
+            powershell-core, this includes initialization, platform validation,
+            and elevation handling functions. Logging functionality is provided
+            by the separate concise-log.psm1 module.
 
         .NOTES
             Author: [Author Name]
@@ -151,10 +136,13 @@ PREVENT UNAUTHORIZED ALTERATIONS.
             Last Modified: [Date]
             Platform: Windows only
             Requirements: pwsh 7.5.4
+            Dependencies: concise-log.psm1 (for Write-InfoLog)
 
         .EXAMPLE
-            Import-Module -Name module-name
+            Import-Module -Name concise-log
+            Import-Module -Name powershell-core
             Initialize-ScriptEnvironment
+            Assert-WindowsPlatform
 
         .EXIT CODES
             0 - Success
@@ -360,7 +348,7 @@ PREVENT UNAUTHORIZED ALTERATIONS.
 
 8.13 Code Region Folding
 
-    - All core modules SHOULD use #region and #endregion comments to organize
+    - All core modules MUST use #region and #endregion comments to organize
       code into collapsible sections in VS Code.
     - Regions improve readability and navigation in longer modules.
     - Region names MUST be descriptive and match the section purpose.
@@ -389,8 +377,8 @@ PREVENT UNAUTHORIZED ALTERATIONS.
 
 8.13.2 Region Naming Conventions
 
-    - Region names SHOULD be Title Case with spaces
-    - Region names SHOULD be concise but descriptive
+    - Region names MUST be Title Case with spaces
+    - Region names MUST be concise but descriptive
     - Common region names:
 
         #region Public Functions
@@ -571,6 +559,116 @@ PREVENT UNAUTHORIZED ALTERATIONS.
         - ✓ Does not create files or directories
         - ✓ Only defines functions and exports them
 
+8.20 Elevated Script Template
+
+    - Elevated scripts require administrative privileges and use functions
+      from the powershell-core module for elevation handling.
+
+    - Template structure:
+
+        <#
+        .SYNOPSIS
+            Brief description of what the elevated script does.
+
+        .DESCRIPTION
+            Detailed explanation of the script's purpose and requirements.
+
+        .NOTES
+            Requires: Administrative privileges
+            Platform: Windows only
+            Requirements: pwsh 7.5.4
+        #>
+
+        # Import required modules
+        Import-Module -Name concise-log
+        Import-Module -Name powershell-core
+
+        # Initialize script environment
+        Initialize-ScriptEnvironment
+        Assert-WindowsPlatform
+        Assert-PowerShellVersionStrict
+
+        # Check for administrative privileges
+        if (-not (Test-IsAdministrator)) {
+            Write-InfoLog -Scope "ELEV-SCRIPT" `
+                -Message "Requesting administrative privileges"
+
+            Invoke-ElevationRequest
+        }
+
+        # Script logic here
+        Write-FormattedStep -Message "Starting elevated operations"
+
+        # Perform elevated tasks
+        # ...
+
+        Write-FormattedStep -Message "Elevated operations completed"
+
+    - Available functions in elevated context:
+        - Initialize-ScriptEnvironment
+        - Assert-WindowsPlatform
+        - Test-IsInteractivePowerShell
+        - Invoke-PowerShellCoreTransition
+        - Assert-PowerShellVersionStrict
+        - Test-IsAdministrator
+        - Invoke-ElevationRequest
+        - Write-FormattedStep (private, but available)
+
+8.21 Non-Elevated Script Template
+
+    - Non-elevated scripts do not require administrative privileges and
+      use only initialization and utility functions from powershell-core.
+
+    - Template structure:
+
+        <#
+        .SYNOPSIS
+            Brief description of what the non-elevated script does.
+
+        .DESCRIPTION
+            Detailed explanation of the script's purpose and requirements.
+
+        .NOTES
+            Platform: Windows only
+            Requirements: pwsh 7.5.4
+        #>
+
+        # Import required modules
+        Import-Module -Name concise-log
+        Import-Module -Name powershell-core
+
+        # Initialize script environment
+        Initialize-ScriptEnvironment
+        Assert-WindowsPlatform
+        Assert-PowerShellVersionStrict
+
+        # Check if running interactively
+        if (Test-IsInteractivePowerShell) {
+            Write-FormattedStep -Message "Running in interactive mode"
+        } else {
+            Write-InfoLog -Scope "SCRIPT" `
+                -Message "Running in non-interactive mode"
+        }
+
+        # Script logic here
+        Write-FormattedStep -Message "Starting operations"
+
+        # Perform tasks
+        # ...
+
+        Write-FormattedStep -Message "Operations completed"
+
+    - Available functions in non-elevated context:
+        - Initialize-ScriptEnvironment
+        - Assert-WindowsPlatform
+        - Test-IsInteractivePowerShell
+        - Invoke-PowerShellCoreTransition
+        - Assert-PowerShellVersionStrict
+        - Write-FormattedStep (private, but available)
+
+    - Note: Elevation functions (Test-IsAdministrator,
+      Invoke-ElevationRequest) are not used in non-elevated scripts.
+
 9.1 Review Checklist
 
     - [ ] Module metadata with SYNOPSIS, DESCRIPTION, NOTES
@@ -595,6 +693,15 @@ PREVENT UNAUTHORIZED ALTERATIONS.
     - [ ] Private helper functions NOT exported
     - [ ] Functions return values instead of calling exit
     - [ ] Module can be safely imported without side effects
+    - [ ] No logging functions in core module (use concise-log.psm1)
+    - [ ] Write-FormattedStep is private (not exported)
+    - [ ] Write-FormattedStep uses Write-InfoLog from concise-log.psm1
+    - [ ] Functions marked with context indicators (elevated/non-elevated)
+    - [ ] Help file section 8.2 lists only 7 exported functions
+    - [ ] Help file section 8.20 provides elevated script template
+    - [ ] Help file section 8.21 provides non-elevated script template
+    - [ ] All lines maximum 83 characters (RULE 08)
+    - [ ] File maximum 997 lines (RULE 09)
 
 9.2 References
 
