@@ -64,6 +64,8 @@ PREVENT UNAUTHORIZED ALTERATIONS.
 
       in this document SHOULD follow RFC-2119 and RFC-8174.
     - This document MUST NOT use MAY.
+    - The key word "MUST" denotes "required".
+    - The key word "SHOULD" denotes "optional".
 
 6.  Naming Conventions:
 
@@ -140,7 +142,8 @@ PREVENT UNAUTHORIZED ALTERATIONS.
 
 8.4 Function Documentation
 
-    - All functions MUST include comprehensive documentation:
+    - All functions MUST include comprehensive documentation placed directly inside
+      the function body as shown in the example below:
 
         function Get-RepositoryRoot {
             <#
@@ -485,10 +488,10 @@ PREVENT UNAUTHORIZED ALTERATIONS.
             'Invoke-ExampleFunction'
         )
         PrivateData          = @{
-            PSData = @{
-                Tags       = @('example', 'module')
-                ProjectUri = 'https://github.com/example/project'
-                LicenseUri = 'https://github.com/example/project/LICENSE'
+            PSData           = @{
+                Tags         = @('example', 'module')
+                ProjectUri   = 'https://github.com/example/project'
+                LicenseUri   = 'https://github.com/example/project/LICENSE'
             }
         }
     }
