@@ -63,8 +63,19 @@
 
 Set-StrictMode -Version Latest
 
-# Import concise-log module for Write-InfoLog dependency
-Import-Module -Name concise-log
+# Import concise-log module for concise logging dependency
+$modulePath = $PSScriptRoot
+$conciseLogPath = Join-Path $modulePath 'concise-log.psm1'
+
+# Convert to absolute path
+$conciseLogPath = [System.IO.Path]::GetFullPath($conciseLogPath)
+
+if (Test-Path -LiteralPath $conciseLogPath) {
+    Import-Module -Name $conciseLogPath -Force -ErrorAction Stop -Global
+} else {
+    Write-Error "Required module not found: $conciseLogPath"
+    throw "concise-log.psm1 module is required but not found"
+}
 
 #region Core Initialization Functions
 
@@ -370,13 +381,17 @@ function Invoke-ElevationRequest {
         contexts (scheduled tasks, CI/CD pipelines), logs guidance and exits
         with code 1 instead of attempting elevation.
 
+    .PARAMETER ScriptPath
+        The full path to the script to relaunch with elevation.
+        If not provided, attempts to determine from call stack.
+
     .OUTPUTS
         None. Exits the current process after relaunch or with code 1 in
         non-interactive context.
 
     .EXAMPLE
         if (-not (Test-IsAdministrator)) {
-            Invoke-ElevationRequest
+            Invoke-ElevationRequest -ScriptPath $PSCommandPath
         }
 
     .NOTES
@@ -386,27 +401,51 @@ function Invoke-ElevationRequest {
         with code 1.
     #>
     [CmdletBinding()]
-    param()
+    param(
+        [Parameter(Mandatory = $false)]
+        [string]$ScriptPath
+    )
 
     try {
         $isInteractive = Test-IsInteractivePowerShell
 
         if (-not $isInteractive) {
             Write-InfoLog -Scope "ELEV-REQUEST" `
-                -Message "Cannot request elevation in non-interactive " +
-                "context"
+                -Message "Cannot request elevation in non-interactive context"
 
             exit 1
         }
 
-        # Relaunch with elevation
-        $scriptPath = $MyInvocation.ScriptName
-        $arguments = $PSBoundParameters.Values
+        # Determine script path if not provided
+        if (-not $ScriptPath) {
+            $callerInfo = Get-PSCallStack | Select-Object -Skip 1 -First 1
+            $ScriptPath = $callerInfo.ScriptName
+        }
+
+        if (-not $ScriptPath -or -not (Test-Path -LiteralPath $ScriptPath)) {
+            Write-ErrorLog -Scope "ELEV-REQUEST" `
+                -Message "Cannot determine script path for elevation"
+            exit 1
+        }
+
+        Write-InfoLog -Scope "ELEV-REQUEST" `
+            -Message "Requesting administrative privileges"
+
+        # Check for pwsh command
+        $pwshCommand = Get-Command -Name 'pwsh' -ErrorAction SilentlyContinue
+
+        if (-not $pwshCommand) {
+            Write-ErrorLog -Scope "ELEV-REQUEST" `
+                -Message "Elevation failed: 'pwsh' command not found in PATH"
+            exit 1
+        }
+
+        # Relaunch with elevation using pwsh
+        $argumentList = "-NoProfile -ExecutionPolicy Bypass -File `"$ScriptPath`""
 
         $processInfo = New-Object System.Diagnostics.ProcessStartInfo
-        $processInfo.FileName = "powershell.exe"
-        $processInfo.Arguments = "-NoProfile -File `"$scriptPath`" " +
-            "$arguments"
+        $processInfo.FileName = "pwsh"
+        $processInfo.Arguments = $argumentList
         $processInfo.UseShellExecute = $true
         $processInfo.Verb = "runas"
 
