@@ -295,6 +295,28 @@ PREVENT UNAUTHORIZED ALTERATIONS.
 
         # --- Main Script Execution ---
 
+        # Import required modules
+        $scriptPath = $PSScriptRoot
+        $conciseLogPath = Join-Path $scriptPath 'concise-log.psm1'
+        $coreModulePath = Join-Path $scriptPath 'powershell-core.psm1'
+
+        # Convert to absolute paths (REQUIRED)
+        $conciseLogPath = [System.IO.Path]::GetFullPath($conciseLogPath)
+        $coreModulePath = [System.IO.Path]::GetFullPath($coreModulePath)
+
+        if (-not (Test-Path -LiteralPath $conciseLogPath)) {
+            Write-Error 'Required module not found: concise-log.psm1'
+            exit 1
+        }
+
+        if (-not (Test-Path -LiteralPath $coreModulePath)) {
+            Write-Error 'Required module not found: powershell-core.psm1'
+            exit 1
+        }
+
+        Import-Module -Name $conciseLogPath -Force -ErrorAction Stop
+        Import-Module -Name $coreModulePath -Force -ErrorAction Stop
+
         Initialize-ScriptEnvironment
         Test-IsInteractivePowerShell
 
@@ -607,6 +629,8 @@ PREVENT UNAUTHORIZED ALTERATIONS.
     - Pre-import logging exception: Scripts may use Write-Error or Write-Host
       before module import strictly for fatal messages; after import, only
       module functions MUST be used.
+    - Module paths MUST be converted to absolute paths using
+      [System.IO.Path]::GetFullPath() to ensure reliable module loading.
     - Use this exact pattern:
 
         [CmdletBinding()]
@@ -616,6 +640,10 @@ PREVENT UNAUTHORIZED ALTERATIONS.
         $scriptPath = $PSScriptRoot
         $conciseLogPath = Join-Path $scriptPath 'concise-log.psm1'
         $coreModulePath = Join-Path $scriptPath 'powershell-core.psm1'
+
+        # Convert to absolute paths (REQUIRED)
+        $conciseLogPath = [System.IO.Path]::GetFullPath($conciseLogPath)
+        $coreModulePath = [System.IO.Path]::GetFullPath($coreModulePath)
 
         if (-not (Test-Path -LiteralPath $conciseLogPath)) {
             Write-Error 'Required module not found: concise-log.psm1'
@@ -627,8 +655,8 @@ PREVENT UNAUTHORIZED ALTERATIONS.
             exit 1
         }
 
-        Import-Module -Name $conciseLogPath
-        Import-Module -Name $coreModulePath
+        Import-Module -Name $conciseLogPath -Force -ErrorAction Stop
+        Import-Module -Name $coreModulePath -Force -ErrorAction Stop
 
         # Initialize environment (sets StrictMode and preferences)
         Initialize-ScriptEnvironment
