@@ -96,6 +96,13 @@ function Write-Log {
     # Generate reference
     $hash = Get-LogHash -LogEntry $logEntry
     $scopeParts = $Scope.Split('-')
+
+    # Validate PARENT-CHILD format
+    if ($scopeParts.Length -lt 2) {
+        Write-Warning "Scope '$Scope' should be in PARENT-CHILD format"
+        $scopeParts = @($Scope, 'GENERAL')
+    }
+
     $reference = "urn:cla:$($scopeParts[0].ToLower()):" +
         "$($scopeParts[1].ToLower()):$hash"
 
