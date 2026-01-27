@@ -33,241 +33,81 @@ exit /b 1
 [CmdletBinding()]
 param()
 
-$logPath = Join-Path -Path $PSScriptRoot -ChildPath 'concise-log.psm1'
-if (-not (Test-Path -LiteralPath $logPath)) {
-    Write-Error 'Required module not found: concise-log.psm1'
+#region Module Imports
 
+# Import required modules
+$scriptPath = $PSScriptRoot
+if (-not $scriptPath) {
+    $scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Path
+}
+
+if (-not $scriptPath) {
+    Write-Host "FATAL: Cannot determine script directory" -ForegroundColor Red
+    Write-Host "PSScriptRoot: $PSScriptRoot" -ForegroundColor Yellow
+    Write-Host "MyInvocation.MyCommand.Path: $($MyInvocation.MyCommand.Path)" -ForegroundColor Yellow
     exit 1
 }
-Import-Module -Name $logPath
 
-# --- Core Functions ---
+$conciseLogPath = Join-Path $scriptPath 'concise-log.psm1'
+$coreModulePath = Join-Path $scriptPath 'powershell-core.psm1'
 
-function Initialize-ScriptEnvironment {
-    <#
-    .SYNOPSIS
-        Initializes PowerShell session preferences.
+# Convert module paths to absolute paths
+$conciseLogPath = [System.IO.Path]::GetFullPath($conciseLogPath)
+$coreModulePath = [System.IO.Path]::GetFullPath($coreModulePath)
 
-    .DESCRIPTION
-        Sets script-level preferences for Verbose, Debug, ErrorAction,
-        and Progress to ensure consistent and informative output
-        throughout script execution. These settings apply only to the
-        current script scope.
-
-    .NOTES
-        This function MUST be called early in script execution, before
-        any other operations that depend on these preferences.
-
-    .EXAMPLE
-        Initialize-ScriptEnvironment
-        Configures all session preferences to their standard values.
-    #>
-    [CmdletBinding()]
-    param()
-
-    Set-StrictMode -Version Latest
-    $script:VerbosePreference = 'Continue'
-    $script:DebugPreference = 'Continue'
-    $script:ErrorActionPreference = 'Stop'
-    $script:ProgressPreference = 'SilentlyContinue'
+if (-not (Test-Path -LiteralPath $conciseLogPath)) {
+    Write-Host "ERROR: Required module not found: $conciseLogPath" `
+        -ForegroundColor Red
+    Write-Host "Script directory: $scriptPath" -ForegroundColor Yellow
+    Write-Host "Current location: $PWD" -ForegroundColor Yellow
+    Write-Host "Files in script directory:" -ForegroundColor Yellow
+    if (Test-Path -LiteralPath $scriptPath) {
+        Get-ChildItem -LiteralPath $scriptPath -Filter "*.psm1" |
+            ForEach-Object { Write-Host "  - $($_.Name)" -ForegroundColor Cyan }
+    }
+    exit 1
 }
 
-function Assert-WindowsPlatform {
-    <#
-    .SYNOPSIS
-        Validates the script is running on Windows.
-
-    .DESCRIPTION
-        Ensures the script is executed on a Windows platform, as required
-        by the specification. Throws an exception if the platform is not Windows.
-
-    .EXAMPLE
-        Assert-WindowsPlatform
-        Validates the current platform is Windows.
-    #>
-    [CmdletBinding()]
-    param()
-
-    if (-not ([System.Environment]::OSVersion.Platform `
-        -eq [System.PlatformID]::Win32NT)) {
-        throw "This script requires Windows platform"
-    }
+if (-not (Test-Path -LiteralPath $coreModulePath)) {
+    Write-Host "ERROR: Required module not found: $coreModulePath" `
+        -ForegroundColor Red
+    Write-Host "Script directory: $scriptPath" -ForegroundColor Yellow
+    Write-Host "Current location: $PWD" -ForegroundColor Yellow
+    exit 1
 }
 
-function Assert-PowerShellVersionStrict {
-    <#
-    .SYNOPSIS
-        Validates the PowerShell version matches the required version.
-
-    .DESCRIPTION
-        Ensures the PowerShell version running the script matches the
-        required version specified in the script. Throws an exception if
-        the version does not match.
-
-    .EXAMPLE
-        Assert-PowerShellVersionStrict
-        Validates the PowerShell version is 7.5.4.
-    #>
-    [CmdletBinding()]
-    param()
-
-    $requiredVersion = [version]'7.5.4'
-    if (-not ($PSVersionTable.PSVersion -eq $requiredVersion)) {
-        throw "PowerShell version mismatch: required $requiredVersion, current $($PSVersionTable.PSVersion)"
-    }
+try {
+    Import-Module -Name $conciseLogPath -Force -ErrorAction Stop -Global
+    Import-Module -Name $coreModulePath -Force -ErrorAction Stop -Global
+} catch {
+    Write-Host "ERROR: Failed to import modules: $_" -ForegroundColor Red
+    Write-Host "concise-log path: $conciseLogPath" -ForegroundColor Yellow
+    Write-Host "powershell-core path: $coreModulePath" -ForegroundColor Yellow
+    Write-Host "Exception: $($_.Exception.GetType().FullName)" -ForegroundColor Yellow
+    Write-Host "Message: $($_.Exception.Message)" -ForegroundColor Yellow
+    exit 1
 }
 
-function Test-IsInteractivePowerShell {
-    <#
-    .SYNOPSIS
-        Ensures the script runs in an interactive terminal.
+# Verify modules loaded
+$conciseLogLoaded = Get-Module -Name 'concise-log' -ErrorAction SilentlyContinue
+$coreModuleLoaded = Get-Module -Name 'powershell-core' -ErrorAction SilentlyContinue
 
-    .DESCRIPTION
-        Checks if the script is running in an interactive PowerShell session.
-        Throws an exception if the session is not interactive.
-
-    .EXAMPLE
-        Test-IsInteractivePowerShell
-        Validates the current session is interactive.
-    #>
-    [CmdletBinding()]
-    param()
-
-    if (-not $Host.UI.RawUI) {
-        throw "This script requires an interactive PowerShell terminal"
-    }
+if (-not $conciseLogLoaded) {
+    Write-Host "ERROR: concise-log module not loaded" -ForegroundColor Red
+    exit 1
 }
 
-function Invoke-PowerShellCoreTransition {
-    <#
-    .SYNOPSIS
-        Relaunches in PowerShell Core (pwsh) if available and version < 7.
-
-    .DESCRIPTION
-        Checks if PowerShell Core (pwsh) is available and if the current
-        PowerShell version is less than 7. If so, relaunches the script in pwsh.
-
-    .EXAMPLE
-        Invoke-PowerShellCoreTransition
-        Transitions to PowerShell Core if necessary.
-    #>
-    [CmdletBinding()]
-    param()
-
-    $requiredVersion = [version]'7.5.4'
-    $pwshPath = Get-Command -Name 'pwsh' -ErrorAction SilentlyContinue
-    if (-not ($PSVersionTable.PSVersion -eq $requiredVersion)) {
-        if ($pwshPath) {
-            $pwshVersionString = & $pwshPath -NoProfile `
-                -Command '$PSVersionTable.PSVersion.ToString()'
-
-            [version]$pwshVersion = $pwshVersionString
-
-            if ($pwshVersion -eq $requiredVersion) {
-                Write-Verbose "Transitioning to pwsh $pwshVersion"
-
-                & $pwshPath -File $PSCommandPath
-
-                exit 0
-            } else {
-                throw "Need pwsh $requiredVersion, have $($PSVersionTable.PSVersion)"
-            }
-        } else {
-            throw "PowerShell Core (pwsh) not found; required version $requiredVersion"
-        }
-    }
+if (-not $coreModuleLoaded) {
+    Write-Host "ERROR: powershell-core module not loaded" -ForegroundColor Red
+    exit 1
 }
 
-function Test-IsAdministrator {
-    <#
-    .SYNOPSIS
-        Checks if the current process is running with administrative privileges.
+#endregion
 
-    .DESCRIPTION
-        Uses Windows Security API to determine if the current user identity
-        belongs to the Administrator role.
+# Initialize environment (sets StrictMode and preferences)
+Initialize-ScriptEnvironment
 
-    .OUTPUTS
-        Boolean - True if user is administrator, False otherwise.
-
-    .EXAMPLE
-        if (Test-IsAdministrator) { Write-Host "Running as admin" }
-        Checks for administrative privileges.
-    #>
-    [CmdletBinding()]
-    param()
-
-    $currentIdentity = [Security.Principal.WindowsIdentity]::GetCurrent()
-
-    $currentPrincipal = [Security.Principal.WindowsPrincipal]$currentIdentity
-
-    $isAdministrator = $currentPrincipal.IsInRole(
-        [Security.Principal.WindowsBuiltInRole]::Administrator
-    )
-
-    $null = Write-DebugLog -Scope "ELEVATION-ADMIN" `
-        -Message "Administrator check: $isAdministrator"
-
-    return $isAdministrator
-}
-
-function Invoke-ElevationRequest {
-    <#
-    .SYNOPSIS
-        Restarts the current script with elevated (administrator) privileges.
-
-    .DESCRIPTION
-        Uses Start-Process with the -Verb RunAs parameter to relaunch the script
-        as administrator. If pwsh is available, it prefers it over powershell.exe.
-
-    .EXAMPLE
-        Invoke-ElevationRequest
-        Requests elevation and relaunches the script as administrator.
-    #>
-    [CmdletBinding()]
-    param()
-
-    if (-not $Host.UI.RawUI) {
-        Write-ErrorLog -Scope "ELEVATION-REQUEST" `
-            -Message "Non-interactive session; run in interactive PowerShell."
-
-        exit 1
-    }
-
-    Write-InfoLog -Scope "ELEVATION-REQUEST" `
-        -Message "Requesting administrative privileges"
-
-    $pwshCommand = Get-Command -Name 'pwsh' `
-        -ErrorAction SilentlyContinue
-
-    if (-not $pwshCommand) {
-        Write-ErrorLog -Scope "ELEVATION-REQUEST" `
-            -Message "Elevation failed: 'pwsh' command not found in PATH"
-
-        exit 1
-    }
-
-    $executablePath = 'pwsh'
-
-    $argumentList = "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`""
-
-    try {
-        Start-Process -FilePath $executablePath `
-            -ArgumentList $argumentList `
-            -Verb RunAs
-
-        exit 0
-    } catch {
-        Write-ErrorLog -Scope "ELEVATION-REQUEST" `
-            -Message "Elevation failed: $($_.Exception.Message)"
-
-        Write-DebugLog -Scope "ELEVATION-REQUEST" `
-            -Message "Stack Trace: $($_.ScriptStackTrace)"
-        exit 1
-    }
-}
-
-# --- Helper Functions ---
+#region Helper Functions
 
 function Get-RepositoryRoot {
     <#
@@ -310,6 +150,10 @@ function Get-RepositoryRoot {
 
     return $repositoryRoot
 }
+
+#endregion
+
+#region Package Management Functions
 
 function Install-PackageWithWinget {
     <#
@@ -375,6 +219,10 @@ function Install-PackageWithWinget {
             -Message $warningMessage
     }
 }
+
+#endregion
+
+#region Volta Management Functions
 
 function Install-VoltaIfMissing {
     <#
@@ -541,6 +389,10 @@ function Initialize-PackageJsonIfMissing {
 
     return $packageJsonPath
 }
+
+#endregion
+
+#region Primary Functions
 
 # --- Primary Functions ---
 
@@ -857,14 +709,18 @@ function Invoke-NodeVersionPinningWorkflow {
     }
 }
 
+#endregion
+
+#region Main Script Execution
+
 # --- Main Script Execution ---
 
 Initialize-ScriptEnvironment
-Test-IsInteractivePowerShell
+$null = Test-IsInteractivePowerShell
 
 Invoke-PowerShellCoreTransition
 if (-not (Test-IsAdministrator)) {
-    Invoke-ElevationRequest
+    Invoke-ElevationRequest -ScriptPath $PSCommandPath
 }
 
 try {
@@ -890,3 +746,5 @@ try {
 
     exit 1
 }
+
+#endregion
