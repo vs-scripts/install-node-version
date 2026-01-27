@@ -44,7 +44,11 @@ if (-not $scriptPath) {
 if (-not $scriptPath) {
     Write-Host "FATAL: Cannot determine script directory" -ForegroundColor Red
     Write-Host "PSScriptRoot: $PSScriptRoot" -ForegroundColor Yellow
-    Write-Host "MyInvocation.MyCommand.Path: $($MyInvocation.MyCommand.Path)" -ForegroundColor Yellow
+
+    $commandPath = $MyInvocation.MyCommand.Path
+    Write-Host "MyInvocation.MyCommand.Path: $commandPath" `
+        -ForegroundColor Yellow
+
     exit 1
 }
 
@@ -83,14 +87,19 @@ try {
     Write-Host "ERROR: Failed to import modules: $_" -ForegroundColor Red
     Write-Host "concise-log path: $conciseLogPath" -ForegroundColor Yellow
     Write-Host "powershell-core path: $coreModulePath" -ForegroundColor Yellow
-    Write-Host "Exception: $($_.Exception.GetType().FullName)" -ForegroundColor Yellow
+
+    $exceptionType = $_.Exception.GetType().FullName
+    Write-Host "Exception: $exceptionType" -ForegroundColor Yellow
+
     Write-Host "Message: $($_.Exception.Message)" -ForegroundColor Yellow
     exit 1
 }
 
 # Verify modules loaded
-$conciseLogLoaded = Get-Module -Name 'concise-log' -ErrorAction SilentlyContinue
-$coreModuleLoaded = Get-Module -Name 'powershell-core' -ErrorAction SilentlyContinue
+$conciseLogLoaded = Get-Module -Name 'concise-log' `
+    -ErrorAction SilentlyContinue
+$coreModuleLoaded = Get-Module -Name 'powershell-core' `
+    -ErrorAction SilentlyContinue
 
 if (-not $conciseLogLoaded) {
     Write-Host "ERROR: concise-log module not loaded" -ForegroundColor Red
@@ -294,27 +303,33 @@ function Add-VoltaToSessionPath {
 
     $voltaDirectories = @($voltaBinaryDirectory)
     if ($env:ProgramFiles) {
-        $voltaProgramFiles = Join-Path -Path $env:ProgramFiles -ChildPath 'Volta'
+        $voltaProgramFiles = Join-Path -Path $env:ProgramFiles `
+            -ChildPath 'Volta'
         if (Test-Path -LiteralPath $voltaProgramFiles) {
             $voltaDirectories += $voltaProgramFiles
         }
     }
     if (${env:ProgramFiles(x86)}) {
-        $voltaProgramFilesX86 = Join-Path -Path ${env:ProgramFiles(x86)} -ChildPath 'Volta'
+        $voltaProgramFilesX86 = Join-Path `
+            -Path ${env:ProgramFiles(x86)} `
+            -ChildPath 'Volta'
         if (Test-Path -LiteralPath $voltaProgramFilesX86) {
             $voltaDirectories += $voltaProgramFilesX86
         }
     }
 
     $pathSeparator = [System.IO.Path]::PathSeparator
-    $pathEntries = ($env:PATH -split $pathSeparator) | Where-Object { $_ -ne '' }
+    $pathEntries = ($env:PATH -split $pathSeparator) | `
+        Where-Object { $_ -ne '' }
 
     foreach ($voltaDirectory in $voltaDirectories) {
         $isVoltaInPath = $false
         foreach ($pathEntry in $pathEntries) {
             try {
-                $normalizedPathEntry = [System.IO.Path]::GetFullPath($pathEntry).TrimEnd('\')
-                $normalizedVoltaPath = [System.IO.Path]::GetFullPath($voltaDirectory).TrimEnd('\')
+                $normalizedPathEntry = `
+                    [System.IO.Path]::GetFullPath($pathEntry).TrimEnd('\')
+                $normalizedVoltaPath = `
+                    [System.IO.Path]::GetFullPath($voltaDirectory).TrimEnd('\')
 
                 if ($normalizedPathEntry -ieq $normalizedVoltaPath) {
                     $isVoltaInPath = $true
@@ -331,7 +346,8 @@ function Add-VoltaToSessionPath {
                 -Message "Adding Volta directory to PATH: $voltaDirectory"
 
             $env:PATH = "$voltaDirectory$pathSeparator$env:PATH"
-            $pathEntries = ($env:PATH -split $pathSeparator) | Where-Object { $_ -ne '' }
+            $pathEntries = ($env:PATH -split $pathSeparator) | `
+                Where-Object { $_ -ne '' }
         }
     }
 }
