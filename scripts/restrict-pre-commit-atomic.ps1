@@ -1,27 +1,21 @@
 #!/usr/bin/env pwsh
 
 <#
-# RULE 01: MUST NOT evade any rule or protocol defined in this file.
-# RULE 02: MUST NOT alter these rules or protocols without author consent.
-# RULE 03: MUST NOT create new rules or protocols to override or evade.
-# RULE 04: MUST NOT change configurations to bypass these rules or protocols.
-# RULE 05: MUST obtain author consent before making any changes.
-#>
-
-<#
 .SYNOPSIS
-    Enforces atomic commits by restricting staged files to exactly one file.
+    Enforces atomic commits by restricting staged files to one file.
 
 .DESCRIPTION
-    This script is used as a pre-commit hook to ensure that only a single file
-    is staged for commit. This enforces the atomic commit convention where each
-    commit should contain changes to exactly one file.
+    This script is used as a pre-commit hook to ensure that only a
+    single file is staged for commit. This enforces the atomic commit
+    convention where each commit should contain changes to exactly one
+    file.
 
 .NOTES
     Author: Richeve Bebedor <richeve.bebedor+vs-scripts@gmail.com>
     Version: 0.0.0
+    Last Modified: 2026-01-28
     Platform: Windows only
-    Requirements: pwsh 7.5.4+
+    Requirements: pwsh 7.5.4
     Hook Type: Pre-commit Git hook
 
 .EXAMPLE
@@ -33,57 +27,130 @@
     1 - Failure (multiple files staged or hook error)
 #>
 
-Set-StrictMode -Version Latest
-$ErrorActionPreference = 'Stop'
+[CmdletBinding()]
+param()
 
-# --- Core Functions ---
+# Import required modules
+$scriptPath = $PSScriptRoot
+$conciseLogPath = Join-Path $scriptPath 'concise-log.psm1'
+$coreModulePath = Join-Path $scriptPath 'powershell-core.psm1'
+
+# Convert to absolute paths (REQUIRED)
+$conciseLogPath = [System.IO.Path]::GetFullPath($conciseLogPath)
+$coreModulePath = [System.IO.Path]::GetFullPath($coreModulePath)
+
+if (-not (Test-Path -LiteralPath $conciseLogPath)) {
+    Write-Error 'Required module not found: concise-log.psm1'
+    exit 1
+}
+
+if (-not (Test-Path -LiteralPath $coreModulePath)) {
+    Write-Error 'Required module not found: powershell-core.psm1'
+    exit 1
+}
+
+Import-Module -Name $conciseLogPath -Force -ErrorAction Stop
+Import-Module -Name $coreModulePath -Force -ErrorAction Stop
+
+#region Primary Functions
 
 function Test-AtomicCommit {
     <#
     .SYNOPSIS
-        Checks if the current commit is atomic (contains exactly one file).
+        Checks if the current commit is atomic (one file only).
 
     .DESCRIPTION
-        This function checks if the staged files meet the atomic commit requirement
-        by verifying that exactly one file is staged for commit. Uses git to retrieve
-        the list of staged files.
+        This function checks if the staged files meet the atomic
+        commit requirement by verifying that exactly one file is
+        staged for commit. Uses git to retrieve the list of staged
+        files.
 
     .OUTPUTS
-        Boolean - Returns $true if the commit is atomic, $false otherwise.
+        System.Boolean. Returns $true if the commit is atomic, $false
+        otherwise.
 
     .EXAMPLE
-        if (Test-AtomicCommit) { Write-Host "Commit is atomic" }
-        Validates the atomic commit requirement.
+        if (Test-AtomicCommit) {
+            Write-InfoLog -Scope "HOOK-PRECOMMIT" `
+                -Message "Commit is atomic"
+        }
+
+    .NOTES
+        This function validates the staged file count before commit.
     #>
     [CmdletBinding()]
+    [OutputType([bool])]
     param()
 
     try {
-        $stagedFileList = @(git diff --cached --name-only 2>&1 | Where-Object { $_ -and $_ -notmatch '^\s*$' })
+        Write-DebugLog -Scope "HOOK-PRECOMMIT" `
+            -Message "Checking staged files for atomic commit"
+
+        $stagedFileOutput = & git diff --cached --name-only 2>&1
+        $stagedFileList = @($stagedFileOutput | Where-Object {
+            $_ -and $_ -notmatch '^\s*$'
+        })
         $stagedFileCount = $stagedFileList.Count
 
+        Write-DebugLog -Scope "HOOK-PRECOMMIT" `
+            -Message "Staged file count: $stagedFileCount"
+
         if ($stagedFileCount -gt 1) {
-            Write-Error -Message "ATOMIC_COMMIT_REQUIRED: $stagedFileCount files staged (1 max required)"
-            $stagedFileList | ForEach-Object { Write-Error -Message $_ }
+            Write-ErrorLog -Scope "HOOK-PRECOMMIT" `
+                -Message "$stagedFileCount files staged (1 max required)"
+
+            foreach ($file in $stagedFileList) {
+                Write-DebugLog -Scope "HOOK-PRECOMMIT" `
+                    -Message "Staged file: $file"
+            }
+
             return $false
         }
 
+        Write-InfoLog -Scope "HOOK-PRECOMMIT" `
+            -Message "Atomic commit validated"
+
         return $true
-    } catch {
-        Write-Error -Message "HOOK_ERROR: $($_.Exception.Message)"
+    }
+    catch {
+        Write-ErrorLog -Scope "HOOK-PRECOMMIT" `
+            -Message "Validation error: $($_.Exception.Message)"
+
         return $false
     }
 }
 
-# --- Main Script Execution ---
+#endregion
+
+#region Main Script Execution
+
+Initialize-ScriptEnvironment
+Assert-WindowsPlatform
+Assert-PowerShellVersionStrict
 
 try {
     $isAtomicCommit = Test-AtomicCommit
+
     if (-not $isAtomicCommit) {
+        Write-InfoLog -Scope "SCRIPT-MAIN" `
+            -Message "Commit rejected: multiple files staged"
+
         exit 1
     }
+
+    Write-InfoLog -Scope "SCRIPT-MAIN" `
+        -Message "Success: Atomic commit validated"
+
     exit 0
-} catch {
-    Write-Error -Message "HOOK_ERROR: $($_.Exception.Message)"
+}
+catch {
+    Write-ErrorLog -Scope "SCRIPT-MAIN" `
+        -Message "Hook error: $($_.Exception.Message)"
+
+    Write-DebugLog -Scope "SCRIPT-MAIN" `
+        -Message "Stack Trace: $($_.ScriptStackTrace)"
+
     exit 1
 }
+
+#endregion
