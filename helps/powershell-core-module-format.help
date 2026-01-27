@@ -555,9 +555,32 @@ PREVENT UNAUTHORIZED ALTERATIONS.
 
 8.18 Core Module Import Patterns
 
-    - Calling scripts MUST import core modules using Import-Module:
+    - Calling scripts MUST import core modules using Import-Module with
+      absolute paths.
+    - Module paths MUST be converted to absolute paths using
+      [System.IO.Path]::GetFullPath() to ensure reliable module loading.
+    - Use this exact pattern:
 
-        Import-Module -Name module-name
+        $scriptPath = $PSScriptRoot
+        $conciseLogPath = Join-Path $scriptPath 'concise-log.psm1'
+        $coreModulePath = Join-Path $scriptPath 'powershell-core.psm1'
+
+        # Convert to absolute paths (REQUIRED)
+        $conciseLogPath = [System.IO.Path]::GetFullPath($conciseLogPath)
+        $coreModulePath = [System.IO.Path]::GetFullPath($coreModulePath)
+
+        if (-not (Test-Path -LiteralPath $conciseLogPath)) {
+            Write-Error 'Required module not found: concise-log.psm1'
+            exit 1
+        }
+
+        if (-not (Test-Path -LiteralPath $coreModulePath)) {
+            Write-Error 'Required module not found: powershell-core.psm1'
+            exit 1
+        }
+
+        Import-Module -Name $conciseLogPath -Force -ErrorAction Stop
+        Import-Module -Name $coreModulePath -Force -ErrorAction Stop
 
         # Now functions from the module are available
         Initialize-ScriptEnvironment
@@ -597,9 +620,30 @@ PREVENT UNAUTHORIZED ALTERATIONS.
             Requirements: pwsh 7.5.4
         #>
 
+        [CmdletBinding()]
+        param()
+
         # Import required modules
-        Import-Module -Name concise-log
-        Import-Module -Name powershell-core
+        $scriptPath = $PSScriptRoot
+        $conciseLogPath = Join-Path $scriptPath 'concise-log.psm1'
+        $coreModulePath = Join-Path $scriptPath 'powershell-core.psm1'
+
+        # Convert to absolute paths (REQUIRED)
+        $conciseLogPath = [System.IO.Path]::GetFullPath($conciseLogPath)
+        $coreModulePath = [System.IO.Path]::GetFullPath($coreModulePath)
+
+        if (-not (Test-Path -LiteralPath $conciseLogPath)) {
+            Write-Error 'Required module not found: concise-log.psm1'
+            exit 1
+        }
+
+        if (-not (Test-Path -LiteralPath $coreModulePath)) {
+            Write-Error 'Required module not found: powershell-core.psm1'
+            exit 1
+        }
+
+        Import-Module -Name $conciseLogPath -Force -ErrorAction Stop
+        Import-Module -Name $coreModulePath -Force -ErrorAction Stop
 
         # Initialize script environment
         Initialize-ScriptEnvironment
@@ -651,9 +695,30 @@ PREVENT UNAUTHORIZED ALTERATIONS.
             Requirements: pwsh 7.5.4
         #>
 
+        [CmdletBinding()]
+        param()
+
         # Import required modules
-        Import-Module -Name concise-log
-        Import-Module -Name powershell-core
+        $scriptPath = $PSScriptRoot
+        $conciseLogPath = Join-Path $scriptPath 'concise-log.psm1'
+        $coreModulePath = Join-Path $scriptPath 'powershell-core.psm1'
+
+        # Convert to absolute paths (REQUIRED)
+        $conciseLogPath = [System.IO.Path]::GetFullPath($conciseLogPath)
+        $coreModulePath = [System.IO.Path]::GetFullPath($coreModulePath)
+
+        if (-not (Test-Path -LiteralPath $conciseLogPath)) {
+            Write-Error 'Required module not found: concise-log.psm1'
+            exit 1
+        }
+
+        if (-not (Test-Path -LiteralPath $coreModulePath)) {
+            Write-Error 'Required module not found: powershell-core.psm1'
+            exit 1
+        }
+
+        Import-Module -Name $conciseLogPath -Force -ErrorAction Stop
+        Import-Module -Name $coreModulePath -Force -ErrorAction Stop
 
         # Initialize script environment
         Initialize-ScriptEnvironment
