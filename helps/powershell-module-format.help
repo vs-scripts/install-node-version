@@ -512,9 +512,24 @@ PREVENT UNAUTHORIZED ALTERATIONS.
 
 8.16 PSM1 Import Patterns
 
-    - Calling scripts MUST import PSM1 modules using Import-Module:
+    - Calling scripts MUST import PSM1 modules using Import-Module with
+      absolute paths.
+    - Module paths MUST be converted to absolute paths using
+      [System.IO.Path]::GetFullPath() to ensure reliable module loading.
+    - Use this exact pattern:
 
-        Import-Module -Name module-name
+        $scriptPath = $PSScriptRoot
+        $modulePath = Join-Path $scriptPath 'module-name.psm1'
+
+        # Convert to absolute path (REQUIRED)
+        $modulePath = [System.IO.Path]::GetFullPath($modulePath)
+
+        if (-not (Test-Path -LiteralPath $modulePath)) {
+            Write-Error 'Required module not found: module-name.psm1'
+            exit 1
+        }
+
+        Import-Module -Name $modulePath -Force -ErrorAction Stop
 
         # Now functions from the module are available
         Get-ExampleValue
