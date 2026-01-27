@@ -35,8 +35,16 @@
 
 .EXAMPLE
     # Example: Non-elevated script structure
-    Import-Module -Name concise-log
-    Import-Module -Name powershell-core
+    $scriptPath = $PSScriptRoot
+    $conciseLogPath = Join-Path $scriptPath 'concise-log.psm1'
+    $coreModulePath = Join-Path $scriptPath 'powershell-core.psm1'
+
+    # Convert to absolute paths (REQUIRED)
+    $conciseLogPath = [System.IO.Path]::GetFullPath($conciseLogPath)
+    $coreModulePath = [System.IO.Path]::GetFullPath($coreModulePath)
+
+    Import-Module -Name $conciseLogPath -Force -ErrorAction Stop
+    Import-Module -Name $coreModulePath -Force -ErrorAction Stop
 
     Initialize-ScriptEnvironment
     Assert-WindowsPlatform
@@ -44,8 +52,16 @@
     Assert-PowerShellVersionStrict
 
     # Example: Elevated script structure
-    Import-Module -Name concise-log
-    Import-Module -Name powershell-core
+    $scriptPath = $PSScriptRoot
+    $conciseLogPath = Join-Path $scriptPath 'concise-log.psm1'
+    $coreModulePath = Join-Path $scriptPath 'powershell-core.psm1'
+
+    # Convert to absolute paths (REQUIRED)
+    $conciseLogPath = [System.IO.Path]::GetFullPath($conciseLogPath)
+    $coreModulePath = [System.IO.Path]::GetFullPath($coreModulePath)
+
+    Import-Module -Name $conciseLogPath -Force -ErrorAction Stop
+    Import-Module -Name $coreModulePath -Force -ErrorAction Stop
 
     Initialize-ScriptEnvironment
     Assert-WindowsPlatform
