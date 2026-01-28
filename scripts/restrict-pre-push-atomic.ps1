@@ -2,16 +2,14 @@
 
 <#
 .SYNOPSIS
-    Enforces atomic pushes by restricting pushes to a single commit with one
-    file.
+    Enforces atomic commits by ensuring each commit contains exactly one file.
 
 .DESCRIPTION
-    This script is used as a pre-push hook to ensure that:
-    1. Only a single commit is being pushed
-    2. That commit contains only a single file
+    This script is used as a pre-push hook to ensure that each commit being
+    pushed contains exactly one file. Multiple commits are allowed in a single
+    push operation, but each commit must be atomic (one file per commit).
 
-    This enforces the atomic push convention where each push should contain
-    exactly one commit with changes to exactly one file.
+    This enforces RULE 11: A commit MUST have a maximum of 1 file.
 
 .NOTES
     Author: Richeve Bebedor <richeve.bebedor+vs-scripts@gmail.com>
@@ -19,15 +17,14 @@
     Last Modified: 2026-01-28
     Platform: Windows only
     Requirements: pwsh 7.5.4
-    Hook Type: Pre-push Git hook
 
 .EXAMPLE
+    # Validates that all commits being pushed contain exactly one file each.
     .\restrict-pre-push-atomic.ps1
-    Validates that exactly one commit with one file is being pushed.
 
 .EXIT CODES
-    0 - Success (atomic push allowed or no commits to push)
-    1 - Failure (multiple commits or multiple files in commit)
+    0 - Success (all commits are atomic or no commits to push)
+    1 - Failure (one or more commits contain multiple or zero files)
 #>
 
 [CmdletBinding()]
@@ -46,11 +43,13 @@ $coreModulePath = [System.IO.Path]::GetFullPath($coreModulePath)
 
 if (-not (Test-Path -LiteralPath $conciseLogPath)) {
     Write-Error 'Required module not found: concise-log.psm1'
+
     exit 1
 }
 
 if (-not (Test-Path -LiteralPath $coreModulePath)) {
     Write-Error 'Required module not found: powershell-core.psm1'
+
     exit 1
 }
 
@@ -59,89 +58,113 @@ Import-Module -Name $coreModulePath -Force -ErrorAction Stop
 
 #region Primary Functions
 
-function Test-AtomicPush {
+function Test-CommitFileCount {
     <#
     .SYNOPSIS
-        Checks if the current push is atomic (contains exactly one commit with
-        one file).
+        Validates that all commits being pushed contain exactly one file.
 
     .DESCRIPTION
-        This function checks if the push meets the atomic push requirement by
-        verifying:
-        1. Only a single commit is being pushed
-        2. That commit contains only a single file
+        This function checks if all commits in the push meet the atomic
+        commit requirement by verifying that each commit contains exactly
+        one file. Multiple commits are allowed, but each must be atomic.
 
     .OUTPUTS
-        Boolean - Returns $true if the push is atomic, $false otherwise.
+        Boolean - Returns $true if all commits are valid, $false otherwise.
 
     .EXAMPLE
-        if (Test-AtomicPush) { Write-Host "Push is atomic" }
-        Validates the atomic push requirement.
+        if (Test-CommitFileCount) { Write-Host "All commits are atomic" }
+        Validates the atomic commit requirement for all commits.
     #>
     [CmdletBinding()]
+    [OutputType([bool])]
     param()
 
     try {
         Write-DebugLog -Scope "HOOK-PREPUSH" `
-            -Message "Checking atomic push requirements"
+            -Message "Checking atomic commit requirements"
 
         $commitList = @(& git rev-list '@{upstream}..HEAD' 2>&1 | `
             Where-Object { $_ -and $_ -notmatch '^\s*$' })
+
         $commitCount = $commitList.Count
 
         Write-DebugLog -Scope "HOOK-PREPUSH" `
             -Message "Found $commitCount commits to push"
 
-        if ($commitCount -gt 1) {
-            $message = "ATOMIC_PUSH_REQUIRED: $commitCount commits to push " +
-                "(1 required)"
-            Write-ErrorLog -Scope "HOOK-PREPUSH" -Message $message
+        if ($commitCount -eq 0) {
+            Write-InfoLog -Scope "HOOK-PREPUSH" `
+                -Message "No commits to push, validation skipped"
 
-            for ($commitIndex = 0; $commitIndex -lt $commitList.Count; `
-                $commitIndex++) {
-                $currentCommitHash = $commitList[$commitIndex]
-                $commitMessage = & git log -1 --pretty='%s' `
-                    $currentCommitHash 2>&1 | Select-Object -First 1
-                $commitShortHash = $currentCommitHash.Substring(0, 7)
-                $indexMessage = "$($commitIndex + 1). $commitShortHash " +
-                    "$commitMessage"
-                Write-ErrorLog -Scope "HOOK-PREPUSH" -Message $indexMessage
-            }
-            return $false
+            return $true
         }
 
-        if ($commitCount -eq 1) {
-            $currentCommitHash = $commitList[0]
-            $changedFileList = @(& git diff-tree --no-commit-id --name-only `
-                -r $currentCommitHash 2>&1 | `
+        $violationList = @()
+
+        for ($commitIndex = 0; $commitIndex -lt $commitList.Count; `
+            $commitIndex++) {
+            $currentCommitHash = $commitList[$commitIndex]
+            $commitShortHash = $currentCommitHash.Substring(0, 7)
+
+            $changedFileList = @(& git diff-tree --no-commit-id `
+                --name-only -r $currentCommitHash 2>&1 | `
                 Where-Object { $_ -and $_ -notmatch '^\s*$' })
             $changedFileCount = $changedFileList.Count
 
-            Write-DebugLog -Scope "HOOK-PREPUSH" `
-                -Message "Found $changedFileCount files in commit"
+            Write-DebugLog -Scope "COMMIT-VALIDATE" `
+                -Message "Commit $commitShortHash has $changedFileCount files"
 
-            if ($changedFileCount -gt 1) {
-                $message = "ATOMIC_COMMIT_REQUIRED: $changedFileCount files " +
-                    "in commit (1 required)"
-                Write-ErrorLog -Scope "HOOK-PREPUSH" -Message $message
+            if ($changedFileCount -ne 1) {
+                $commitMessage = & git log -1 --pretty='%s' `
+                    $currentCommitHash 2>&1 | Select-Object -First 1
 
-                $changedFileList | ForEach-Object {
-                    Write-ErrorLog -Scope "HOOK-PREPUSH" -Message $_
+                $violation = @{
+                    CommitHash = $currentCommitHash
+                    ShortHash = $commitShortHash
+                    Message = $commitMessage
+                    FileCount = $changedFileCount
+                    Files = $changedFileList
                 }
-                return $false
+
+                $violationList += $violation
             }
         }
 
+        if ($violationList.Count -gt 0) {
+            $message = "ATOMIC_PUSH_FAILED: $($violationList.Count) " +
+                "commit(s) violate the one-file-per-commit rule"
+            Write-ErrorLog -Scope "HOOK-PREPUSH" -Message $message
+
+            foreach ($violation in $violationList) {
+                $violationMessage = "ATOMIC_COMMIT_VIOLATION: Commit " +
+                    "$($violation.ShortHash) contains " +
+                    "$($violation.FileCount) files (1 required)"
+                Write-ErrorLog -Scope "HOOK-PREPUSH" `
+                    -Message $violationMessage
+
+                $messageText = "Message: $($violation.Message)"
+                Write-ErrorLog -Scope "HOOK-PREPUSH" -Message $messageText
+
+                if ($violation.FileCount -gt 0) {
+                    Write-ErrorLog -Scope "HOOK-PREPUSH" -Message "Files:"
+                    $violation.Files | ForEach-Object {
+                        Write-ErrorLog -Scope "HOOK-PREPUSH" `
+                            -Message "  - $_"
+                    }
+                }
+            }
+
+            return $false
+        }
+
         Write-InfoLog -Scope "HOOK-PREPUSH" `
-            -Message "Atomic push requirements satisfied"
+            -Message "All commits meet atomic requirements"
 
         return $true
     } catch {
-        Write-DebugLog -Scope "HOOK-PREPUSH" `
-            -Message "Push validation failed silently: $($_.Exception.Message)"
+        Write-ErrorLog -Scope "HOOK-PREPUSH" `
+            -Message "Validation error: $($_.Exception.Message)"
 
-        # Fail silently on push to avoid breaking the push operation
-        return $true
+        throw
     }
 }
 
@@ -154,22 +177,26 @@ Assert-WindowsPlatform
 Assert-PowerShellVersionStrict
 
 try {
-    $isAtomicPush = Test-AtomicPush
-    if (-not $isAtomicPush) {
+    $isValid = Test-CommitFileCount
+    if (-not $isValid) {
         Write-ErrorLog -Scope "SCRIPT-MAIN" `
-            -Message "Atomic push validation failed"
+            -Message "Atomic commit validation failed"
+
         exit 1
     }
 
     Write-InfoLog -Scope "SCRIPT-MAIN" `
-        -Message "Pre-push validation completed successfully"
+        -Message "Success: Pre-push validation completed"
+
     exit 0
 } catch {
-    Write-DebugLog -Scope "SCRIPT-MAIN" `
-        -Message "Unexpected error: $($_.Exception.Message)"
+    Write-ExceptionLog -Scope "SCRIPT-MAIN" `
+        -Message "Unexpected issue: $($_.Exception.Message)"
 
-    # Fail silently on push to avoid breaking the push operation
-    exit 0
+    Write-DebugLog -Scope "SCRIPT-MAIN" `
+        -Message "Stack Trace: $($_.ScriptStackTrace)"
+
+    exit 1
 }
 
 #endregion
