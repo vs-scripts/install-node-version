@@ -1,4 +1,10 @@
-#!/usr/bin/env pwsh
+<# :
+@echo off
+echo.
+echo Error: This script must be run from a PowerShell terminal.
+echo.
+exit /b 1
+#>
 
 <#
 .SYNOPSIS
@@ -221,10 +227,10 @@ function Test-BodyLinePrefixes {
         '5. verify:'
     )
 
-    for ($i = 0; $i -lt 5; $i++) {
-        $line = $BodyLines[$i]
-        $expectedPrefix = $expectedPrefixes[$i]
-        $lineNumber = $i + 1
+    for ($index = 0; $index -lt 5; $index++) {
+        $line = $BodyLines[$index]
+        $expectedPrefix = $expectedPrefixes[$index]
+        $lineNumber = $index + 1
 
         # Extract actual prefix (up to and including colon)
         if ($line -match '^(\d+\.\s*\w+:)') {
@@ -390,10 +396,10 @@ function Test-BodyLineContent {
         '5. verify:'
     )
 
-    for ($i = 0; $i -lt 5; $i++) {
-        $line = $BodyLines[$i]
-        $prefix = $prefixes[$i]
-        $lineNumber = $i + 1
+    for ($index = 0; $index -lt 5; $index++) {
+        $line = $BodyLines[$index]
+        $prefix = $prefixes[$index]
+        $lineNumber = $index + 1
 
         # Remove prefix (case-insensitive) and trim
         $escapedPrefix = [regex]::Escape($prefix)
