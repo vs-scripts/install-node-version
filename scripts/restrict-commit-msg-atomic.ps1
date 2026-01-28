@@ -15,12 +15,11 @@
     Last Modified: 2026-01-28
     Platform: Windows only
     Requirements: pwsh 7.5.4
-    Hook Type: Commit-msg Git hook
 
 .EXAMPLE
+    # Validates that the commit message references the single staged file.
     .\restrict-commit-msg-atomic.ps1 "path/to/commit-msg-file"
-    Validates that the commit message references the single staged
-    file.
+
 
 .EXIT CODES
     0 - Success (atomic commit message allowed)
@@ -154,7 +153,7 @@ function Test-AtomicCommitMessage {
         Write-ErrorLog -Scope "HOOK-COMMITMSG" `
             -Message "Validation error: $($_.Exception.Message)"
 
-        return $false
+        throw
     }
 }
 
@@ -171,7 +170,7 @@ try {
         -MessageFilePath $CommitMsgFile
 
     if (-not $isAtomicMessage) {
-        Write-InfoLog -Scope "SCRIPT-MAIN" `
+        Write-ErrorLog -Scope "SCRIPT-MAIN" `
             -Message "Commit rejected: message not atomic"
 
         exit 1
@@ -183,8 +182,8 @@ try {
     exit 0
 }
 catch {
-    Write-ErrorLog -Scope "SCRIPT-MAIN" `
-        -Message "Hook error: $($_.Exception.Message)"
+    Write-ExceptionLog -Scope "SCRIPT-MAIN" `
+        -Message "Unexpected issue: $($_.Exception.Message)"
 
     Write-DebugLog -Scope "SCRIPT-MAIN" `
         -Message "Stack Trace: $($_.ScriptStackTrace)"
