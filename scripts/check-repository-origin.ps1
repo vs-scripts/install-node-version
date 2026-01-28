@@ -14,12 +14,13 @@ exit /b 1
     Verifies that the current repository's git remote URL matches the
     expected URL defined in the ORIGIN file. This ensures the repository
     is configured to use the correct remote source. If the URLs do not
-    match, the script exits with an error and provides corrective guidance.
+    match, the script exits with an error and provides corrective
+    guidance.
 
 .NOTES
     Author: Richeve Bebedor
     Version: 0.0.0
-    Last Modified: 2026-01-21
+    Last Modified: 2026-01-28
     Platform: Windows only
     Requirements: pwsh 7.5.4
 
@@ -35,14 +36,29 @@ exit /b 1
 [CmdletBinding()]
 param()
 
-Set-StrictMode -Version Latest
+# Import required modules
+$scriptPath = $PSScriptRoot
+$conciseLogPath = Join-Path $scriptPath 'concise-log.psm1'
+$coreModulePath = Join-Path $scriptPath 'powershell-core.psm1'
 
-# Import concise-log module
-$scriptDir = Split-Path -Parent $MyInvocation.MyCommandPath
-Import-Module -Name (Join-Path -Path $scriptDir `
-    -ChildPath 'concise-log.psm1')
+# Convert to absolute paths (REQUIRED)
+$conciseLogPath = [System.IO.Path]::GetFullPath($conciseLogPath)
+$coreModulePath = [System.IO.Path]::GetFullPath($coreModulePath)
 
-#region Core Functions
+if (-not (Test-Path -LiteralPath $conciseLogPath)) {
+    Write-Error 'Required module not found: concise-log.psm1'
+    exit 1
+}
+
+if (-not (Test-Path -LiteralPath $coreModulePath)) {
+    Write-Error 'Required module not found: powershell-core.psm1'
+    exit 1
+}
+
+Import-Module -Name $conciseLogPath -Force -ErrorAction Stop
+Import-Module -Name $coreModulePath -Force -ErrorAction Stop
+
+#region Primary Functions
 
 function Get-RepositoryRoot {
     <#
@@ -51,13 +67,18 @@ function Get-RepositoryRoot {
 
     .DESCRIPTION
         Attempts to detect the git repository root using the git command.
-        Falls back to the current working directory if git detection fails.
+        Falls back to the current working directory if git detection
+        fails.
+
+    .OUTPUTS
+        [string] The repository root path.
 
     .EXAMPLE
         $root = Get-RepositoryRoot
         Returns the repository root path.
     #>
     [CmdletBinding()]
+    [OutputType([string])]
     param()
 
     [string]$repositoryRoot = $PWD.Path
@@ -70,7 +91,8 @@ function Get-RepositoryRoot {
                     $detectedRoot)) {
                 $message = "Detected Git repository root: $detectedRoot"
                 Write-DebugLog -Scope "REPO-ORIGIN" -Message $message
-
+                $repositoryRoot = $detectedRoot
+            }
         } catch {
             $message = "Git root detection failed, using current directory"
             Write-DebugLog -Scope "REPO-ORIGIN" -Message $message
@@ -88,11 +110,13 @@ function Get-AllowedRemoteUrl {
     .DESCRIPTION
         Reads the ORIGIN file from the repository root and returns the
         expected git remote URL. Throws an error if the file cannot be
-        read or is empty. file cannot be
         read or is empty.
 
     .PARAMETER RepositoryRoot
         The root directory of the repository.
+
+    .OUTPUTS
+        [string] The allowed remote URL from the ORIGIN file.
 
     .EXAMPLE
         $allowedUrl = Get-AllowedRemoteUrl `
@@ -100,6 +124,7 @@ function Get-AllowedRemoteUrl {
         Returns the allowed remote URL from the ORIGIN file.
     #>
     [CmdletBinding()]
+    [OutputType([string])]
     param(
         [Parameter(Mandatory = $true, `
             HelpMessage = "Repository root path")]
@@ -137,11 +162,15 @@ function Get-CurrentRemoteUrl {
         Executes the git command to get the current remote URL for the
         'origin' remote. Throws an error if the command fails.
 
+    .OUTPUTS
+        [string] The current git remote URL.
+
     .EXAMPLE
         $currentUrl = Get-CurrentRemoteUrl
         Returns the current git remote URL.
     #>
     [CmdletBinding()]
+    [OutputType([string])]
     param()
 
     try {
@@ -176,12 +205,16 @@ function Test-RemoteUrlMatch {
     .PARAMETER AllowedUrl
         The expected remote URL from the ORIGIN file.
 
+    .OUTPUTS
+        [bool] True if URLs match, false otherwise.
+
     .EXAMPLE
         $isMatch = Test-RemoteUrlMatch -CurrentUrl $current `
             -AllowedUrl $allowed
         Returns true if URLs match.
     #>
     [CmdletBinding()]
+    [OutputType([bool])]
     param(
         [Parameter(Mandatory = $true, `
             HelpMessage = "Current remote URL")]
@@ -202,12 +235,10 @@ function Test-RemoteUrlMatch {
 #region Main Script Execution
 
 Initialize-ScriptEnvironment
-Test-IsInteractivePowerShell
-Invoke-PowerShellCoreTransition
+Assert-WindowsPlatform
+Assert-PowerShellVersionStrict
 
 try {
-    Assert-WindowsPlatform
-
     Write-InfoLog -Scope "REPO-ORIGIN" `
         -Message "Validating remote URL"
 
