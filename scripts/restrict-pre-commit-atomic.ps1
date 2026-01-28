@@ -16,11 +16,10 @@
     Last Modified: 2026-01-28
     Platform: Windows only
     Requirements: pwsh 7.5.4
-    Hook Type: Pre-commit Git hook
 
 .EXAMPLE
+    # Validates that exactly one file is staged for commit.
     .\restrict-pre-commit-atomic.ps1
-    Validates that exactly one file is staged for commit.
 
 .EXIT CODES
     0 - Success (atomic commit allowed)
@@ -116,7 +115,7 @@ function Test-AtomicCommit {
         Write-ErrorLog -Scope "HOOK-PRECOMMIT" `
             -Message "Validation error: $($_.Exception.Message)"
 
-        return $false
+        throw
     }
 }
 
@@ -132,7 +131,7 @@ try {
     $isAtomicCommit = Test-AtomicCommit
 
     if (-not $isAtomicCommit) {
-        Write-InfoLog -Scope "SCRIPT-MAIN" `
+        Write-ErrorLog -Scope "SCRIPT-MAIN" `
             -Message "Commit rejected: multiple files staged"
 
         exit 1
@@ -144,8 +143,8 @@ try {
     exit 0
 }
 catch {
-    Write-ErrorLog -Scope "SCRIPT-MAIN" `
-        -Message "Hook error: $($_.Exception.Message)"
+    Write-ExceptionLog -Scope "SCRIPT-MAIN" `
+        -Message "Unexpected issue: $($_.Exception.Message)"
 
     Write-DebugLog -Scope "SCRIPT-MAIN" `
         -Message "Stack Trace: $($_.ScriptStackTrace)"
