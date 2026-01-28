@@ -24,9 +24,16 @@
 #
 # Rules:
 # - type, scope, subject must be lowercase
-# - subject is imperative, no trailing period
-# - scope is file or directory name
+# - subject should be imperative and must not have trailing period
+# - scope must be a file name (without extension) or directory name only
+# - scope must not be a complete path
 # - header must be concise and ≤83 chars
+# - specs type must denotes file changes to ./todo directory
+# - tests type must denotes file changes to ./tests directory
+# - helps type must denotes file changes to ./helps directory
+# - break type must denotes file changes to ./VERSION file
+# - issue type must denotes file changes to any location except
+#   ./todo, ./tests, ./helps, ./VERSION
 
 <type>(<scope>): <subject>
 
