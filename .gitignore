@@ -42,8 +42,6 @@
 !VERSION
 !WEBSITE
 
-!package.json
-
 !*.bash
 !*.js
 !*.mjs
@@ -52,6 +50,7 @@
 !*.psm1
 !*.sh
 !*.zig
+!*.json
 
 !.githooks/
 !.githooks/pre-commit
@@ -98,3 +97,5 @@
 
 !waste/
 !waste/**/*
+
+package-lock.json
