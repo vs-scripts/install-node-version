@@ -8,11 +8,11 @@ exit /b 1
 
 <#
 .SYNOPSIS
-    Configures Git to include the repository .gitconfig file globally.
+    Configures Git to include the repository .gitconfig file locally.
 
 .DESCRIPTION
-    Sets the global Git include.path configuration so that the custom
-    .gitconfig file in this repository is loaded for all Git operations.
+    Sets the local Git include.path configuration so that the custom
+    .gitconfig file in this repository is loaded for this repository only.
 
 .NOTES
     Author: VS Scripts Automation
@@ -168,42 +168,41 @@ function Assert-GitCommandAvailable {
 function Set-CustomGitConfigIncludePath {
     <#
     .SYNOPSIS
-        Sets the git global include.path to the repository .gitconfig.
+        Sets the git local include.path to the repository .gitconfig.
 
     .DESCRIPTION
-        Configures the global git environment to include the repository's
+        Configures the local git environment to include the repository's
         custom configuration file. It is idempotent and checks if the
         configuration is already set before applying changes.
 
     .NOTES
-        Modifies global git configuration.
+        Modifies local git configuration.
 
     .EXAMPLE
         Set-CustomGitConfigIncludePath
-        Updates git global config.
+        Updates git local config.
     #>
     [CmdletBinding()]
     param()
 
-    $customGitConfigPath = Get-CustomGitConfigPath
+    $customGitConfigPath = '../.gitconfig'
 
     Write-InfoLog -Scope 'GIT-CONFIG' `
         -Message "Configuring Git include.path for $customGitConfigPath"
 
-    $currentIncludePath = & git config --global include.path 2>$null
+    $currentIncludePath = & git config --local include.path 2>$null
 
-    if ($currentIncludePath -and `
-        ($currentIncludePath -eq $customGitConfigPath)) {
+    if ($currentIncludePath) {
         Write-InfoLog -Scope 'GIT-CONFIG' `
-            -Message "Git include.path is already set to custom .gitconfig"
+            -Message "Removing existing include.path to ensure precedence"
 
-        return
+        & git config --local --unset include.path
     }
 
-    & git config --global include.path $customGitConfigPath
+    & git config --local include.path $customGitConfigPath
 
     Write-InfoLog -Scope 'GIT-CONFIG' `
-        -Message "Git include.path updated to $customGitConfigPath"
+        -Message "Git include.path set to $customGitConfigPath (at bottom)"
 }
 
 function Invoke-PrimaryWorkflow {
