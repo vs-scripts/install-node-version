@@ -37,79 +37,25 @@ param()
 
 # Import required modules
 $scriptPath = $PSScriptRoot
-if (-not $scriptPath) {
-    $scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Path
-}
-
-if (-not $scriptPath) {
-    Write-Host "FATAL: Cannot determine script directory" -ForegroundColor Red
-    Write-Host "PSScriptRoot: $PSScriptRoot" -ForegroundColor Yellow
-
-    $commandPath = $MyInvocation.MyCommand.Path
-    Write-Host "MyInvocation.MyCommand.Path: $commandPath" `
-        -ForegroundColor Yellow
-
-    exit 1
-}
-
 $conciseLogPath = Join-Path $scriptPath 'concise-log.psm1'
 $coreModulePath = Join-Path $scriptPath 'powershell-core.psm1'
 
-# Convert module paths to absolute paths
+# Convert to absolute paths (REQUIRED)
 $conciseLogPath = [System.IO.Path]::GetFullPath($conciseLogPath)
 $coreModulePath = [System.IO.Path]::GetFullPath($coreModulePath)
 
 if (-not (Test-Path -LiteralPath $conciseLogPath)) {
-    Write-Host "ERROR: Required module not found: $conciseLogPath" `
-        -ForegroundColor Red
-    Write-Host "Script directory: $scriptPath" -ForegroundColor Yellow
-    Write-Host "Current location: $PWD" -ForegroundColor Yellow
-    Write-Host "Files in script directory:" -ForegroundColor Yellow
-    if (Test-Path -LiteralPath $scriptPath) {
-        Get-ChildItem -LiteralPath $scriptPath -Filter "*.psm1" |
-            ForEach-Object { Write-Host "  - $($_.Name)" -ForegroundColor Cyan }
-    }
+    Write-Error 'Required module not found: concise-log.psm1'
     exit 1
 }
 
 if (-not (Test-Path -LiteralPath $coreModulePath)) {
-    Write-Host "ERROR: Required module not found: $coreModulePath" `
-        -ForegroundColor Red
-    Write-Host "Script directory: $scriptPath" -ForegroundColor Yellow
-    Write-Host "Current location: $PWD" -ForegroundColor Yellow
+    Write-Error 'Required module not found: powershell-core.psm1'
     exit 1
 }
 
-try {
-    Import-Module -Name $conciseLogPath -Force -ErrorAction Stop -Global
-    Import-Module -Name $coreModulePath -Force -ErrorAction Stop -Global
-} catch {
-    Write-Host "ERROR: Failed to import modules: $_" -ForegroundColor Red
-    Write-Host "concise-log path: $conciseLogPath" -ForegroundColor Yellow
-    Write-Host "powershell-core path: $coreModulePath" -ForegroundColor Yellow
-
-    $exceptionType = $_.Exception.GetType().FullName
-    Write-Host "Exception: $exceptionType" -ForegroundColor Yellow
-
-    Write-Host "Message: $($_.Exception.Message)" -ForegroundColor Yellow
-    exit 1
-}
-
-# Verify modules loaded
-$conciseLogLoaded = Get-Module -Name 'concise-log' `
-    -ErrorAction SilentlyContinue
-$coreModuleLoaded = Get-Module -Name 'powershell-core' `
-    -ErrorAction SilentlyContinue
-
-if (-not $conciseLogLoaded) {
-    Write-Host "ERROR: concise-log module not loaded" -ForegroundColor Red
-    exit 1
-}
-
-if (-not $coreModuleLoaded) {
-    Write-Host "ERROR: powershell-core module not loaded" -ForegroundColor Red
-    exit 1
-}
+Import-Module -Name $conciseLogPath -Force -ErrorAction Stop
+Import-Module -Name $coreModulePath -Force -ErrorAction Stop
 
 #endregion
 
@@ -146,13 +92,13 @@ function Get-RepositoryRoot {
             $detectedRoot = (& git rev-parse --show-toplevel 2>$null).Trim()
 
             if ($detectedRoot -and (Test-Path -LiteralPath $detectedRoot)) {
-                $null = Write-DebugLog -Scope "REPO-ROOT" `
+                Write-DebugLog -Scope "REPO-ROOT" `
                     -Message "Detected Git repository root: $detectedRoot"
 
                 $repositoryRoot = $detectedRoot
             }
         } catch {
-            $null = Write-DebugLog -Scope "REPO-ROOT" `
+            Write-DebugLog -Scope "REPO-ROOT" `
                 -Message "Git root detection failed, using current directory"
         }
     }
@@ -209,23 +155,18 @@ function Install-PackageWithWinget {
         --accept-package-agreements `
         --accept-source-agreements
 
-    $allowedExitCodes = @(0, -1978335189)
-    if ($LASTEXITCODE -notin $allowedExitCodes) {
-        $warningMessage = "winget install failed for $PackageIdentifier " +
-            "(exit $LASTEXITCODE)"
+    if ($LASTEXITCODE -eq 0) {
+        Write-InfoLog -Scope "WINGET-INSTALL" `
+            -Message "Package $PackageIdentifier installed successfully"
 
-        Write-WarningLog -Scope "WINGET-INSTALL" `
-            -Message $warningMessage
+    } else {
+        $errorMessage = "winget install failed for " +
+            "'$PackageIdentifier'"+ " (exit $LASTEXITCODE)"
 
         Write-ErrorLog -Scope "WINGET-INSTALL" `
-            -Message "winget install failed; aborting"
+            -Message $errorMessage
 
-        throw $warningMessage
-    } elseif ($LASTEXITCODE -ne 0) {
-        $warningMessage = "winget reported no applicable upgrade for " +
-            "$PackageIdentifier (exit $LASTEXITCODE)"
-        Write-WarningLog -Scope "WINGET-INSTALL" `
-            -Message $warningMessage
+        throw "winget install failed for $PackageIdentifier (exit $LASTEXITCODE)"
     }
 }
 
@@ -303,12 +244,12 @@ function Add-VoltaToSessionPath {
 
     $voltaDirectories = @($voltaBinaryDirectory)
     if ($env:ProgramFiles) {
-        $voltaProgramFiles = Join-Path -Path $env:ProgramFiles `
-            -ChildPath 'Volta'
+        $voltaProgramFiles = Join-Path -Path $env:ProgramFiles -ChildPath 'Volta'
         if (Test-Path -LiteralPath $voltaProgramFiles) {
             $voltaDirectories += $voltaProgramFiles
         }
     }
+
     if (${env:ProgramFiles(x86)}) {
         $voltaProgramFilesX86 = Join-Path `
             -Path ${env:ProgramFiles(x86)} `
@@ -319,8 +260,7 @@ function Add-VoltaToSessionPath {
     }
 
     $pathSeparator = [System.IO.Path]::PathSeparator
-    $pathEntries = ($env:PATH -split $pathSeparator) | `
-        Where-Object { $_ -ne '' }
+    $pathEntries = ($env:PATH -split $pathSeparator) | Where-Object { $_ -ne '' }
 
     foreach ($voltaDirectory in $voltaDirectories) {
         $isVoltaInPath = $false
@@ -328,6 +268,7 @@ function Add-VoltaToSessionPath {
             try {
                 $normalizedPathEntry = `
                     [System.IO.Path]::GetFullPath($pathEntry).TrimEnd('\')
+
                 $normalizedVoltaPath = `
                     [System.IO.Path]::GetFullPath($voltaDirectory).TrimEnd('\')
 
@@ -477,14 +418,10 @@ function Invoke-NodeVersionPinningWorkflow {
         }
 
         $ltsNodeOutput = & volta run --node lts node --version
-        $ltsNodeVersion = & $normalizeVersion `
-            $ltsNodeOutput `
-            "Node.js"
+        $ltsNodeVersion = & $normalizeVersion $ltsNodeOutput "Node.js"
 
         $ltsNpmOutput = & volta run --node lts --bundled-npm npm --version
-        $ltsNpmVersion = & $normalizeVersion `
-            $ltsNpmOutput `
-            "npm"
+        $ltsNpmVersion = & $normalizeVersion $ltsNpmOutput "npm"
 
         return [ordered]@{
             node = $ltsNodeVersion
@@ -507,8 +444,7 @@ function Invoke-NodeVersionPinningWorkflow {
             throw "package.json is not valid JSON"
         }
 
-        $hasEngines = $packageData.PSObject.Properties.Name `
-            -contains 'engines'
+        $hasEngines = $packageData.PSObject.Properties.Name -contains 'engines'
         $engines = if ($hasEngines) {
             $packageData.engines
         } else {
@@ -516,12 +452,8 @@ function Invoke-NodeVersionPinningWorkflow {
         }
 
         if ($engines -and $engines.node -and $engines.npm) {
-            $targetNodeVersion = & $normalizeVersion `
-                $engines.node `
-                "Node.js"
-            $targetNpmVersion = & $normalizeVersion `
-                $engines.npm `
-                "npm"
+            $targetNodeVersion = & $normalizeVersion $engines.node "Node.js"
+            $targetNpmVersion = & $normalizeVersion $engines.npm "npm"
 
             $ltsVersions = & $resolveLtsVersions
             $isNodeLts = $targetNodeVersion -eq $ltsVersions.node
@@ -639,8 +571,7 @@ function Invoke-NodeVersionPinningWorkflow {
 
         $voltaVersionsMatch = $false
         if ($packageData) {
-            $hasVolta = $packageData.PSObject.Properties.Name `
-                -contains 'volta'
+            $hasVolta = $packageData.PSObject.Properties.Name -contains 'volta'
             $voltaValues = if ($hasVolta) {
                 $packageData.volta
             } else {
@@ -670,6 +601,7 @@ function Invoke-NodeVersionPinningWorkflow {
 
             $installMessage = "Installing Node.js $targetNodeVersion " +
                 "and npm $targetNpmVersion"
+
             Write-InfoLog -Scope "NODE-PIN" -Message $installMessage
 
             & volta install `
@@ -709,12 +641,14 @@ function Invoke-NodeVersionPinningWorkflow {
         if ($installedNodeVersion -ne $targetNodeVersion) {
             $nodeMismatch = "Node.js version mismatch. " +
                 "Expected $targetNodeVersion, got $installedNodeVersion"
+
             throw $nodeMismatch
         }
 
         if ($installedNpmVersion -ne $targetNpmVersion) {
             $npmMismatch = "npm version mismatch. " +
                 "Expected $targetNpmVersion, got $installedNpmVersion"
+
             throw $npmMismatch
         }
 
@@ -732,7 +666,7 @@ function Invoke-NodeVersionPinningWorkflow {
 # --- Main Script Execution ---
 
 Initialize-ScriptEnvironment
-$null = Test-IsInteractivePowerShell
+Test-IsInteractivePowerShell
 
 Invoke-PowerShellCoreTransition
 if (-not (Test-IsAdministrator)) {
