@@ -22,8 +22,8 @@ exit /b 1
     Requirements: pwsh 7.5.4, Administrator privileges
 
 .EXAMPLE
+    # Installs Volta and pins Node.js LTS to the current repository.
     .\install-node-version.ps1
-    Installs Volta and pins Node.js LTS to the current repository.
 
 .EXIT CODES
     0 - Success
@@ -75,7 +75,7 @@ function Get-RepositoryRoot {
 
     .OUTPUTS
         String - The absolute path to the repository root or current working
-                    directory.
+                 directory.
 
     .EXAMPLE
         $root = Get-RepositoryRoot
@@ -110,63 +110,49 @@ function Get-RepositoryRoot {
 
 #region Package Management Functions
 
-function Install-PackageWithWinget {
+function Install-VoltaWithWinget {
     <#
     .SYNOPSIS
-        Installs a package using the Windows Package Manager (winget).
+        Installs Volta using the Windows Package Manager (winget).
 
     .DESCRIPTION
-        Standardizes the winget installation command with agreements and
-        silent flags. Throws if winget is missing.
-
-    .PARAMETER PackageIdentifier
-        The ID of the package to install (e.g., "Volta.Volta").
+        Installs Volta via winget with silent flags and package agreements.
+        Throws if winget is missing or installation fails.
 
     .EXAMPLE
-        Install-PackageWithWinget -PackageIdentifier "Volta.Volta"
-        Installs Volta using winget.
+        # Installs Volta using winget.
+        Install-VoltaWithWinget
+
     #>
     [CmdletBinding()]
-    param(
-        [Parameter(Mandatory = $true, `
-            HelpMessage = "Package identifier for winget")]
-        [ValidateNotNullOrEmpty()]
-        [string]$PackageIdentifier
-    )
+    param()
 
     $wingetCommand = Get-Command -Name 'winget' -ErrorAction SilentlyContinue
     if (-not $wingetCommand) {
-        Write-ErrorLog -Scope "WINGET-INSTALL" `
-            -Message "winget not found for package $PackageIdentifier"
+        Write-ErrorLog -Scope "VOLTA-INSTALL" `
+            -Message "winget not found; cannot install Volta"
 
-        $failureMessage = "Package '$PackageIdentifier' is not installed " +
-            "and winget was not found."
-
-        throw $failureMessage
+        throw "Volta is not installed and winget was not found"
     }
 
-    Write-DebugLog -Scope "WINGET-INSTALL" `
-        -Message "Installing package $PackageIdentifier via winget"
+    Write-DebugLog -Scope "VOLTA-INSTALL" `
+        -Message "Installing Volta via winget"
 
     & winget install `
-        --id $PackageIdentifier `
+        --id Volta.Volta `
         --source winget `
         --silent `
         --accept-package-agreements `
         --accept-source-agreements
 
     if ($LASTEXITCODE -eq 0) {
-        Write-InfoLog -Scope "WINGET-INSTALL" `
-            -Message "Package $PackageIdentifier installed successfully"
-
+        Write-InfoLog -Scope "VOLTA-INSTALL" `
+            -Message "Volta installed successfully"
     } else {
-        $errorMessage = "winget install failed for " +
-            "'$PackageIdentifier'"+ " (exit $LASTEXITCODE)"
+        Write-ErrorLog -Scope "VOLTA-INSTALL" `
+            -Message "winget install failed for Volta (exit $LASTEXITCODE)"
 
-        Write-ErrorLog -Scope "WINGET-INSTALL" `
-            -Message $errorMessage
-
-        throw "winget install failed for $PackageIdentifier (exit $LASTEXITCODE)"
+        throw "winget install failed for Volta (exit $LASTEXITCODE)"
     }
 }
 
@@ -190,8 +176,6 @@ function Install-VoltaIfMissing {
     [CmdletBinding()]
     param()
 
-    Add-VoltaToSessionPath
-
     $voltaCommand = Get-Command -Name 'volta' -ErrorAction SilentlyContinue
     if ($voltaCommand) {
         Write-InfoLog -Scope "VOLTA-INSTALL" `
@@ -203,7 +187,7 @@ function Install-VoltaIfMissing {
     Write-InfoLog -Scope "VOLTA-INSTALL" `
         -Message "Volta not found. Installing via winget."
 
-    Install-PackageWithWinget -PackageIdentifier "Volta.Volta"
+    Install-VoltaWithWinget
 
     Add-VoltaToSessionPath
 
@@ -385,7 +369,6 @@ function Invoke-NodeVersionPinningWorkflow {
 
     # 1. Ensure Volta is available
     Install-VoltaIfMissing
-    Add-VoltaToSessionPath
 
     # 2. Ensure package.json exists
     $packageJsonPath = Join-Path -Path $RepositoryRoot -ChildPath 'package.json'
