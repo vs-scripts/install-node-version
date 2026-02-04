@@ -8,12 +8,14 @@ exit /b 1
 
 <#
 .SYNOPSIS
-    Installs and configures Volta to pin Node.js LTS to the repository.
+    Installs Volta, pins Node.js LTS, and updates npm to latest version.
 
 .DESCRIPTION
     This script ensures Volta is installed on the system, adds it to the PATH,
-    creates a package.json if needed, and pins the latest Node.js LTS version
-    to the repository. Volta manages Node.js versions per-project.
+    creates a package.json if needed, pins the latest Node.js LTS version
+    to the repository, and updates npm to the latest available version.
+    Both engines and volta fields in package.json are synchronized.
+    Volta manages Node.js versions per-project.
 
 .NOTES
     Author: Richeve Bebedor <richeve.bebedor+vs-scripts@gmail.com>
@@ -22,8 +24,8 @@ exit /b 1
     Requirements: pwsh 7.5.4, Administrator privileges
 
 .EXAMPLE
-    # Installs Volta and pins Node.js LTS to the current repository.
     .\install-node-version.ps1
+    Installs Volta, pins Node.js LTS, and updates npm to latest version.
 
 .EXIT CODES
     0 - Success
@@ -37,25 +39,79 @@ param()
 
 # Import required modules
 $scriptPath = $PSScriptRoot
+if (-not $scriptPath) {
+    $scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Path
+}
+
+if (-not $scriptPath) {
+    Write-Host "FATAL: Cannot determine script directory" -ForegroundColor Red
+    Write-Host "PSScriptRoot: $PSScriptRoot" -ForegroundColor Yellow
+
+    $commandPath = $MyInvocation.MyCommand.Path
+    Write-Host "MyInvocation.MyCommand.Path: $commandPath" `
+        -ForegroundColor Yellow
+
+    exit 1
+}
+
 $conciseLogPath = Join-Path $scriptPath 'concise-log.psm1'
 $coreModulePath = Join-Path $scriptPath 'powershell-core.psm1'
 
-# Convert to absolute paths (REQUIRED)
+# Convert module paths to absolute paths
 $conciseLogPath = [System.IO.Path]::GetFullPath($conciseLogPath)
 $coreModulePath = [System.IO.Path]::GetFullPath($coreModulePath)
 
 if (-not (Test-Path -LiteralPath $conciseLogPath)) {
-    Write-Error 'Required module not found: concise-log.psm1'
+    Write-Host "ERROR: Required module not found: $conciseLogPath" `
+        -ForegroundColor Red
+    Write-Host "Script directory: $scriptPath" -ForegroundColor Yellow
+    Write-Host "Current location: $PWD" -ForegroundColor Yellow
+    Write-Host "Files in script directory:" -ForegroundColor Yellow
+    if (Test-Path -LiteralPath $scriptPath) {
+        Get-ChildItem -LiteralPath $scriptPath -Filter "*.psm1" |
+            ForEach-Object { Write-Host "  - $($_.Name)" -ForegroundColor Cyan }
+    }
     exit 1
 }
 
 if (-not (Test-Path -LiteralPath $coreModulePath)) {
-    Write-Error 'Required module not found: powershell-core.psm1'
+    Write-Host "ERROR: Required module not found: $coreModulePath" `
+        -ForegroundColor Red
+    Write-Host "Script directory: $scriptPath" -ForegroundColor Yellow
+    Write-Host "Current location: $PWD" -ForegroundColor Yellow
     exit 1
 }
 
-Import-Module -Name $conciseLogPath -Force -ErrorAction Stop
-Import-Module -Name $coreModulePath -Force -ErrorAction Stop
+try {
+    Import-Module -Name $conciseLogPath -Force -ErrorAction Stop -Global
+    Import-Module -Name $coreModulePath -Force -ErrorAction Stop -Global
+} catch {
+    Write-Host "ERROR: Failed to import modules: $_" -ForegroundColor Red
+    Write-Host "concise-log path: $conciseLogPath" -ForegroundColor Yellow
+    Write-Host "powershell-core path: $coreModulePath" -ForegroundColor Yellow
+
+    $exceptionType = $_.Exception.GetType().FullName
+    Write-Host "Exception: $exceptionType" -ForegroundColor Yellow
+
+    Write-Host "Message: $($_.Exception.Message)" -ForegroundColor Yellow
+    exit 1
+}
+
+# Verify modules loaded
+$conciseLogLoaded = Get-Module -Name 'concise-log' `
+    -ErrorAction SilentlyContinue
+$coreModuleLoaded = Get-Module -Name 'powershell-core' `
+    -ErrorAction SilentlyContinue
+
+if (-not $conciseLogLoaded) {
+    Write-Host "ERROR: concise-log module not loaded" -ForegroundColor Red
+    exit 1
+}
+
+if (-not $coreModuleLoaded) {
+    Write-Host "ERROR: powershell-core module not loaded" -ForegroundColor Red
+    exit 1
+}
 
 #endregion
 
@@ -75,7 +131,7 @@ function Get-RepositoryRoot {
 
     .OUTPUTS
         String - The absolute path to the repository root or current working
-                 directory.
+                    directory.
 
     .EXAMPLE
         $root = Get-RepositoryRoot
@@ -92,13 +148,13 @@ function Get-RepositoryRoot {
             $detectedRoot = (& git rev-parse --show-toplevel 2>$null).Trim()
 
             if ($detectedRoot -and (Test-Path -LiteralPath $detectedRoot)) {
-                Write-DebugLog -Scope "REPO-ROOT" `
+                $null = Write-DebugLog -Scope "REPO-ROOT" `
                     -Message "Detected Git repository root: $detectedRoot"
 
                 $repositoryRoot = $detectedRoot
             }
         } catch {
-            Write-DebugLog -Scope "REPO-ROOT" `
+            $null = Write-DebugLog -Scope "REPO-ROOT" `
                 -Message "Git root detection failed, using current directory"
         }
     }
@@ -110,49 +166,69 @@ function Get-RepositoryRoot {
 
 #region Package Management Functions
 
-function Install-VoltaWithWinget {
+function Install-PackageWithWinget {
     <#
     .SYNOPSIS
-        Installs Volta using the Windows Package Manager (winget).
+        Installs a package using the Windows Package Manager (winget).
 
     .DESCRIPTION
-        Installs Volta via winget with silent flags and package agreements.
-        Throws if winget is missing or installation fails.
+        Standardizes the winget installation command with agreements and
+        silent flags. Throws if winget is missing.
+
+    .PARAMETER PackageIdentifier
+        The ID of the package to install (e.g., "Volta.Volta").
 
     .EXAMPLE
-        # Installs Volta using winget.
-        Install-VoltaWithWinget
-
+        Install-PackageWithWinget -PackageIdentifier "Volta.Volta"
+        Installs Volta using winget.
     #>
     [CmdletBinding()]
-    param()
+    param(
+        [Parameter(Mandatory = $true, `
+            HelpMessage = "Package identifier for winget")]
+        [ValidateNotNullOrEmpty()]
+        [string]$PackageIdentifier
+    )
 
     $wingetCommand = Get-Command -Name 'winget' -ErrorAction SilentlyContinue
     if (-not $wingetCommand) {
-        Write-ErrorLog -Scope "VOLTA-INSTALL" `
-            -Message "winget not found; cannot install Volta"
+        Write-ErrorLog -Scope "WINGET-INSTALL" `
+            -Message "winget not found for package $PackageIdentifier"
 
-        throw "Volta is not installed and winget was not found"
+        $failureMessage = "Package '$PackageIdentifier' is not installed " +
+            "and winget was not found."
+
+        throw $failureMessage
     }
 
-    Write-DebugLog -Scope "VOLTA-INSTALL" `
-        -Message "Installing Volta via winget"
+    Write-DebugLog -Scope "WINGET-INSTALL" `
+        -Message "Installing package $PackageIdentifier via winget"
 
     & winget install `
-        --id Volta.Volta `
+        --id $PackageIdentifier `
         --source winget `
         --silent `
         --accept-package-agreements `
         --accept-source-agreements
 
-    if ($LASTEXITCODE -eq 0) {
-        Write-InfoLog -Scope "VOLTA-INSTALL" `
-            -Message "Volta installed successfully"
-    } else {
-        Write-ErrorLog -Scope "VOLTA-INSTALL" `
-            -Message "winget install failed for Volta (exit $LASTEXITCODE)"
+    $allowedExitCodes = @(0, -1978335189)
+    if ($LASTEXITCODE -notin $allowedExitCodes) {
+        $warningMessage = "winget install failed for $PackageIdentifier " +
+            "(exit $LASTEXITCODE)"
 
-        throw "winget install failed for Volta (exit $LASTEXITCODE)"
+        Write-WarningLog -Scope "WINGET-INSTALL" `
+            -Message $warningMessage
+
+        Write-ErrorLog -Scope "WINGET-INSTALL" `
+            -Message "winget install failed; aborting"
+
+        throw $warningMessage
+    } elseif ($LASTEXITCODE -ne 0) {
+        $warningMessage = "winget reported no applicable upgrade for " +
+            "$PackageIdentifier (exit $LASTEXITCODE)"
+
+        Write-WarningLog -Scope "WINGET-INSTALL" `
+            -Message $warningMessage
     }
 }
 
@@ -176,6 +252,8 @@ function Install-VoltaIfMissing {
     [CmdletBinding()]
     param()
 
+    Add-VoltaToSessionPath
+
     $voltaCommand = Get-Command -Name 'volta' -ErrorAction SilentlyContinue
     if ($voltaCommand) {
         Write-InfoLog -Scope "VOLTA-INSTALL" `
@@ -187,7 +265,7 @@ function Install-VoltaIfMissing {
     Write-InfoLog -Scope "VOLTA-INSTALL" `
         -Message "Volta not found. Installing via winget."
 
-    Install-VoltaWithWinget
+    Install-PackageWithWinget -PackageIdentifier "Volta.Volta"
 
     Add-VoltaToSessionPath
 
@@ -228,7 +306,9 @@ function Add-VoltaToSessionPath {
 
     $voltaDirectories = @($voltaBinaryDirectory)
     if ($env:ProgramFiles) {
-        $voltaProgramFiles = Join-Path -Path $env:ProgramFiles -ChildPath 'Volta'
+        $voltaProgramFiles = Join-Path -Path $env:ProgramFiles `
+            -ChildPath 'Volta'
+
         if (Test-Path -LiteralPath $voltaProgramFiles) {
             $voltaDirectories += $voltaProgramFiles
         }
@@ -238,6 +318,7 @@ function Add-VoltaToSessionPath {
         $voltaProgramFilesX86 = Join-Path `
             -Path ${env:ProgramFiles(x86)} `
             -ChildPath 'Volta'
+
         if (Test-Path -LiteralPath $voltaProgramFilesX86) {
             $voltaDirectories += $voltaProgramFilesX86
         }
@@ -252,7 +333,6 @@ function Add-VoltaToSessionPath {
             try {
                 $normalizedPathEntry = `
                     [System.IO.Path]::GetFullPath($pathEntry).TrimEnd('\')
-
                 $normalizedVoltaPath = `
                     [System.IO.Path]::GetFullPath($voltaDirectory).TrimEnd('\')
 
@@ -333,6 +413,255 @@ function Initialize-PackageJsonIfMissing {
 
 #endregion
 
+#region npm Update Functions
+
+function Update-NpmToLatest {
+    <#
+    .SYNOPSIS
+        Updates npm to the latest version and synchronizes package.json fields.
+
+    .DESCRIPTION
+        Updates npm to the latest available version using Volta when available,
+        or falls back to direct npm update. Updates both engines.npm and
+        volta.npm fields in package.json to maintain consistency.
+
+    .PARAMETER RepositoryRoot
+        The directory containing the package.json file to update.
+
+    .EXAMPLE
+        # Updates npm to latest and synchronizes package.json fields.
+        Update-NpmToLatest -RepositoryRoot "C:\Projects\MyRepo"
+    #>
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory = $true, `
+            HelpMessage = "Repository root directory path")]
+        [ValidateNotNullOrEmpty()]
+        [string]$RepositoryRoot
+    )
+
+    Write-InfoLog -Scope "NPM-UPDATE" `
+        -Message "Starting npm update to latest version"
+
+    $normalizeVersion = {
+        param(
+            [string]$versionOutput,
+            [string]$versionLabel
+        )
+
+        if (-not $versionOutput) {
+            throw "Missing $versionLabel version value"
+        }
+
+        $versionValue = $versionOutput.Trim()
+        if ($versionValue.StartsWith('v')) {
+            $versionValue = $versionValue.Substring(1)
+        }
+
+        if (-not ($versionValue -match '^\d+\.\d+\.\d+$')) {
+            throw "$versionLabel version is invalid: $versionOutput"
+        }
+
+        return $versionValue
+    }
+
+    # Get current npm version
+    $currentNpmVersion = $null
+    try {
+        $currentNpmOutput = & npm --version
+        $currentNpmVersion = & $normalizeVersion `
+            $currentNpmOutput `
+            "npm (current)"
+
+        Write-InfoLog -Scope "NPM-UPDATE" `
+            -Message "Current npm version: $currentNpmVersion"
+    } catch {
+        Write-WarningLog -Scope "NPM-UPDATE" `
+            -Message "Could not determine current npm version: $_"
+    }
+
+    # Check if Volta is available and managing npm
+    $voltaCommand = Get-Command -Name 'volta' -ErrorAction SilentlyContinue
+    $useVoltaForUpdate = $false
+
+    if ($voltaCommand) {
+        Write-InfoLog -Scope "NPM-UPDATE" `
+            -Message "Volta detected, checking npm management"
+
+        try {
+            # Check if npm is managed by Volta by looking for volta section
+            $packageJsonPath = Join-Path -Path $RepositoryRoot `
+                -ChildPath 'package.json'
+
+            if (Test-Path -LiteralPath $packageJsonPath) {
+                $packageJsonRaw = Get-Content -LiteralPath $packageJsonPath -Raw
+                $packageData = $packageJsonRaw | ConvertFrom-Json
+
+                $hasVolta = $packageData.PSObject.Properties.Name `
+                    -contains 'volta'
+
+                if ($hasVolta -and $packageData.volta.npm) {
+                    $useVoltaForUpdate = $true
+                    Write-InfoLog -Scope "NPM-UPDATE" `
+                        -Message "npm is managed by Volta, using Volta for update"
+                } else {
+                    Write-InfoLog -Scope "NPM-UPDATE" `
+                        -Message "npm not managed by Volta, using direct update"
+                }
+            }
+        } catch {
+            Write-WarningLog -Scope "NPM-UPDATE" `
+                -Message "Could not check Volta npm management: $_"
+        }
+    } else {
+        Write-InfoLog -Scope "NPM-UPDATE" `
+            -Message "Volta not available, using direct npm update"
+    }
+
+    # Update npm using appropriate method
+    $latestNpmVersion = $null
+
+    if ($useVoltaForUpdate) {
+        Write-InfoLog -Scope "NPM-UPDATE" `
+            -Message "Updating npm via Volta"
+
+        try {
+            Push-Location -Path $RepositoryRoot
+
+            # Install latest npm via Volta
+            & volta install npm@latest
+            if ($LASTEXITCODE -ne 0) {
+                throw "Volta failed to install latest npm"
+            }
+
+            # Pin latest npm to project
+            & volta pin npm@latest
+            if ($LASTEXITCODE -ne 0) {
+                throw "Volta failed to pin latest npm"
+            }
+
+            # Get the version that was installed
+            $latestNpmOutput = & npm --version
+            $latestNpmVersion = & $normalizeVersion `
+                $latestNpmOutput `
+                "npm (latest)"
+
+            Write-InfoLog -Scope "NPM-UPDATE" `
+                -Message "Updated npm via Volta to version: $latestNpmVersion"
+        } catch {
+            Write-ErrorLog -Scope "NPM-UPDATE" `
+                -Message "Volta npm update failed: $($_.Exception.Message)"
+            throw
+        } finally {
+            Pop-Location
+        }
+    } else {
+        Write-InfoLog -Scope "NPM-UPDATE" `
+            -Message "Updating npm directly"
+
+        try {
+            # Update npm directly
+            & npm install -g npm@latest
+            if ($LASTEXITCODE -ne 0) {
+                throw "Direct npm update failed"
+            }
+
+            # Get the version that was installed
+            $latestNpmOutput = & npm --version
+            $latestNpmVersion = & $normalizeVersion `
+                $latestNpmOutput `
+                "npm (latest)"
+
+            Write-InfoLog -Scope "NPM-UPDATE" `
+                -Message "Updated npm directly to version: $latestNpmVersion"
+        } catch {
+            Write-ErrorLog -Scope "NPM-UPDATE" `
+                -Message "Direct npm update failed: $($_.Exception.Message)"
+            throw
+        }
+    }
+
+    # Update package.json with new npm version
+    $packageJsonPath = Join-Path -Path $RepositoryRoot -ChildPath 'package.json'
+
+    if (Test-Path -LiteralPath $packageJsonPath) {
+        Write-InfoLog -Scope "NPM-UPDATE" `
+            -Message "Updating package.json with new npm version"
+
+        try {
+            $packageJsonRaw = Get-Content -LiteralPath $packageJsonPath -Raw
+            $packageData = $packageJsonRaw | ConvertFrom-Json
+
+            # Update engines.npm field
+            $hasEngines = $packageData.PSObject.Properties.Name `
+                -contains 'engines'
+
+            if ($hasEngines) {
+                $packageData.engines.npm = $latestNpmVersion
+            } else {
+                $enginesValue = [ordered]@{
+                    npm = $latestNpmVersion
+                }
+                $packageData | Add-Member `
+                    -NotePropertyName 'engines' `
+                    -NotePropertyValue $enginesValue
+            }
+
+            # Update volta.npm field if volta section exists
+            $hasVolta = $packageData.PSObject.Properties.Name `
+                -contains 'volta'
+
+            if ($hasVolta) {
+                $packageData.volta.npm = $latestNpmVersion
+                Write-InfoLog -Scope "NPM-UPDATE" `
+                    -Message "Updated volta.npm field to: $latestNpmVersion"
+            }
+
+            # Save updated package.json
+            $jsonContent = $packageData | ConvertTo-Json -Depth 20
+            Set-Content -LiteralPath $packageJsonPath `
+                -Value $jsonContent `
+                -Encoding UTF8
+
+            Write-InfoLog -Scope "NPM-UPDATE" `
+                -Message "Updated engines.npm field to: $latestNpmVersion"
+        } catch {
+            Write-ErrorLog -Scope "NPM-UPDATE" `
+                -Message "Failed to update package.json: $($_.Exception.Message)"
+            throw
+        }
+    } else {
+        Write-WarningLog -Scope "NPM-UPDATE" `
+            -Message "package.json not found, skipping field updates"
+    }
+
+    # Verify the update was successful
+    try {
+        $verifyNpmOutput = & npm --version
+        $verifyNpmVersion = & $normalizeVersion `
+            $verifyNpmOutput `
+            "npm (verify)"
+
+        if ($verifyNpmVersion -ne $latestNpmVersion) {
+            $versionMismatch = "npm version verification failed. " +
+                "Expected $latestNpmVersion, got $verifyNpmVersion"
+            throw $versionMismatch
+        }
+
+        Write-InfoLog -Scope "NPM-UPDATE" `
+            -Message "npm update verification successful: $verifyNpmVersion"
+    } catch {
+        Write-ErrorLog -Scope "NPM-UPDATE" `
+            -Message "npm update verification failed: $($_.Exception.Message)"
+        throw
+    }
+
+    Write-InfoLog -Scope "NPM-UPDATE" `
+        -Message "npm update completed successfully"
+}
+
+#endregion
+
 #region Primary Functions
 
 # --- Primary Functions ---
@@ -369,6 +698,7 @@ function Invoke-NodeVersionPinningWorkflow {
 
     # 1. Ensure Volta is available
     Install-VoltaIfMissing
+    Add-VoltaToSessionPath
 
     # 2. Ensure package.json exists
     $packageJsonPath = Join-Path -Path $RepositoryRoot -ChildPath 'package.json'
@@ -401,10 +731,14 @@ function Invoke-NodeVersionPinningWorkflow {
         }
 
         $ltsNodeOutput = & volta run --node lts node --version
-        $ltsNodeVersion = & $normalizeVersion $ltsNodeOutput "Node.js"
+        $ltsNodeVersion = & $normalizeVersion `
+            $ltsNodeOutput `
+            "Node.js"
 
         $ltsNpmOutput = & volta run --node lts --bundled-npm npm --version
-        $ltsNpmVersion = & $normalizeVersion $ltsNpmOutput "npm"
+        $ltsNpmVersion = & $normalizeVersion `
+            $ltsNpmOutput `
+            "npm"
 
         return [ordered]@{
             node = $ltsNodeVersion
@@ -427,7 +761,8 @@ function Invoke-NodeVersionPinningWorkflow {
             throw "package.json is not valid JSON"
         }
 
-        $hasEngines = $packageData.PSObject.Properties.Name -contains 'engines'
+        $hasEngines = $packageData.PSObject.Properties.Name `
+            -contains 'engines'
         $engines = if ($hasEngines) {
             $packageData.engines
         } else {
@@ -435,8 +770,12 @@ function Invoke-NodeVersionPinningWorkflow {
         }
 
         if ($engines -and $engines.node -and $engines.npm) {
-            $targetNodeVersion = & $normalizeVersion $engines.node "Node.js"
-            $targetNpmVersion = & $normalizeVersion $engines.npm "npm"
+            $targetNodeVersion = & $normalizeVersion `
+                $engines.node `
+                "Node.js"
+            $targetNpmVersion = & $normalizeVersion `
+                $engines.npm `
+                "npm"
 
             $ltsVersions = & $resolveLtsVersions
             $isNodeLts = $targetNodeVersion -eq $ltsVersions.node
@@ -554,7 +893,8 @@ function Invoke-NodeVersionPinningWorkflow {
 
         $voltaVersionsMatch = $false
         if ($packageData) {
-            $hasVolta = $packageData.PSObject.Properties.Name -contains 'volta'
+            $hasVolta = $packageData.PSObject.Properties.Name `
+                -contains 'volta'
             $voltaValues = if ($hasVolta) {
                 $packageData.volta
             } else {
@@ -584,7 +924,6 @@ function Invoke-NodeVersionPinningWorkflow {
 
             $installMessage = "Installing Node.js $targetNodeVersion " +
                 "and npm $targetNpmVersion"
-
             Write-InfoLog -Scope "NODE-PIN" -Message $installMessage
 
             & volta install `
@@ -624,14 +963,12 @@ function Invoke-NodeVersionPinningWorkflow {
         if ($installedNodeVersion -ne $targetNodeVersion) {
             $nodeMismatch = "Node.js version mismatch. " +
                 "Expected $targetNodeVersion, got $installedNodeVersion"
-
             throw $nodeMismatch
         }
 
         if ($installedNpmVersion -ne $targetNpmVersion) {
             $npmMismatch = "npm version mismatch. " +
                 "Expected $targetNpmVersion, got $installedNpmVersion"
-
             throw $npmMismatch
         }
 
@@ -649,7 +986,7 @@ function Invoke-NodeVersionPinningWorkflow {
 # --- Main Script Execution ---
 
 Initialize-ScriptEnvironment
-Test-IsInteractivePowerShell
+$null = Test-IsInteractivePowerShell
 
 Invoke-PowerShellCoreTransition
 if (-not (Test-IsAdministrator)) {
@@ -664,15 +1001,21 @@ try {
     Invoke-NodeVersionPinningWorkflow -RepositoryRoot $repositoryRoot
 
     Write-InfoLog -Scope "SCRIPT-MAIN" `
-        -Message "Success: Node.js LTS now bound to this folder and session"
+        -Message "Node.js LTS pinning completed successfully"
+
+    # Update npm to latest version and synchronize package.json
+    Update-NpmToLatest -RepositoryRoot $repositoryRoot
 
     Write-InfoLog -Scope "SCRIPT-MAIN" `
-        -Message "Usage: run node in $repositoryRoot"
+        -Message "Success: Node.js LTS and latest npm now configured"
+
+    Write-InfoLog -Scope "SCRIPT-MAIN" `
+        -Message "Usage: run node and npm commands in $repositoryRoot"
 
     exit 0
 } catch {
     Write-ErrorLog -Scope "SCRIPT-MAIN" `
-        -Message "Failed to install or pin Node.js: $($_.Exception.Message)"
+        -Message "Failed to configure Node.js/npm: $($_.Exception.Message)"
 
     Write-DebugLog -Scope "SCRIPT-MAIN" `
         -Message "Stack Trace: $($_.ScriptStackTrace)"
